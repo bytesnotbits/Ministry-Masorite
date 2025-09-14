@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // REPLACEMENT for the renderHouses function
+    // renderHouses function
 async function renderHouses(territoryId) {
     houseList.innerHTML = '';
     const territory = await getFromStore('territories', territoryId);
@@ -76,23 +76,14 @@ async function renderHouses(territoryId) {
         const visits = (await getByIndex('visits', 'houseId', house.id)).sort((a,b) => new Date(b.date) - new Date(a.date));
         const lastVisit = visits[0];
 
-        // --- NEW LOGIC FOR DYNAMIC ICONS ---
         let iconsHTML = '';
-        if (house.hasMailbox) {
-            iconsHTML += `<span title="Mailbox Available">📭</span>`;
-        }
-        if (house.noTrespassing) {
-            iconsHTML += `<span title="No Trespassing Sign">🚫</span>`;
-        }
-        if (lastVisit && lastVisit.isNotAtHome) {
-            iconsHTML += `<span title="Last Visit: Not at Home">⏰</span>`;
-        }
+        if (house.hasMailbox) iconsHTML += `<span title="Mailbox Available">📭</span>`;
+        if (house.noTrespassing) iconsHTML += `<span title="No Trespassing Sign">🚫</span>`;
+        if (lastVisit && lastVisit.isNotAtHome) iconsHTML += `<span title="Last Visit: Not at Home">⏰</span>`;
 
-        // --- NEW LOGIC FOR CARD DETAILS ---
         const lastActivityDate = lastVisit ? `Last Visit: <strong>${new Date(lastVisit.date).toLocaleDateString()}</strong>` : 'No activity yet';
         const personMet = lastVisit && !lastVisit.isNotAtHome && lastVisit.personName ? `Met: <strong>${lastVisit.personName}</strong>` : '';
 
-        // --- ASSEMBLE THE NEW CARD ---
         const li = document.createElement('li');
         li.className = 'house-card';
         li.dataset.id = house.id;
@@ -106,6 +97,8 @@ async function renderHouses(territoryId) {
                 ${iconsHTML}
             </div>
             <button class="delete-btn" data-id="${house.id}" data-type="house">X</button>
+            <!-- THIS IS THE NEW BUTTON -->
+            <button class="log-nh-btn" data-id="${house.id}">Log 'NH'</button>
         `;
         houseList.appendChild(li);
     }
@@ -178,6 +171,24 @@ function setupEventListeners() {
         
         showView(targetView);
     }
+
+    // 'Log NH' button
+    if (target.classList.contains('log-nh-btn')) {
+        const houseId = Number(target.dataset.id);
+        if (!houseId) return;
+    
+        await addToStore('visits', {
+            houseId: houseId,
+            date: new Date().toISOString(),
+            notes: 'Not at home.',
+            personName: '',
+            isNotAtHome: true
+        });
+        
+    // Refresh the entire house list to show the updated card immediately
+    await renderHouses(currentTerritoryId);
+    }
+
 
     // Sorting buttons
     if (target.classList.contains('sort-btn')) {
@@ -285,8 +296,11 @@ function setupEventListeners() {
 
     document.getElementById('not-at-home-check').addEventListener('change', async (e) => {
     if (!currentHouseId) return;
+    
+    const visits = (await getByIndex('visits', 'houseId', currentHouseId)).sort((a, b) => new Date(b.date) - new Date(a.date));
+    const lastVisit = visits[0];
 
-    // Only create a log when the box is CHECKED
+    // If the box is CHECKED, add a new "Not at Home" visit.
     if (e.target.checked) {
         await addToStore('visits', {
             houseId: currentHouseId,
@@ -295,9 +309,18 @@ function setupEventListeners() {
             personName: '',
             isNotAtHome: true 
         });
-        // Refresh the view to show the new visit log immediately
-        await renderHouseDetails(currentHouseId);
+    } 
+    // If the box is UNCHECKED, confirm and delete the last visit ONLY IF it was a "Not at Home".
+    else {
+        if (lastVisit && lastVisit.isNotAtHome) {
+            if (confirm("Are you sure you want to delete the last 'Not at Home' visit record?")) {
+                await deleteFromStore('visits', lastVisit.id);
+            }
+        }
     }
+
+    // Refresh the visit history to show the change.
+    await renderHouseDetails(currentHouseId);
 });
     
     // Data Management Event Listeners
