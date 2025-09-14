@@ -294,13 +294,14 @@ function setupEventListeners() {
         await updateInStore('houses', house);
     });
 
+    // Non-destructive version
     document.getElementById('not-at-home-check').addEventListener('change', async (e) => {
     if (!currentHouseId) return;
     
     const visits = (await getByIndex('visits', 'houseId', currentHouseId)).sort((a, b) => new Date(b.date) - new Date(a.date));
     const lastVisit = visits[0];
 
-    // If the box is CHECKED, add a new "Not at Home" visit.
+    // If the box is CHECKED, add a standard "Not at Home" record.
     if (e.target.checked) {
         await addToStore('visits', {
             houseId: currentHouseId,
@@ -310,18 +311,25 @@ function setupEventListeners() {
             isNotAtHome: true 
         });
     } 
-    // If the box is UNCHECKED, confirm and delete the last visit ONLY IF it was a "Not at Home".
+    // If the box is UNCHECKED, it means we are updating the status.
+    // This action ADDS a new record instead of deleting the old one.
     else {
+        // This should only happen if the last visit was indeed a "Not at Home".
         if (lastVisit && lastVisit.isNotAtHome) {
-            if (confirm("Are you sure you want to delete the last 'Not at Home' visit record?")) {
-                await deleteFromStore('visits', lastVisit.id);
-            }
+            await addToStore('visits', {
+                houseId: currentHouseId,
+                date: new Date().toISOString(),
+                notes: "Status updated from 'Not at Home'.", // The new, clear note
+                personName: '',
+                isNotAtHome: false // Explicitly set the status to false
+            });
         }
     }
 
-    // Refresh the visit history to show the change.
+    // Refresh the visit history to show the newly added record.
     await renderHouseDetails(currentHouseId);
 });
+
     
     // Data Management Event Listeners
     document.getElementById('export-mscribe-btn').addEventListener('click', handleBackup);
