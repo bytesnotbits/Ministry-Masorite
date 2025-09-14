@@ -204,7 +204,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         document.getElementById('add-house-btn').addEventListener('click', async () => {
-            const address = prompt('Enter the house number and street:');
+            const address = prompt('New house number:');
             if (address) {
                 await addToStore('houses', { territoryId: currentTerritoryId, address, hasMailbox: false, noTrespassing: false });
                 await renderHouses(currentTerritoryId);
