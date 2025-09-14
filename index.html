@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ministry Scribe</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>Ministry Scribe</h1>
+    </header>
+
+    <main>
+        <!-- This is the main screen showing the list of territories -->
+        <div id="territory-list-view" class="view active">
+            <h2>My Territories</h2>
+            <div class="controls">
+                <span>Sort by:</span>
+                <button class="sort-btn">Street Name</button>
+                <button class="sort-btn">House Count</button>
+            </div>
+            <ul id="territory-list">
+                <!-- JavaScript will add territories here -->
+                <li class="placeholder">You haven't added any territories yet.</li>
+            </ul>
+            <button id="add-territory-btn" class="primary-action">+ Add New Territory</button>
+        </div>
+
+        <!-- This screen shows the list of houses for a single territory -->
+        <div id="house-list-view" class="view">
+            <button class="back-btn">&larr; Back to Territories</button>
+            <h2 id="house-list-title"></h2>
+            <ul id="house-list">
+                <!-- JavaScript will add houses here -->
+            </ul>
+            <button id="add-house-btn" class="primary-action">+ Add New House to Territory</button>
+        </div>
+
+        <!-- This screen shows the details for a single house -->
+        <div id="house-detail-view" class="view">
+             <button class="back-btn">&larr; Back to House List</button>
+             <h2 id="house-detail-address"></h2>
+             <!-- House Info Section -->
+             <div class="detail-section">
+                <h3>Details</h3>
+                <label><input type="checkbox" id="mailbox-check"> Mailbox Available</label><br>
+                <label><input type="checkbox" id="notrespass-check"> "No Trespassing" Notice</label>
+             </div>
+             <!-- People Met Section -->
+             <div class="detail-section">
+                <h3>Individuals Met</h3>
+                <ul id="people-list"></ul>
+                <button>+ Add Person</button>
+             </div>
+             <!-- Visit Notes Section -->
+             <div class="detail-section">
+                 <h3>Visit History</h3>
+                 <ul id="visit-notes-list">
+                    <!-- Example Note -->
+                    <li>
+                        <strong>Sep 15, 2025</strong> <span class="edit-date-btn">&#128197;</span>
+                        <p>Had a pleasant conversation about gardening. Mentioned they would be away next week.</p>
+                    </li>
+                 </ul>
+                 <button class="primary-action">+ Add New Visit Note</button>
+             </div>
+        </div>
+
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
