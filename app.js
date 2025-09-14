@@ -235,7 +235,8 @@ async function renderHouses(territoryId) {
             const notes = notesInput.value;
             const personName = prompt("Who did you speak with? (Optional)");
             if(notes) {
-                await addToStore('visits', { houseId: currentHouseId, date: new Date().toISOString(), notes, personName: personName || '' });
+                await addToStore('visits', { houseId: currentHouseId, date: new Date().toISOString(), notes, personName: personName || '', isNotAtHome: false });
+
                 await renderHouseDetails(currentHouseId);
                 notesInput.value = '';
             } else {
