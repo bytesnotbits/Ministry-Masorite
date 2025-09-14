@@ -38,7 +38,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         territoryList.innerHTML = '';
         let territories = await getAllFromStore('territories');
         
-        // Sorting logic
         territories.sort((a, b) => {
             if (territorySort === 'name') return a.name.localeCompare(b.name);
             return new Date(b.createdAt) - new Date(a.createdAt);
@@ -75,7 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         for (const house of houses) {
             const visits = await getByIndex('visits', 'houseId', house.id);
             const lastVisit = visits.sort((a,b) => new Date(b.date) - new Date(a.date))[0];
-            const primaryPerson = lastVisit ? lastVisit.personName : 'No visits yet';
+            const primaryPerson = lastVisit ? lastVisit.personName || 'Last visit' : 'No visits yet';
 
             const li = document.createElement('li');
             li.className = 'house-card';
@@ -84,8 +83,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <strong>${house.address}</strong><br>
                 <small>${primaryPerson}</small>
                 <div class="icons">
-                    <span class="${house.hasMailbox ? 'active' : ''}">📭</span>
-                    <span class="${house.noTrespassing ? 'active' : ''}">🚫</span>
+                    <span title="Mailbox" class="${house.hasMailbox ? 'active' : ''}">📭</span>
+                    <span title="No Trespassing" class="${house.noTrespassing ? 'active' : ''}">🚫</span>
                 </div>
                 <button class="delete-btn" data-id="${house.id}" data-type="house">X</button>
             `;
@@ -99,16 +98,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('mailbox-check').checked = house.hasMailbox;
         document.getElementById('notrespass-check').checked = house.noTrespassing;
         
-        // Render visits
         visitList.innerHTML = '';
         const visits = await getByIndex('visits', 'houseId', houseId);
-        visits.sort((a, b) => new Date(b.date) - new Date(a.date)); // Newest first
+        visits.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         for (const visit of visits) {
             const li = document.createElement('li');
+            const personInfo = visit.personName ? `Spoke with: <strong>${visit.personName}</strong><br>` : '';
             li.innerHTML = `
-                <strong>${new Date(visit.date).toLocaleDateString()}</strong>
-                <span class="edit-date-btn" data-id="${visit.id}">✏️ Change Date</span>
+                <div>
+                    <span>${new Date(visit.date).toLocaleDateString()}</span>
+                    <span class="edit-date-btn" data-id="${visit.id}">✏️ Change Date</span>
+                </div>
+                ${personInfo}
                 <p>${visit.notes}</p>
                 <button class="delete-btn" data-id="${visit.id}" data-type="visit">X</button>
             `;
@@ -118,31 +120,77 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- EVENT LISTENERS SETUP ---
     function setupEventListeners() {
-        // Main Navigation
+        // Consolidated Click Handler for main actions
         document.addEventListener('click', async (e) => {
-            // Navigate to house list from territory list
-            if (e.target && e.target.closest('#territory-list li') && !e.target.classList.contains('delete-btn')) {
-                const li = e.target.closest('li');
-                currentTerritoryId = Number(li.dataset.id);
+            const target = e.target;
+
+            // Navigate to house list
+            const territoryLi = target.closest('#territory-list li');
+            if (territoryLi && !target.classList.contains('delete-btn') && !territoryLi.classList.contains('placeholder')) {
+                currentTerritoryId = Number(territoryLi.dataset.id);
                 await renderHouses(currentTerritoryId);
                 showView('house-list-view');
+                return;
             }
-            // Navigate to house details from house list
-            if (e.target && e.target.closest('#house-list li') && !e.target.classList.contains('delete-btn')) {
-                const li = e.target.closest('li');
-                currentHouseId = Number(li.dataset.id);
+
+            // Navigate to house details
+            const houseLi = target.closest('#house-list li');
+            if (houseLi && !target.classList.contains('delete-btn') && !houseLi.classList.contains('placeholder')) {
+                currentHouseId = Number(houseLi.dataset.id);
                 await renderHouseDetails(currentHouseId);
                 showView('house-detail-view');
+                return;
             }
+
             // Back buttons
-            if (e.target.classList.contains('back-btn')) {
-                const targetView = e.target.dataset.target;
-                showView(targetView);
+            if (target.classList.contains('back-btn')) {
+                showView(target.dataset.target);
             }
+
             // Sorting buttons
-            if (e.target.classList.contains('sort-btn')) {
-                territorySort = e.target.dataset.sort;
+            if (target.classList.contains('sort-btn')) {
+                territorySort = target.dataset.sort;
                 await renderTerritories();
+            }
+
+            // Deletion logic
+            if (target.classList.contains('delete-btn')) {
+                const id = Number(target.dataset.id);
+                const type = target.dataset.type;
+
+                if (type === 'territory' && confirm('Are you sure you want to delete this entire territory and all its houses? This cannot be undone.')) {
+                    const houses = await getByIndex('houses', 'territoryId', id);
+                    for(const house of houses) {
+                        const visits = await getByIndex('visits', 'houseId', house.id);
+                        for(const visit of visits) await deleteFromStore('visits', visit.id);
+                        await deleteFromStore('houses', house.id);
+                    }
+                    await deleteFromStore('territories', id);
+                    await renderTerritories();
+                } else if (type === 'house' && confirm('Are you sure you want to delete this house and all its visit history?')) {
+                    const visits = await getByIndex('visits', 'houseId', id);
+                    for(const visit of visits) await deleteFromStore('visits', visit.id);
+                    await deleteFromStore('houses', id);
+                    await renderHouses(currentTerritoryId);
+                } else if (type === 'visit' && confirm('Delete this visit note?')) {
+                    await deleteFromStore('visits', id);
+                    await renderHouseDetails(currentHouseId);
+                }
+            }
+
+            // Edit visit date
+            if (target.classList.contains('edit-date-btn')) {
+                const visitId = Number(target.dataset.id);
+                const visit = await getFromStore('visits', visitId);
+                const currentDate = new Date(visit.date).toISOString().split('T')[0];
+                const newDateStr = prompt('Enter new date (YYYY-MM-DD):', currentDate);
+                if (newDateStr && !isNaN(new Date(newDateStr))) {
+                    visit.date = new Date(newDateStr);
+                    await updateInStore('visits', visit);
+                    await renderHouseDetails(currentHouseId);
+                } else if(newDateStr) {
+                    alert('Invalid date format.');
+                }
             }
         });
 
@@ -150,7 +198,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('add-territory-btn').addEventListener('click', async () => {
             const name = prompt('Enter the name for the new territory (e.g., "Maple Street"):');
             if (name) {
-                await addToStore('territories', { name, createdAt: new Date() });
+                await addToStore('territories', { name, createdAt: new Date().toISOString() });
                 await renderTerritories();
             }
         });
@@ -168,7 +216,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const notes = notesInput.value;
             const personName = prompt("Who did you speak with? (Optional)");
             if(notes) {
-                await addToStore('visits', { houseId: currentHouseId, date: new Date(), notes, personName });
+                await addToStore('visits', { houseId: currentHouseId, date: new Date().toISOString(), notes, personName: personName || '' });
                 await renderHouseDetails(currentHouseId);
                 notesInput.value = '';
             } else {
@@ -178,59 +226,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // House Detail Checkboxes
         document.getElementById('mailbox-check').addEventListener('change', async (e) => {
+            if (!currentHouseId) return;
             const house = await getFromStore('houses', currentHouseId);
             house.hasMailbox = e.target.checked;
             await updateInStore('houses', house);
         });
         document.getElementById('notrespass-check').addEventListener('change', async (e) => {
+            if (!currentHouseId) return;
             const house = await getFromStore('houses', currentHouseId);
             house.noTrespassing = e.target.checked;
             await updateInStore('houses', house);
         });
         
-        // Deletion Logic
-        document.addEventListener('click', async (e) => {
-            if (!e.target.classList.contains('delete-btn')) return;
-            const id = Number(e.target.dataset.id);
-            const type = e.target.dataset.type;
-
-            if (type === 'territory' && confirm('Are you sure you want to delete this entire territory and all its houses? This cannot be undone.')) {
-                // Also delete all associated houses and their visits
-                const houses = await getByIndex('houses', 'territoryId', id);
-                for(const house of houses) {
-                    const visits = await getByIndex('visits', 'houseId', house.id);
-                    for(const visit of visits) await deleteFromStore('visits', visit.id);
-                    await deleteFromStore('houses', house.id);
-                }
-                await deleteFromStore('territories', id);
-                await renderTerritories();
-            } else if (type === 'house' && confirm('Are you sure you want to delete this house and all its visit history?')) {
-                const visits = await getByIndex('visits', 'houseId', id);
-                for(const visit of visits) await deleteFromStore('visits', visit.id);
-                await deleteFromStore('houses', id);
-                await renderHouses(currentTerritoryId);
-            } else if (type === 'visit' && confirm('Delete this visit note?')) {
-                await deleteFromStore('visits', id);
-                await renderHouseDetails(currentHouseId);
-            }
-        });
-        
-        // Edit visit date
-        document.addEventListener('click', async (e) => {
-            if (!e.target.classList.contains('edit-date-btn')) return;
-            const visitId = Number(e.target.dataset.id);
-            const newDateStr = prompt('Enter new date (YYYY-MM-DD):');
-            if (newDateStr && !isNaN(new Date(newDateStr))) {
-                const visit = await getFromStore('visits', visitId);
-                visit.date = new Date(newDateStr);
-                await updateInStore('visits', visit);
-                await renderHouseDetails(currentHouseId);
-            } else if(newDateStr) {
-                alert('Invalid date format.');
-            }
-        });
-
-        // --- DATA MANAGEMENT ---
+        // Data Management Event Listeners
         document.getElementById('export-mscribe-btn').addEventListener('click', handleBackup);
         document.getElementById('export-csv-btn').addEventListener('click', handleExportCSV);
         document.getElementById('export-pdf-btn').addEventListener('click', handleExportPDF);
@@ -249,7 +257,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         
         const backupData = {
-            territories: [territory], // Only backing up the current territory
+            territories: [territory],
             houses,
             visits
         };
@@ -257,7 +265,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `${territory.name.replace(/\s/g, '_')}.mscribe`;
+        a.download = `${territory.name.replace(/[^\w\s]/gi, '').replace(/\s/g, '_')}.mscribe`;
         a.click();
         URL.revokeObjectURL(a.href);
     }
@@ -276,15 +284,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             try {
                 const data = JSON.parse(e.target.result);
                 await clearAllStores();
-                if (data.territories) {
-                    for(const item of data.territories) await addToStore('territories', item);
-                }
-                if (data.houses) {
-                    for(const item of data.houses) await addToStore('houses', item);
-                }
-                if (data.visits) {
-                    for(const item of data.visits) await addToStore('visits', item);
-                }
+                if (data.territories) for(const item of data.territories) await addToStore('territories', item);
+                if (data.houses) for(const item of data.houses) await addToStore('houses', item);
+                if (data.visits) for(const item of data.visits) await addToStore('visits', item);
                 alert('Restore successful!');
                 await renderTerritories();
                 showView('territory-list-view');
@@ -294,27 +296,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         };
         reader.readAsText(file);
-        event.target.value = ''; // Reset input
+        event.target.value = '';
     }
     
     async function handleExportCSV() {
         const territory = await getFromStore('territories', currentTerritoryId);
         const houses = await getByIndex('houses', 'territoryId', currentTerritoryId);
         
-        let csvContent = "Address,Has Mailbox,No Trespassing,Last Visit Date,Last Visit Note\n";
+        let csvContent = "Address,Has Mailbox,No Trespassing,Last Visit Date,Last Visit Note,Person Met\n";
         
         for (const house of houses) {
-            const visits = await getByIndex('visits', 'houseId', house.id);
-            const lastVisit = visits.sort((a,b) => new Date(b.date) - new Date(a.date))[0];
+            const visits = (await getByIndex('visits', 'houseId', house.id)).sort((a,b) => new Date(b.date) - new Date(a.date));
+            const lastVisit = visits[0];
             const cleanNote = lastVisit ? `"${lastVisit.notes.replace(/"/g, '""')}"` : 'N/A';
             
-            csvContent += `"${house.address}",${house.hasMailbox},${house.noTrespassing},${lastVisit ? new Date(lastVisit.date).toLocaleDateString() : 'N/A'},${cleanNote}\n`;
+            csvContent += `"${house.address}",${house.hasMailbox},${house.noTrespassing},${lastVisit ? new Date(lastVisit.date).toLocaleDateString() : 'N/A'},${cleanNote},"${lastVisit ? lastVisit.personName || '' : ''}"\n`;
         }
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `${territory.name.replace(/\s/g, '_')}.csv`;
+        a.download = `${territory.name.replace(/[^\w\s]/gi, '').replace(/\s/g, '_')}.csv`;
         a.click();
         URL.revokeObjectURL(a.href);
     }
@@ -327,38 +329,45 @@ document.addEventListener('DOMContentLoaded', async () => {
         doc.setFontSize(18);
         doc.text(`Territory Report: ${territory.name}`, 14, 22);
         
-        let y = 30; // Vertical position in PDF
+        let y = 30;
 
         for (const house of houses) {
-            if (y > 280) { // Add new page if content overflows
-                doc.addPage();
-                y = 20;
-            }
+            if (y > 270) { doc.addPage(); y = 20; }
+            doc.setLineWidth(0.5);
+            doc.line(14, y, 196, y);
+            y += 7;
+
             doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
             doc.text(`Address: ${house.address}`, 14, y);
             y += 7;
+            doc.setFont(undefined, 'normal');
             doc.setFontSize(10);
             doc.text(`Mailbox: ${house.hasMailbox ? 'Yes' : 'No'} | No Trespassing: ${house.noTrespassing ? 'Yes' : 'No'}`, 16, y);
             y += 7;
 
-            const visits = await getByIndex('visits', 'houseId', house.id);
-            visits.sort((a, b) => new Date(b.date) - new Date(a.date));
+            const visits = (await getByIndex('visits', 'houseId', house.id)).sort((a, b) => new Date(b.date) - new Date(a.date));
             if (visits.length > 0) {
+                 doc.setFont(undefined, 'bold');
                  doc.text("Visit History:", 16, y);
                  y += 5;
+                 doc.setFont(undefined, 'normal');
                 for(const visit of visits) {
                      if (y > 280) { doc.addPage(); y = 20; }
-                     doc.text(`${new Date(visit.date).toLocaleDateString()}: ${visit.notes}`, 18, y);
-                     y += 5;
+                     const personInfo = visit.personName ? `(Spoke with ${visit.personName})` : '';
+                     const visitText = `${new Date(visit.date).toLocaleDateString()} ${personInfo}: ${visit.notes}`;
+                     const splitText = doc.splitTextToSize(visitText, 170); // Wrap text
+                     doc.text(splitText, 18, y);
+                     y += (splitText.length * 4) + 2;
                 }
             } else {
                  doc.text("No visits recorded.", 16, y);
                  y += 5;
             }
-             y += 5; // Extra space
+             y += 3;
         }
 
-        doc.save(`${territory.name.replace(/\s/g, '_')}.pdf`);
+        doc.save(`${territory.name.replace(/[^\w\s]/gi, '').replace(/\s/g, '_')}.pdf`);
     }
 
 });
