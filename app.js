@@ -121,6 +121,9 @@ async function renderHouses(territoryId) {
         const visits = await getByIndex('visits', 'houseId', houseId);
         visits.sort((a, b) => new Date(b.date) - new Date(a.date));
 
+        const lastVisit = visits[0];
+        document.getElementById('not-at-home-check').checked = (lastVisit && lastVisit.isNotAtHome);
+        
         for (const visit of visits) {
             const li = document.createElement('li');
             const personInfo = visit.personName ? `Spoke with: <strong>${visit.personName}</strong><br>` : '';
@@ -138,7 +141,6 @@ async function renderHouses(territoryId) {
     }
 
     // --- EVENT LISTENERS SETUP ---
-    // REPLACE your old setupEventListeners function with this one
 function setupEventListeners() {
     // Consolidated Click Handler for main actions
     document.addEventListener('click', async (e) => {
@@ -257,20 +259,6 @@ function setupEventListeners() {
         }
     });
 
-    // NEW EVENT LISTENER for the Not-at-Home button
-    document.getElementById('add-not-at-home-btn').addEventListener('click', async () => {
-        if (!currentHouseId) return;
-        await addToStore('visits', {
-            houseId: currentHouseId,
-            date: new Date().toISOString(),
-            notes: 'Not at home.',
-            personName: '',
-            isNotAtHome: true // The new flag!
-        });
-        await renderHouseDetails(currentHouseId);
-        alert('"Not-at-Home" has been logged.');
-    });
-
     // House Detail Checkboxes
     document.getElementById('mailbox-check').addEventListener('change', async (e) => {
         if (!currentHouseId) return;
@@ -284,6 +272,23 @@ function setupEventListeners() {
         house.noTrespassing = e.target.checked;
         await updateInStore('houses', house);
     });
+
+    document.getElementById('not-at-home-check').addEventListener('change', async (e) => {
+    if (!currentHouseId) return;
+
+    // Only create a log when the box is CHECKED
+    if (e.target.checked) {
+        await addToStore('visits', {
+            houseId: currentHouseId,
+            date: new Date().toISOString(),
+            notes: 'Not at home.',
+            personName: '',
+            isNotAtHome: true 
+        });
+        // Refresh the view to show the new visit log immediately
+        await renderHouseDetails(currentHouseId);
+    }
+});
     
     // Data Management Event Listeners
     document.getElementById('export-mscribe-btn').addEventListener('click', handleBackup);
