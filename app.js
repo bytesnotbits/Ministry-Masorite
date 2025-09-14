@@ -243,6 +243,32 @@ async function renderHouses(territoryId) {
             }
         });
 
+                // NEW EVENT LISTENER for the Not-at-Home button
+        document.getElementById('add-not-at-home-btn').addEventListener('click', async () => {
+            if (!currentHouseId) return;
+
+            // Add a special visit record indicating "not at home"
+            await addToStore('visits', {
+                houseId: currentHouseId,
+                date: new Date().toISOString(),
+                notes: 'Not at home.',
+                personName: '',
+                isNotAtHome: true // The new flag!
+            });
+
+            // Refresh both the details view and the house list in the background
+            await renderHouseDetails(currentHouseId);
+            alert('"Not-at-Home" has been logged.');
+        });```
+
+#### **Part C: Update the existing "Add Visit" button**
+
+We need to make one tiny change to the original `add-visit-btn` logic to ensure regular visits aren't marked as "not-at-home."
+
+**Find this line inside the `add-visit-btn` event listener:**
+```javascript
+await addToStore('visits', { houseId: currentHouseId, date: new Date().toISOString(), notes, personName: personName || '' });
+
         // House Detail Checkboxes
         document.getElementById('mailbox-check').addEventListener('change', async (e) => {
             if (!currentHouseId) return;
