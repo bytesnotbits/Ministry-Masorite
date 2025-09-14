@@ -60,37 +60,56 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    async function renderHouses(territoryId) {
-        houseList.innerHTML = '';
-        const territory = await getFromStore('territories', territoryId);
-        document.getElementById('house-list-title').textContent = territory.name;
+    // REPLACEMENT for the renderHouses function
+async function renderHouses(territoryId) {
+    houseList.innerHTML = '';
+    const territory = await getFromStore('territories', territoryId);
+    document.getElementById('house-list-title').textContent = territory.name;
 
-        const houses = await getByIndex('houses', 'territoryId', territoryId);
-        if (houses.length === 0) {
-            houseList.innerHTML = '<li class="placeholder">No houses added to this territory yet.</li>';
-            return;
-        }
-
-        for (const house of houses) {
-            const visits = await getByIndex('visits', 'houseId', house.id);
-            const lastVisit = visits.sort((a,b) => new Date(b.date) - new Date(a.date))[0];
-            const primaryPerson = lastVisit ? lastVisit.personName || 'Last visit' : 'No visits yet';
-
-            const li = document.createElement('li');
-            li.className = 'house-card';
-            li.dataset.id = house.id;
-            li.innerHTML = `
-                <strong>${house.address}</strong><br>
-                <small>${primaryPerson}</small>
-                <div class="icons">
-                    <span title="Mailbox" class="${house.hasMailbox ? 'active' : ''}">📭</span>
-                    <span title="No Trespassing" class="${house.noTrespassing ? 'active' : ''}">🚫</span>
-                </div>
-                <button class="delete-btn" data-id="${house.id}" data-type="house">X</button>
-            `;
-            houseList.appendChild(li);
-        }
+    const houses = await getByIndex('houses', 'territoryId', territoryId);
+    if (houses.length === 0) {
+        houseList.innerHTML = '<li class="placeholder">No houses added to this territory yet.</li>';
+        return;
     }
+
+    for (const house of houses) {
+        const visits = (await getByIndex('visits', 'houseId', house.id)).sort((a,b) => new Date(b.date) - new Date(a.date));
+        const lastVisit = visits[0];
+
+        // --- NEW LOGIC FOR DYNAMIC ICONS ---
+        let iconsHTML = '';
+        if (house.hasMailbox) {
+            iconsHTML += `<span title="Mailbox Available">📭</span>`;
+        }
+        if (house.noTrespassing) {
+            iconsHTML += `<span title="No Trespassing Sign">🚫</span>`;
+        }
+        if (lastVisit && lastVisit.isNotAtHome) {
+            iconsHTML += `<span title="Last Visit: Not at Home">⏰</span>`;
+        }
+
+        // --- NEW LOGIC FOR CARD DETAILS ---
+        const lastActivityDate = lastVisit ? `Last Visit: <strong>${new Date(lastVisit.date).toLocaleDateString()}</strong>` : 'No activity yet';
+        const personMet = lastVisit && !lastVisit.isNotAtHome && lastVisit.personName ? `Met: <strong>${lastVisit.personName}</strong>` : '';
+
+        // --- ASSEMBLE THE NEW CARD ---
+        const li = document.createElement('li');
+        li.className = 'house-card';
+        li.dataset.id = house.id;
+        li.innerHTML = `
+            <strong>${house.address}</strong>
+            <div class="house-card-details">
+                ${lastActivityDate}<br>
+                ${personMet}
+            </div>
+            <div class="icons">
+                ${iconsHTML}
+            </div>
+            <button class="delete-btn" data-id="${house.id}" data-type="house">X</button>
+        `;
+        houseList.appendChild(li);
+    }
+}
 
     async function renderHouseDetails(houseId) {
         const house = await getFromStore('houses', houseId);
