@@ -144,77 +144,87 @@ async function renderHouses(territoryId) {
 function setupEventListeners() {
     // Consolidated Click Handler for main actions
     document.addEventListener('click', async (e) => {
-        const target = e.target;
+    const target = e.target;
 
-        // Navigate to house list
-        const territoryLi = target.closest('#territory-list li');
-        if (territoryLi && !target.classList.contains('delete-btn') && !territoryLi.classList.contains('placeholder')) {
-            currentTerritoryId = Number(territoryLi.dataset.id);
+    // Navigate to house list
+    const territoryLi = target.closest('#territory-list li');
+    if (territoryLi && !target.classList.contains('delete-btn') && !territoryLi.classList.contains('placeholder')) {
+        currentTerritoryId = Number(territoryLi.dataset.id);
+        await renderHouses(currentTerritoryId);
+        showView('house-list-view');
+        return;
+    }
+
+    // Navigate to house details
+    const houseLi = target.closest('#house-list li');
+    if (houseLi && !target.classList.contains('delete-btn') && !houseLi.classList.contains('placeholder')) {
+        currentHouseId = Number(houseLi.dataset.id);
+        await renderHouseDetails(currentHouseId);
+        showView('house-detail-view');
+        return;
+    }
+
+    // Back buttons --- THIS SECTION IS THE FIX ---
+    if (target.classList.contains('back-btn')) {
+        const targetView = target.dataset.target;
+        
+        // If we are going back TO the house list, we must refresh it first.
+        if (targetView === 'house-list-view') {
             await renderHouses(currentTerritoryId);
-            showView('house-list-view');
-            return;
+            
+            // UX Improvement: Uncheck the "Log Not at Home" box when leaving details view.
+            document.getElementById('not-at-home-check').checked = false;
         }
+        
+        showView(targetView);
+    }
 
-        // Navigate to house details
-        const houseLi = target.closest('#house-list li');
-        if (houseLi && !target.classList.contains('delete-btn') && !houseLi.classList.contains('placeholder')) {
-            currentHouseId = Number(houseLi.dataset.id);
-            await renderHouseDetails(currentHouseId);
-            showView('house-detail-view');
-            return;
-        }
+    // Sorting buttons
+    if (target.classList.contains('sort-btn')) {
+        territorySort = target.dataset.sort;
+        await renderTerritories();
+    }
 
-        // Back buttons
-        if (target.classList.contains('back-btn')) {
-            showView(target.dataset.target);
-        }
+    // Deletion logic
+    if (target.classList.contains('delete-btn')) {
+        const id = Number(target.dataset.id);
+        const type = target.dataset.type;
 
-        // Sorting buttons
-        if (target.classList.contains('sort-btn')) {
-            territorySort = target.dataset.sort;
-            await renderTerritories();
-        }
-
-        // Deletion logic
-        if (target.classList.contains('delete-btn')) {
-            const id = Number(target.dataset.id);
-            const type = target.dataset.type;
-
-            if (type === 'territory' && confirm('Are you sure you want to delete this entire territory and all its houses? This cannot be undone.')) {
-                const houses = await getByIndex('houses', 'territoryId', id);
-                for(const house of houses) {
-                    const visits = await getByIndex('visits', 'houseId', house.id);
-                    for(const visit of visits) await deleteFromStore('visits', visit.id);
-                    await deleteFromStore('houses', house.id);
-                }
-                await deleteFromStore('territories', id);
-                await renderTerritories();
-            } else if (type === 'house' && confirm('Are you sure you want to delete this house and all its visit history?')) {
-                const visits = await getByIndex('visits', 'houseId', id);
+        if (type === 'territory' && confirm('Are you sure you want to delete this entire territory and all its houses? This cannot be undone.')) {
+            const houses = await getByIndex('houses', 'territoryId', id);
+            for(const house of houses) {
+                const visits = await getByIndex('visits', 'houseId', house.id);
                 for(const visit of visits) await deleteFromStore('visits', visit.id);
-                await deleteFromStore('houses', id);
-                await renderHouses(currentTerritoryId);
-            } else if (type === 'visit' && confirm('Delete this visit note?')) {
-                await deleteFromStore('visits', id);
-                await renderHouseDetails(currentHouseId);
+                await deleteFromStore('houses', house.id);
             }
+            await deleteFromStore('territories', id);
+            await renderTerritories();
+        } else if (type === 'house' && confirm('Are you sure you want to delete this house and all its visit history?')) {
+            const visits = await getByIndex('visits', 'houseId', id);
+            for(const visit of visits) await deleteFromStore('visits', visit.id);
+            await deleteFromStore('houses', id);
+            await renderHouses(currentTerritoryId);
+        } else if (type === 'visit' && confirm('Delete this visit note?')) {
+            await deleteFromStore('visits', id);
+            await renderHouseDetails(currentHouseId);
         }
+    }
 
-        // Edit visit date
-        if (target.classList.contains('edit-date-btn')) {
-            const visitId = Number(target.dataset.id);
-            const visit = await getFromStore('visits', visitId);
-            const currentDate = new Date(visit.date).toISOString().split('T')[0];
-            const newDateStr = prompt('Enter new date (YYYY-MM-DD):', currentDate);
-            if (newDateStr && !isNaN(new Date(newDateStr))) {
-                visit.date = new Date(newDateStr);
-                await updateInStore('visits', visit);
-                await renderHouseDetails(currentHouseId);
-            } else if(newDateStr) {
-                alert('Invalid date format.');
-            }
+    // Edit visit date
+    if (target.classList.contains('edit-date-btn')) {
+        const visitId = Number(target.dataset.id);
+        const visit = await getFromStore('visits', visitId);
+        const currentDate = new Date(visit.date).toISOString().split('T')[0];
+        const newDateStr = prompt('Enter new date (YYYY-MM-DD):', currentDate);
+        if (newDateStr && !isNaN(new Date(newDateStr))) {
+            visit.date = new Date(newDateStr);
+            await updateInStore('visits', visit);
+            await renderHouseDetails(currentHouseId);
+        } else if(newDateStr) {
+            alert('Invalid date format.');
         }
-    });
+    }
+});
 
     // Add Buttons
     document.getElementById('add-territory-btn').addEventListener('click', async () => {
