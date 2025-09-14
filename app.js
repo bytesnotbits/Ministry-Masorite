@@ -138,160 +138,160 @@ async function renderHouses(territoryId) {
     }
 
     // --- EVENT LISTENERS SETUP ---
-    function setupEventListeners() {
-        // Consolidated Click Handler for main actions
-        document.addEventListener('click', async (e) => {
-            const target = e.target;
+    // REPLACE your old setupEventListeners function with this one
+function setupEventListeners() {
+    // Consolidated Click Handler for main actions
+    document.addEventListener('click', async (e) => {
+        const target = e.target;
 
-            // Navigate to house list
-            const territoryLi = target.closest('#territory-list li');
-            if (territoryLi && !target.classList.contains('delete-btn') && !territoryLi.classList.contains('placeholder')) {
-                currentTerritoryId = Number(territoryLi.dataset.id);
-                await renderHouses(currentTerritoryId);
-                showView('house-list-view');
-                return;
-            }
+        // Navigate to house list
+        const territoryLi = target.closest('#territory-list li');
+        if (territoryLi && !target.classList.contains('delete-btn') && !territoryLi.classList.contains('placeholder')) {
+            currentTerritoryId = Number(territoryLi.dataset.id);
+            await renderHouses(currentTerritoryId);
+            showView('house-list-view');
+            return;
+        }
 
-            // Navigate to house details
-            const houseLi = target.closest('#house-list li');
-            if (houseLi && !target.classList.contains('delete-btn') && !houseLi.classList.contains('placeholder')) {
-                currentHouseId = Number(houseLi.dataset.id);
-                await renderHouseDetails(currentHouseId);
-                showView('house-detail-view');
-                return;
-            }
-
-            // Back buttons
-            if (target.classList.contains('back-btn')) {
-                showView(target.dataset.target);
-            }
-
-            // Sorting buttons
-            if (target.classList.contains('sort-btn')) {
-                territorySort = target.dataset.sort;
-                await renderTerritories();
-            }
-
-            // Deletion logic
-            if (target.classList.contains('delete-btn')) {
-                const id = Number(target.dataset.id);
-                const type = target.dataset.type;
-
-                if (type === 'territory' && confirm('Are you sure you want to delete this entire territory and all its houses? This cannot be undone.')) {
-                    const houses = await getByIndex('houses', 'territoryId', id);
-                    for(const house of houses) {
-                        const visits = await getByIndex('visits', 'houseId', house.id);
-                        for(const visit of visits) await deleteFromStore('visits', visit.id);
-                        await deleteFromStore('houses', house.id);
-                    }
-                    await deleteFromStore('territories', id);
-                    await renderTerritories();
-                } else if (type === 'house' && confirm('Are you sure you want to delete this house and all its visit history?')) {
-                    const visits = await getByIndex('visits', 'houseId', id);
-                    for(const visit of visits) await deleteFromStore('visits', visit.id);
-                    await deleteFromStore('houses', id);
-                    await renderHouses(currentTerritoryId);
-                } else if (type === 'visit' && confirm('Delete this visit note?')) {
-                    await deleteFromStore('visits', id);
-                    await renderHouseDetails(currentHouseId);
-                }
-            }
-
-            // Edit visit date
-            if (target.classList.contains('edit-date-btn')) {
-                const visitId = Number(target.dataset.id);
-                const visit = await getFromStore('visits', visitId);
-                const currentDate = new Date(visit.date).toISOString().split('T')[0];
-                const newDateStr = prompt('Enter new date (YYYY-MM-DD):', currentDate);
-                if (newDateStr && !isNaN(new Date(newDateStr))) {
-                    visit.date = new Date(newDateStr);
-                    await updateInStore('visits', visit);
-                    await renderHouseDetails(currentHouseId);
-                } else if(newDateStr) {
-                    alert('Invalid date format.');
-                }
-            }
-        });
-
-        // Add Buttons
-        document.getElementById('add-territory-btn').addEventListener('click', async () => {
-            const name = prompt('Enter the name for the new territory (e.g., "Maple Street"):');
-            if (name) {
-                await addToStore('territories', { name, createdAt: new Date().toISOString() });
-                await renderTerritories();
-            }
-        });
-
-        document.getElementById('add-house-btn').addEventListener('click', async () => {
-            const address = prompt('New house number:');
-            if (address) {
-                await addToStore('houses', { territoryId: currentTerritoryId, address, hasMailbox: false, noTrespassing: false });
-                await renderHouses(currentTerritoryId);
-            }
-        });
-        
-        document.getElementById('add-visit-btn').addEventListener('click', async () => {
-            const notesInput = document.getElementById('visit-note-input');
-            const notes = notesInput.value;
-            const personName = prompt("Who did you speak with? (Optional)");
-            if(notes) {
-                await addToStore('visits', { houseId: currentHouseId, date: new Date().toISOString(), notes, personName: personName || '', isNotAtHome: false });
-
-                await renderHouseDetails(currentHouseId);
-                notesInput.value = '';
-            } else {
-                alert('Please enter some notes for the visit.');
-            }
-        });
-
-                // NEW EVENT LISTENER for the Not-at-Home button
-        document.getElementById('add-not-at-home-btn').addEventListener('click', async () => {
-            if (!currentHouseId) return;
-
-            // Add a special visit record indicating "not at home"
-            await addToStore('visits', {
-                houseId: currentHouseId,
-                date: new Date().toISOString(),
-                notes: 'Not at home.',
-                personName: '',
-                isNotAtHome: true // The new flag!
-            });
-
-            // Refresh both the details view and the house list in the background
+        // Navigate to house details
+        const houseLi = target.closest('#house-list li');
+        if (houseLi && !target.classList.contains('delete-btn') && !houseLi.classList.contains('placeholder')) {
+            currentHouseId = Number(houseLi.dataset.id);
             await renderHouseDetails(currentHouseId);
-            alert('"Not-at-Home" has been logged.');
-        });```
+            showView('house-detail-view');
+            return;
+        }
 
-#### **Part C: Update the existing "Add Visit" button**
+        // Back buttons
+        if (target.classList.contains('back-btn')) {
+            showView(target.dataset.target);
+        }
 
-We need to make one tiny change to the original `add-visit-btn` logic to ensure regular visits aren't marked as "not-at-home."
+        // Sorting buttons
+        if (target.classList.contains('sort-btn')) {
+            territorySort = target.dataset.sort;
+            await renderTerritories();
+        }
 
-**Find this line inside the `add-visit-btn` event listener:**
-```javascript
-await addToStore('visits', { houseId: currentHouseId, date: new Date().toISOString(), notes, personName: personName || '' });
+        // Deletion logic
+        if (target.classList.contains('delete-btn')) {
+            const id = Number(target.dataset.id);
+            const type = target.dataset.type;
 
-        // House Detail Checkboxes
-        document.getElementById('mailbox-check').addEventListener('change', async (e) => {
-            if (!currentHouseId) return;
-            const house = await getFromStore('houses', currentHouseId);
-            house.hasMailbox = e.target.checked;
-            await updateInStore('houses', house);
+            if (type === 'territory' && confirm('Are you sure you want to delete this entire territory and all its houses? This cannot be undone.')) {
+                const houses = await getByIndex('houses', 'territoryId', id);
+                for(const house of houses) {
+                    const visits = await getByIndex('visits', 'houseId', house.id);
+                    for(const visit of visits) await deleteFromStore('visits', visit.id);
+                    await deleteFromStore('houses', house.id);
+                }
+                await deleteFromStore('territories', id);
+                await renderTerritories();
+            } else if (type === 'house' && confirm('Are you sure you want to delete this house and all its visit history?')) {
+                const visits = await getByIndex('visits', 'houseId', id);
+                for(const visit of visits) await deleteFromStore('visits', visit.id);
+                await deleteFromStore('houses', id);
+                await renderHouses(currentTerritoryId);
+            } else if (type === 'visit' && confirm('Delete this visit note?')) {
+                await deleteFromStore('visits', id);
+                await renderHouseDetails(currentHouseId);
+            }
+        }
+
+        // Edit visit date
+        if (target.classList.contains('edit-date-btn')) {
+            const visitId = Number(target.dataset.id);
+            const visit = await getFromStore('visits', visitId);
+            const currentDate = new Date(visit.date).toISOString().split('T')[0];
+            const newDateStr = prompt('Enter new date (YYYY-MM-DD):', currentDate);
+            if (newDateStr && !isNaN(new Date(newDateStr))) {
+                visit.date = new Date(newDateStr);
+                await updateInStore('visits', visit);
+                await renderHouseDetails(currentHouseId);
+            } else if(newDateStr) {
+                alert('Invalid date format.');
+            }
+        }
+    });
+
+    // Add Buttons
+    document.getElementById('add-territory-btn').addEventListener('click', async () => {
+        const name = prompt('Enter the name for the new territory (e.g., "Maple Street"):');
+        if (name) {
+            await addToStore('territories', { name, createdAt: new Date().toISOString() });
+            await renderTerritories();
+        }
+    });
+
+    document.getElementById('add-house-btn').addEventListener('click', async () => {
+        const houseNumber = prompt('Enter the house number:');
+        if (houseNumber) {
+            const territory = await getFromStore('territories', currentTerritoryId);
+            const fullAddress = `${houseNumber} ${territory.name}`;
+            await addToStore('houses', { 
+                territoryId: currentTerritoryId, 
+                address: fullAddress,
+                hasMailbox: false, 
+                noTrespassing: false 
+            });
+            await renderHouses(currentTerritoryId);
+        }
+    });
+    
+    document.getElementById('add-visit-btn').addEventListener('click', async () => {
+        const notesInput = document.getElementById('visit-note-input');
+        const notes = notesInput.value;
+        const personName = prompt("Who did you speak with? (Optional)");
+        if(notes) {
+            await addToStore('visits', { 
+                houseId: currentHouseId, 
+                date: new Date().toISOString(), 
+                notes, 
+                personName: personName || '', 
+                isNotAtHome: false // Explicitly set to false
+            });
+            await renderHouseDetails(currentHouseId);
+            notesInput.value = '';
+        } else {
+            alert('Please enter some notes for the visit.');
+        }
+    });
+
+    // NEW EVENT LISTENER for the Not-at-Home button
+    document.getElementById('add-not-at-home-btn').addEventListener('click', async () => {
+        if (!currentHouseId) return;
+        await addToStore('visits', {
+            houseId: currentHouseId,
+            date: new Date().toISOString(),
+            notes: 'Not at home.',
+            personName: '',
+            isNotAtHome: true // The new flag!
         });
-        document.getElementById('notrespass-check').addEventListener('change', async (e) => {
-            if (!currentHouseId) return;
-            const house = await getFromStore('houses', currentHouseId);
-            house.noTrespassing = e.target.checked;
-            await updateInStore('houses', house);
-        });
-        
-        // Data Management Event Listeners
-        document.getElementById('export-mscribe-btn').addEventListener('click', handleBackup);
-        document.getElementById('export-csv-btn').addEventListener('click', handleExportCSV);
-        document.getElementById('export-pdf-btn').addEventListener('click', handleExportPDF);
-        document.getElementById('restore-btn').addEventListener('click', () => document.getElementById('restore-file-input').click());
-        document.getElementById('restore-file-input').addEventListener('change', handleRestore);
-    }
+        await renderHouseDetails(currentHouseId);
+        alert('"Not-at-Home" has been logged.');
+    });
 
+    // House Detail Checkboxes
+    document.getElementById('mailbox-check').addEventListener('change', async (e) => {
+        if (!currentHouseId) return;
+        const house = await getFromStore('houses', currentHouseId);
+        house.hasMailbox = e.target.checked;
+        await updateInStore('houses', house);
+    });
+    document.getElementById('notrespass-check').addEventListener('change', async (e) => {
+        if (!currentHouseId) return;
+        const house = await getFromStore('houses', currentHouseId);
+        house.noTrespassing = e.target.checked;
+        await updateInStore('houses', house);
+    });
+    
+    // Data Management Event Listeners
+    document.getElementById('export-mscribe-btn').addEventListener('click', handleBackup);
+    document.getElementById('export-csv-btn').addEventListener('click', handleExportCSV);
+    document.getElementById('export-pdf-btn').addEventListener('click', handleExportPDF);
+    document.getElementById('restore-btn').addEventListener('click', () => document.getElementById('restore-file-input').click());
+    document.getElementById('restore-file-input').addEventListener('change', handleRestore);
+}
     // --- BACKUP & RESTORE FUNCTIONS ---
     async function handleBackup() {
         const territory = await getFromStore('territories', currentTerritoryId);
