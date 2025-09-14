@@ -174,17 +174,19 @@ function setupEventListeners() {
 
     // 'Log NH' button
     if (target.classList.contains('log-nh-btn')) {
-        const houseId = Number(target.dataset.id);
-        if (!houseId) return;
+    e.stopPropagation(); 
+
+    const houseId = Number(target.dataset.id);
+    if (!houseId) return;
+
+    await addToStore('visits', {
+        houseId: houseId,
+        date: new Date().toISOString(),
+        notes: 'Not at home.',
+        personName: '',
+        isNotAtHome: true
+    });
     
-        await addToStore('visits', {
-            houseId: houseId,
-            date: new Date().toISOString(),
-            notes: 'Not at home.',
-            personName: '',
-            isNotAtHome: true
-        });
-        
     // Refresh the entire house list to show the updated card immediately
     await renderHouses(currentTerritoryId);
     }
