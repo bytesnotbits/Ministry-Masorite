@@ -170,12 +170,3 @@ textarea { width: 100%; box-sizing: border-box; }
     right: 45px;
     font-size: 20px;
 }
-
-/* NEW STYLE FOR THE NOT-AT-HOME BUTTON */
-#add-not-at-home-btn {
-    background-color: #f0ad4e; /* A distinct color */
-    color: var(--white);
-    border: none;
-    width: 100%;
-    margin-top: 10px;
-}
