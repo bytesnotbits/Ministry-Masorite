@@ -151,3 +151,31 @@ textarea { width: 100%; box-sizing: border-box; }
 }
 
 .controls { margin-bottom: 15px; }
+
+/* NEW STYLES FOR ENHANCED HOUSE CARD */
+.house-card-details {
+    font-size: 14px;
+    color: var(--light-text);
+    margin-top: 8px;
+}
+
+.house-card-details strong {
+    color: var(--dark-text);
+}
+
+.house-card .icons {
+    /* This is an adjustment to existing style */
+    position: absolute;
+    top: 15px;
+    right: 45px;
+    font-size: 20px;
+}
+
+/* NEW STYLE FOR THE NOT-AT-HOME BUTTON */
+#add-not-at-home-btn {
+    background-color: #f0ad4e; /* A distinct color */
+    color: var(--white);
+    border: none;
+    width: 100%;
+    margin-top: 10px;
+}
