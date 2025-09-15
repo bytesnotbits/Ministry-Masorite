@@ -56,45 +56,29 @@
              <div class="detail-section">
                 <h3>Details</h3>
                 <label><input type="checkbox" id="mailbox-check"> Mailbox Available</label><br>
-                <label><input type="checkbox" id="notrespass-check"> "No Trespassing" Notice</label>
-                <label><input type="checkbox" id="not-at-home-check"> NH</label>
+                <label><input type="checkbox" id="notrespass-check"> "No Trespassing" Notice</label><br>
+                <label><input type="checkbox" id="not-at-home-check"> Currently "Not at Home"</label>
              </div>
 
              <div class="detail-section">
                 <h3>Individuals Met</h3>
-                <ul id="people-list"></ul>
-                <button id="add-visit-btn" class="primary-action">+ Add New Visit</button>
+                <ul id="people-list">
+                    <!-- Names will be dynamically inserted here -->
+                </ul>
              </div>
 
              <div class="detail-section">
                  <h3>Visit History</h3>
-                 <ul id="visit-notes-list"></ul>
+                 <ul id="visit-notes-list">
+                    <!-- Visit notes will be dynamically inserted here -->
+                 </ul>
                  <button id="add-visit-btn" class="primary-action">+ Add New Visit Note</button>
              </div>
         </div>
 
-                    <div id="note-modal" class="modal-backdrop hidden">
-                    <div class="modal-content">
-                        <button class="close-modal-btn">&times;</button>
-                        <h3>Add Visit Note</h3>
-                        <label for="modal-person-name">Person's Name (optional)</label>
-                        <input type="text" id="modal-person-name">
-                
-                        <label for="modal-visit-notes">Visit Notes</label>
-                        <textarea id="modal-visit-notes" rows="4"></textarea>
-                
-                        <label class="modal-toggle">
-                            <input type="checkbox" id="modal-remove-nh-check">
-                            Remove 'NH' Status?
-                        </label>
-                
-                        <div class="modal-actions">
-                            <button id="modal-cancel-btn">Cancel</button>
-                            <button id="modal-save-note-btn" class="primary-action">Save Note</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-content">
+        <!-- NOTE-TAKING MODAL -->
+        <div id="note-modal" class="modal-backdrop hidden">
+            <div class="modal-content">
                 <button class="close-modal-btn">&times;</button>
                 <h3>Add Visit Note</h3>
                 <label for="modal-person-name">Person's Name (optional)</label>
@@ -114,6 +98,7 @@
                 </div>
             </div>
         </div>
+
     </main>
 
     <!-- App Logic -->
