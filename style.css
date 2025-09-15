@@ -90,18 +90,20 @@ button.back-btn {
 
 .delete-btn {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    background: #ffcccc;
+    top: 8px; /* Slightly adjusted for better visual alignment */
+    right: 12px;/* Slightly adjusted for better visual alignment */
+    background: none;
     color: #a00;
     border: none;
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
+    font-size: 24px; /* Larger font size for a clear 'X' */
     font-weight: bold;
     cursor: pointer;
-    line-height: 28px;
-    text-align: center;
+    padding: 0; /* Remove any default button padding */
+    transition: color 0.2s; /* Add a smooth transition for hover */
+}
+
+.delete-btn:hover {
+    color: #e00; /* Make the 'X' brighter on hover */
 }
 
 /* Detail View */
