@@ -303,10 +303,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('modal-territory-save-new-btn').addEventListener('click', async () => {
             const success = await handleSaveTerritory();
             if (success) {
-                // Success! Clear the form for the next entry and set focus.
-                modalTerritoryNumber.value = '';
-                modalTerritoryName.value = '';
-                modalTerritoryNumber.focus();
+                // Success! Keep the territory number, clear the name, and focus the name field.
+                    modalTerritoryName.value = '';
+                    modalTerritoryName.focus(); // Set focus to the next field to be filled
             }
         });
         
