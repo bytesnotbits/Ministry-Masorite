@@ -69,15 +69,32 @@
              <div class="detail-section">
                  <h3>Visit History</h3>
                  <ul id="visit-notes-list"></ul>
-                 <div class="inline-form">
-                     <textarea id="visit-note-input" placeholder="Enter notes for new visit..."></textarea>
-                     <button id="add-visit-btn" class="primary-action">+ Add New Visit Note</button>
-                 </div>
+                 <button id="add-visit-btn" class="primary-action">+ Add New Visit Note</button>
              </div>
         </div>
 
-            <div id="note-modal" class="modal-backdrop hidden">
-            <div class="modal-content">
+                    <div id="note-modal" class="modal-backdrop hidden">
+                    <div class="modal-content">
+                        <button class="close-modal-btn">&times;</button>
+                        <h3>Add Visit Note</h3>
+                        <label for="modal-person-name">Person's Name (optional)</label>
+                        <input type="text" id="modal-person-name">
+                
+                        <label for="modal-visit-notes">Visit Notes</label>
+                        <textarea id="modal-visit-notes" rows="4"></textarea>
+                
+                        <label class="modal-toggle">
+                            <input type="checkbox" id="modal-remove-nh-check">
+                            Remove 'NH' Status?
+                        </label>
+                
+                        <div class="modal-actions">
+                            <button id="modal-cancel-btn">Cancel</button>
+                            <button id="modal-save-note-btn" class="primary-action">Save Note</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-content">
                 <button class="close-modal-btn">&times;</button>
                 <h3>Add Visit Note</h3>
                 <label for="modal-person-name">Person's Name (optional)</label>
@@ -97,7 +114,6 @@
                 </div>
             </div>
         </div>
-
     </main>
 
     <!-- App Logic -->
