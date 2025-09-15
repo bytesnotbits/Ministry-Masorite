@@ -95,6 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             let iconsHTML = '';
             if (house.hasMailbox) iconsHTML += `<span title="Mailbox Available">📭</span>`;
             if (house.noTrespassing) iconsHTML += `<span title="No Trespassing Sign">🚫</span>`;
+            if (house.hasGate) iconsHTML += `<span title="Gated Property">🚧</span>`;
             if (house.isCurrentlyNH) iconsHTML += `<span title="Status: Not at Home">⏰</span>`;
     
             const lastActivityDate = lastVisit ? `Last Visit: <strong>${new Date(lastVisit.date).toLocaleDateString()}</strong>` : 'No activity yet';
@@ -124,6 +125,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('house-detail-address').textContent = house.address;
         document.getElementById('mailbox-check').checked = house.hasMailbox;
         document.getElementById('notrespass-check').checked = house.noTrespassing;
+        document.getElementById('gate-check').checked = house.hasGate || false;
         document.getElementById('not-at-home-check').checked = house.isCurrentlyNH || false;
         
         visitList.innerHTML = '';
@@ -327,7 +329,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const fullAddress = `${houseNumber} ${territory.name}`;
                 await addToStore('houses', { 
                     territoryId: currentTerritoryId, address: fullAddress,
-                    hasMailbox: false, noTrespassing: false, isCurrentlyNH: false 
+                    hasMailbox: false, noTrespassing: false, isCurrentlyNH: false,
+                    hasGate: false 
                 });
                 await renderHouses(currentTerritoryId);
             }
@@ -377,8 +380,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             house.noTrespassing = e.target.checked; // <--- Corrected line
             await updateInStore('houses', house);
         });
-
-
+        document.getElementById('gate-check').addEventListener('change', async (e) => {
+            if (!currentHouseId) return;
+            const house = await getFromStore('houses', currentHouseId);
+            house.hasGate = e.target.checked;
+            await updateInStore('houses', house);
+        });
         document.getElementById('not-at-home-check').addEventListener('change', async (e) => {
             if (!currentHouseId) return;
             const house = await getFromStore('houses', currentHouseId);
@@ -452,7 +459,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const territory = await getFromStore('territories', currentTerritoryId);
         const houses = await getByIndex('houses', 'territoryId', currentTerritoryId);
         
-        let csvContent = "Address,Status,Mailbox,No Trespassing,Last Visit Date,Last Visit Note,Person Met\n";
+        let csvContent = "Address,Status,Mailbox,No Trespassing,Gate,Last Visit Date,Last Visit Note,Person Met\n";
         
         for (const house of houses) {
             const visits = (await getByIndex('visits', 'houseId', house.id)).sort((a,b) => new Date(b.date) - new Date(a.date));
@@ -460,7 +467,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const cleanNote = lastVisit ? `"${lastVisit.notes.replace(/"/g, '""')}"` : 'N/A';
             const status = house.isCurrentlyNH ? "Not at Home" : "OK";
             
-            csvContent += `"${house.address}",${status},${house.hasMailbox},${house.noTrespassing},${lastVisit ? new Date(lastVisit.date).toLocaleDateString() : 'N/A'},${cleanNote},"${lastVisit ? lastVisit.personName || '' : ''}"\n`;
+            csvContent += `"${house.address}",${status},${house.hasMailbox},${house.noTrespassing},${house.hasGate},${lastVisit ? new Date(lastVisit.date).toLocaleDateString() : 'N/A'},${cleanNote},"${lastVisit ? lastVisit.personName || '' : ''}"\n`;
         }
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
