@@ -36,23 +36,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function renderTerritories() {
         territoryList.innerHTML = '';
         let territories = await getAllFromStore('territories');
+    
+        // Sorter for strings containing numbers (Natural Sort)
+        const naturalSort = (a, b) => {
+            // Use Intl.Collator for robust, locale-aware natural sorting
+            return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+        };
         
+        // UPDATED: Sorting logic to use natural sort for 'number'
         territories.sort((a, b) => {
-            if (territorySort === 'name') return a.name.localeCompare(b.name);
+            if (territorySort === 'name') {
+                return a.name.localeCompare(b.name);
+            } else if (territorySort === 'number') {
+                // Use natural sort for territory numbers
+                // Provide a default empty string for any old data without a .number property
+                return naturalSort(a.number || '', b.number || '');
+            }
+            // Default sort by date
             return new Date(b.createdAt) - new Date(a.createdAt);
         });
-
+    
         if (territories.length === 0) {
             territoryList.innerHTML = '<li class="placeholder">Click "+ Add New Territory" to begin.</li>';
             return;
         }
-
+    
         for (const territory of territories) {
             const houses = await getByIndex('houses', 'territoryId', territory.id);
             const li = document.createElement('li');
             li.dataset.id = territory.id;
+    
+            // Display the territory number (works perfectly with strings)
+            const numberDisplay = territory.number ? `<strong>#${territory.number}</strong> -` : 'No # -';
+    
             li.innerHTML = `
-                <span>${territory.name} (${houses.length} houses)</span>
+                <span>${numberDisplay} ${territory.name} (${houses.length} houses)</span>
                 <button class="delete-btn" data-id="${territory.id}" data-type="territory">X</button>
             `;
             territoryList.appendChild(li);
@@ -238,14 +256,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         // --- Individual Button Event Listeners ---
-
         document.getElementById('add-territory-btn').addEventListener('click', async () => {
-            const name = prompt('Enter the name for the new territory (e.g., "Maple Street"):');
-            if (name) {
-                await addToStore('territories', { name, createdAt: new Date().toISOString() });
-                await renderTerritories();
-            }
-        });
+        // 1. Prompt for the territory number (as a string)
+        const territoryNumber = prompt('Enter the territory number (e.g., "5", "1-7", "4-13 LTR"):');
+        // Exit if the user cancels or enters nothing
+        if (!territoryNumber) return; 
+    
+        // 2. Prompt for the territory name
+        const name = prompt('Enter the name for the new territory (e.g., "Maple Street"):');
+        if (name) {
+            // 3. Save the new territory object with the string-based number
+            await addToStore('territories', {
+                name,
+                number: territoryNumber, // Store the input directly as a string
+                createdAt: new Date().toISOString()
+            });
+            await renderTerritories();
+        }
+    });
 
         document.getElementById('add-house-btn').addEventListener('click', async () => {
             const houseNumber = prompt('Enter the house number:');
