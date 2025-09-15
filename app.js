@@ -152,6 +152,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const modalVisitNotes = document.getElementById('modal-visit-notes');
         const modalRemoveNHCheck = document.getElementById('modal-remove-nh-check');
 
+        // --- Get Territory Modal Elements ---
+        const territoryModal = document.getElementById('territory-modal');
+        const modalTerritoryNumber = document.getElementById('modal-territory-number');
+        const modalTerritoryName = document.getElementById('modal-territory-name');
+
         // --- Show/Hide Modal Functions ---
         const showNoteModal = () => noteModal.classList.remove('hidden');
         const hideNoteModal = () => {
@@ -161,6 +166,36 @@ document.addEventListener('DOMContentLoaded', async () => {
             modalRemoveNHCheck.checked = false;
         };
 
+        // --- Show/Hide Territory Modal Functions ---
+        const showTerritoryModal = () => {
+            territoryModal.classList.remove('hidden');
+            modalTerritoryNumber.focus(); // Auto-focus the first field
+        };
+        const hideTerritoryModal = () => {
+            territoryModal.classList.add('hidden');
+            modalTerritoryNumber.value = ''; // Clear fields on close
+            modalTerritoryName.value = '';
+        };
+    
+        // --- Core Logic for Saving a Territory (REUSABLE FUNCTION) ---
+        async function handleSaveTerritory() {
+            const number = modalTerritoryNumber.value.trim();
+            const name = modalTerritoryName.value.trim();
+    
+            if (!number || !name) {
+                alert('Please fill out both the territory number and name.');
+                return false; // Indicate failure
+            }
+    
+            await addToStore('territories', {
+                name,
+                number,
+                createdAt: new Date().toISOString()
+            });
+            await renderTerritories();
+            return true; // Indicate success
+        }
+        
         // --- Main Click Handler ---
         document.addEventListener('click', async (e) => {
             const target = e.target;
@@ -256,24 +291,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         // --- Individual Button Event Listeners ---
-        document.getElementById('add-territory-btn').addEventListener('click', async () => {
-        // 1. Prompt for the territory number (as a string)
-        const territoryNumber = prompt('Enter the territory number (e.g., "5", "1-7", "4-13 LTR"):');
-        // Exit if the user cancels or enters nothing
-        if (!territoryNumber) return; 
-    
-        // 2. Prompt for the territory name
-        const name = prompt('Enter the name for the new territory (e.g., "Maple Street"):');
-        if (name) {
-            // 3. Save the new territory object with the string-based number
-            await addToStore('territories', {
-                name,
-                number: territoryNumber, // Store the input directly as a string
-                createdAt: new Date().toISOString()
-            });
-            await renderTerritories();
-        }
-    });
+        document.getElementById('add-territory-btn').addEventListener('click', showTerritoryModal);
+        // --- NEW Territory Modal Event Listeners ---
+        document.getElementById('modal-territory-save-btn').addEventListener('click', async () => {
+            const success = await handleSaveTerritory();
+            if (success) {
+                hideTerritoryModal();
+            }
+        });
+        
+        document.getElementById('modal-territory-save-new-btn').addEventListener('click', async () => {
+            const success = await handleSaveTerritory();
+            if (success) {
+                // Success! Clear the form for the next entry and set focus.
+                modalTerritoryNumber.value = '';
+                modalTerritoryName.value = '';
+                modalTerritoryNumber.focus();
+            }
+        });
+        
+        document.getElementById('modal-territory-cancel-btn').addEventListener('click', hideTerritoryModal);
+        
+        // Also handle the 'X' close button on the new modal
+        territoryModal.querySelector('.close-modal-btn').addEventListener('click', hideTerritoryModal);
 
         document.getElementById('add-house-btn').addEventListener('click', async () => {
             const houseNumber = prompt('Enter the house number:');
