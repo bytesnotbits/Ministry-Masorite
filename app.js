@@ -1,4 +1,3 @@
-// Ensure window.jsPDF is available
 const { jsPDF } = window.jspdf;
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -397,3 +396,55 @@ document.addEventListener('DOMContentLoaded', async () => {
         a.click();
         URL.revokeObjectURL(a.href);
     }
+
+    async function handleExportPDF() {
+        const doc = new jsPDF();
+        const territory = await getFromStore('territories', currentTerritoryId);
+        const houses = await getByIndex('houses', 'territoryId', currentTerritoryId);
+        
+        doc.setFontSize(18);
+        doc.text(`Territory Report: ${territory.name}`, 14, 22);
+        
+        let y = 30;
+
+        for (const house of houses) {
+            if (y > 270) { doc.addPage(); y = 20; }
+            doc.setLineWidth(0.5);
+            doc.line(14, y, 196, y);
+            y += 7;
+
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            const status = house.isCurrentlyNH ? " (Status: Not at Home)" : "";
+            doc.text(`Address: ${house.address}${status}`, 14, y);
+            y += 7;
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(10);
+            doc.text(`Mailbox: ${house.hasMailbox ? 'Yes' : 'No'} | No Trespassing: ${house.noTrespassing ? 'Yes' : 'No'}`, 16, y);
+            y += 7;
+
+            const visits = (await getByIndex('visits', 'houseId', house.id)).sort((a, b) => new Date(b.date) - new Date(a.date));
+            if (visits.length > 0) {
+                 doc.setFont(undefined, 'bold');
+                 doc.text("Visit History:", 16, y);
+                 y += 5;
+                 doc.setFont(undefined, 'normal');
+                for(const visit of visits) {
+                     if (y > 280) { doc.addPage(); y = 20; }
+                     const personInfo = visit.personName ? `(Spoke with ${visit.personName})` : '';
+                     const visitText = `${new Date(visit.date).toLocaleDateString()} ${personInfo}: ${visit.notes}`;
+                     const splitText = doc.splitTextToSize(visitText, 170); // Wrap text
+                     doc.text(splitText, 18, y);
+                     y += (splitText.length * 4) + 2;
+                }
+            } else {
+                 doc.text("No visits recorded.", 16, y);
+                 y += 5;
+            }
+             y += 3;
+        }
+
+        doc.save(`${territory.name.replace(/[^\w\s]/gi, '').replace(/\s/g, '_')}.pdf`);
+    }
+
+});
