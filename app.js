@@ -199,7 +199,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         // --- Main Click Handler ---
         document.addEventListener('click', async (e) => {
             const target = e.target;
-
+        
+            // --- BUTTON-SPECIFIC ACTIONS FIRST ---
+        
+            // Log 'NH' Button (MOVED UP)
+            if (target.classList.contains('log-nh-btn')) {
+                e.stopPropagation(); // Stop the click from bubbling up to the parent <li>
+                const houseId = Number(target.dataset.id);
+                if (!houseId) return;
+        
+                await addToStore('visits', {
+                    houseId: houseId, date: new Date().toISOString(),
+                    notes: 'Not at home.', personName: '', isNotAtHome: true
+                });
+                
+                const house = await getFromStore('houses', houseId);
+                house.isCurrentlyNH = true;
+                await updateInStore('houses', house);
+                
+                await renderHouses(currentTerritoryId);
+                return; // Action is complete, exit the handler
+            }
+        
+            // --- GENERAL NAVIGATION ACTIONS ---
+        
             // Navigate to house list
             const territoryLi = target.closest('#territory-list li');
             if (territoryLi && !target.classList.contains('delete-btn') && !territoryLi.classList.contains('placeholder')) {
@@ -208,10 +231,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 showView('house-list-view');
                 return;
             }
-
-            // Navigate to house details
+        
+            // Navigate to house details (NOW WORKS CORRECTLY)
             const houseLi = target.closest('#house-list li');
-            if (houseLi && !target.classList.contains('delete-btn') && !houseLi.classList.contains('placeholder')) {
+            // Ensure we aren't clicking a button inside the li that has its own action
+            if (houseLi && !target.closest('button') && !houseLi.classList.contains('placeholder')) {
                 currentHouseId = Number(houseLi.dataset.id);
                 await renderHouseDetails(currentHouseId);
                 showView('house-detail-view');
@@ -223,24 +247,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const targetView = target.dataset.target;
                 if (targetView === 'house-list-view') await renderHouses(currentTerritoryId);
                 showView(targetView);
-            }
-            
-            // Log 'NH' Button
-            if (target.classList.contains('log-nh-btn')) {
-                e.stopPropagation();
-                const houseId = Number(target.dataset.id);
-                if (!houseId) return;
-
-                await addToStore('visits', {
-                    houseId: houseId, date: new Date().toISOString(),
-                    notes: 'Not at home.', personName: '', isNotAtHome: true
-                });
-                
-                const house = await getFromStore('houses', houseId);
-                house.isCurrentlyNH = true;
-                await updateInStore('houses', house);
-                
-                await renderHouses(currentTerritoryId);
             }
 
             // Sorting buttons
