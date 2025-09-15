@@ -301,9 +301,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('notrespass-check').addEventListener('change', async (e) => {
             if (!currentHouseId) return;
             const house = await getFromStore('houses', currentHouseId);
-            house.noTrespassing = e.get.checked;
+            house.noTrespassing = e.target.checked; // <--- Corrected line
             await updateInStore('houses', house);
         });
+
 
         document.getElementById('not-at-home-check').addEventListener('change', async (e) => {
             if (!currentHouseId) return;
