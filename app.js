@@ -132,7 +132,6 @@ async function renderHouses(territoryId) {
 }
 
     // --- EVENT LISTENERS SETUP ---
-// REPLACE your old setupEventListeners function with this one
 function setupEventListeners() {
     // --- Get Modal Elements ---
     const noteModal = document.getElementById('note-modal');
@@ -265,7 +264,7 @@ function setupEventListeners() {
         }
     });
     
-    // 'Add New Visit Note' button NOW OPENS THE MODAL
+    // 'Add New Visit Note' button opens the modal
     document.getElementById('add-visit-btn').addEventListener('click', showNoteModal);
 
     // MODAL event listeners
@@ -317,6 +316,7 @@ function setupEventListeners() {
         const house = await getFromStore('houses', currentHouseId);
         house.isCurrentlyNH = e.target.checked;
         await updateInStore('houses', house);
+        // We refresh the details to ensure consistency, though it's mainly for visual feedback.
         await renderHouseDetails(currentHouseId);
     });
 
@@ -328,144 +328,6 @@ function setupEventListeners() {
     document.getElementById('restore-file-input').addEventListener('change', handleRestore);
 }
 
-    // Add Buttons
-    document.getElementById('add-territory-btn').addEventListener('click', async () => {
-        const name = prompt('Enter the name for the new territory (e.g., "Maple Street"):');
-        if (name) {
-            await addToStore('territories', { name, createdAt: new Date().toISOString() });
-            await renderTerritories();
-        }
-    });
-
-    document.getElementById('add-house-btn').addEventListener('click', async () => {
-        const houseNumber = prompt('Enter the house number:');
-        if (houseNumber) {
-            const territory = await getFromStore('territories', currentTerritoryId);
-            const fullAddress = `${houseNumber} ${territory.name}`;
-            await addToStore('houses', { 
-                territoryId: currentTerritoryId, 
-                address: fullAddress,
-                hasMailbox: false, 
-                noTrespassing: false 
-            });
-            await renderHouses(currentTerritoryId);
-        }
-    });
-    
-    // 'Add New Visit Note' button NOW OPENS THE MODAL
-    document.getElementById('add-visit-btn').addEventListener('click', showNoteModal);
-
-    // MODAL event listeners
-    document.getElementById('modal-save-note-btn').addEventListener('click', async () => {
-        const notes = modalVisitNotes.value;
-        if (!notes) {
-            alert('Please enter some notes for the visit.');
-            return;
-        }
-
-        // Create the new visit log
-        await addToStore('visits', {
-            houseId: currentHouseId, date: new Date().toISOString(),
-            notes: notes, personName: modalPersonName.value || '',
-            isNotAtHome: false // A manual note is never a "not at home" by default
-        });
-        
-        const house = await getFromStore('houses', currentHouseId);
-        
-        // If the user wants to remove the NH status, update the house
-        if (modalRemoveNHCheck.checked) {
-            house.isCurrentlyNH = false;
-        }
-        // Smart Helper: If they didn't check the box, but the house WAS an NH, we assume this successful visit clears the status.
-        else if (house.isCurrentlyNH) {
-             house.isCurrentlyNH = false;
-        }
-
-        await updateInStore('houses', house);
-        hideNoteModal();
-        await renderHouseDetails(currentHouseId);
-    });
-    
-    document.getElementById('modal-cancel-btn').addEventListener('click', hideNoteModal);
-    document.querySelector('.close-modal-btn').addEventListener('click', hideNoteModal);
-
-    // House Detail Checkboxes
-    document.getElementById('mailbox-check').addEventListener('change', async (e) => {
-        if (!currentHouseId) return;
-        const house = await getFromStore('houses', currentHouseId);
-        house.hasMailbox = e.target.checked;
-        await updateInStore('houses', house);
-    });
-    document.getElementById('notrespass-check').addEventListener('change', async (e) => {
-        if (!currentHouseId) return;
-        const house = await getFromStore('houses', currentHouseId);
-        house.noTrespassing = e.target.checked;
-        await updateInStore('houses', house);
-    });
-
-    // 'NH' Checkbox is NOW A PURE TOGGLE (UPDATED)
-    document.getElementById('not-at-home-check').addEventListener('change', async (e) => {
-        if (!currentHouseId) return;
-        const house = await getFromStore('houses', currentHouseId);
-
-    // House Detail Checkboxes
-    document.getElementById('mailbox-check').addEventListener('change', async (e) => {
-        if (!currentHouseId) return;
-        const house = await getFromStore('houses', currentHouseId);
-        house.hasMailbox = e.target.checked;
-        await updateInStore('houses', house);
-    });
-    document.getElementById('notrespass-check').addEventListener('change', async (e) => {
-        if (!currentHouseId) return;
-        const house = await getFromStore('houses', currentHouseId);
-        house.noTrespassing = e.target.checked;
-        await updateInStore('houses', house);
-    });
-
-    // Non-destructive version
-    document.getElementById('not-at-home-check').addEventListener('change', async (e) => {
-    if (!currentHouseId) return;
-    
-    const visits = (await getByIndex('visits', 'houseId', currentHouseId)).sort((a, b) => new Date(b.date) - new Date(a.date));
-    const lastVisit = visits[0];
-
-    // If the box is CHECKED, add a standard "Not at Home" record.
-    if (e.target.checked) {
-        await addToStore('visits', {
-            houseId: currentHouseId,
-            date: new Date().toISOString(),
-            notes: 'Not at home.',
-            personName: '',
-            isNotAtHome: true 
-        });
-    } 
-    // If the box is UNCHECKED, it means we are updating the status.
-    // This action ADDS a new record instead of deleting the old one.
-    else {
-        // This should only happen if the last visit was indeed a "Not at Home".
-        if (lastVisit && lastVisit.isNotAtHome) {
-            await addToStore('visits', {
-                houseId: currentHouseId,
-                date: new Date().toISOString(),
-                notes: "Status updated from 'Not at Home'.", // The new, clear note
-                personName: '',
-                isNotAtHome: false // Explicitly set the status to false
-            });
-        }
-    }
-
-    // Refresh the visit history to show the newly added record.
-    await renderHouseDetails(currentHouseId);
-});
-
-    
-    // Data Management Event Listeners
-    document.getElementById('export-mscribe-btn').addEventListener('click', handleBackup);
-    document.getElementById('export-csv-btn').addEventListener('click', handleExportCSV);
-    document.getElementById('export-pdf-btn').addEventListener('click', handleExportPDF);
-    document.getElementById('restore-btn').addEventListener('click', () => document.getElementById('restore-file-input').click());
-    document.getElementById('restore-file-input').addEventListener('change', handleRestore);
-}
     // --- BACKUP & RESTORE FUNCTIONS ---
     async function handleBackup() {
         const territory = await getFromStore('territories', currentTerritoryId);
