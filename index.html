@@ -99,7 +99,27 @@
                 </div>
             </div>
         </div>
-
+        
+       <!-- ADD NEW TERRITORY MODAL (ADD THIS ENTIRE BLOCK) -->
+        <div id="territory-modal" class="modal-backdrop hidden">
+            <div class="modal-content">
+                <button class="close-modal-btn">&times;</button>
+                <h3>Add New Territory</h3>
+                
+                <label for="modal-territory-number">Territory Number</label>
+                <input type="text" id="modal-territory-number" placeholder="e.g., 5, 1-7, 4-13 LTR">
+        
+                <label for="modal-territory-name">Territory Name (Street)</label>
+                <input type="text" id="modal-territory-name" placeholder="e.g., Maple Street">
+        
+                <div class="modal-actions">
+                    <button id="modal-territory-cancel-btn">Cancel</button>
+                    <button id="modal-territory-save-new-btn">Save & New</button>
+                    <button id="modal-territory-save-btn" class="primary-action">Save</button>
+                </div>
+            </div>
+        </div>
+        
     </main>
 
     <!-- App Logic -->
