@@ -271,3 +271,25 @@ textarea { width: 100%; box-sizing: border-box; }
 .modal-actions button {
     padding: 10px 20px;
 }
+
+.modal-toggles {
+    display: flex;
+    gap: 10px;
+    margin-top: 5px;
+    margin-bottom: 15px;
+}
+
+.toggle-btn {
+    flex-grow: 1;
+    background-color: #f0f0f0; /* Default off state */
+    border: 1px solid #ccc;
+    color: #555;
+    font-weight: bold;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.toggle-btn.active {
+    background-color: var(--primary-color); /* Active on state */
+    color: var(--white);
+    border-color: var(--primary-color);
+}
