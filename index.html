@@ -120,6 +120,31 @@
                 </div>
             </div>
         </div>
+
+        <!-- ADD NEW HOUSE MODAL -->
+        <div id="house-modal" class="modal-backdrop hidden">
+            <div class="modal-content">
+                <button class="close-modal-btn">&times;</button>
+                <h3>Add New House</h3>
+                
+                <label for="modal-house-number">House Number</label>
+                <input type="text" id="modal-house-number" placeholder="e.g., 123">
+
+                <label>Quick Details</label>
+                <div class="modal-toggles">
+                    <button class="toggle-btn" data-prop="isCurrentlyNH">NH</button>
+                    <button class="toggle-btn" data-prop="hasMailbox">Mailbox</button>
+                    <button class="toggle-btn" data-prop="noTrespassing">NT</button>
+                    <button class="toggle-btn" data-prop="hasGate">Gated</button>
+                </div>
+        
+                <div class="modal-actions">
+                    <button id="modal-house-cancel-btn">Cancel</button>
+                    <button id="modal-house-save-new-btn">Save & New</button>
+                    <button id="modal-house-save-btn" class="primary-action">Save</button>
+                </div>
+            </div>
+        </div>
         
     </main>
 
