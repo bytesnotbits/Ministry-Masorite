@@ -148,18 +148,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function setupEventListeners() {
-        // --- Get Modal Elements ---
+        // --- Get Note Modal Elements ---
         const noteModal = document.getElementById('note-modal');
         const modalPersonName = document.getElementById('modal-person-name');
         const modalVisitNotes = document.getElementById('modal-visit-notes');
         const modalRemoveNHCheck = document.getElementById('modal-remove-nh-check');
-
+    
         // --- Get Territory Modal Elements ---
         const territoryModal = document.getElementById('territory-modal');
         const modalTerritoryNumber = document.getElementById('modal-territory-number');
         const modalTerritoryName = document.getElementById('modal-territory-name');
-
-        // --- Show/Hide Modal Functions ---
+    
+        // --- Get House Modal Elements ---
+        const houseModal = document.getElementById('house-modal');
+        const modalHouseNumber = document.getElementById('modal-house-number');
+        const houseModalToggles = document.querySelector('#house-modal .modal-toggles');
+    
+        // --- Show/Hide Note Modal Functions ---
         const showNoteModal = () => noteModal.classList.remove('hidden');
         const hideNoteModal = () => {
             noteModal.classList.add('hidden');
@@ -167,26 +172,39 @@ document.addEventListener('DOMContentLoaded', async () => {
             modalVisitNotes.value = '';
             modalRemoveNHCheck.checked = false;
         };
-
+    
         // --- Show/Hide Territory Modal Functions ---
         const showTerritoryModal = () => {
             territoryModal.classList.remove('hidden');
-            modalTerritoryNumber.focus(); // Auto-focus the first field
+            modalTerritoryNumber.focus(); 
         };
         const hideTerritoryModal = () => {
             territoryModal.classList.add('hidden');
-            modalTerritoryNumber.value = ''; // Clear fields on close
+            modalTerritoryNumber.value = '';
             modalTerritoryName.value = '';
         };
     
-        // --- Core Logic for Saving a Territory (REUSABLE FUNCTION) ---
+        // --- Show/Hide House Modal Functions ---
+        const showHouseModal = () => {
+            houseModal.classList.remove('hidden');
+            modalHouseNumber.focus();
+        };
+        const hideHouseModal = () => {
+            houseModal.classList.add('hidden');
+            modalHouseNumber.value = '';
+            houseModalToggles.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+        };
+    
+        // --- Core Logic for Saving a Territory ---
         async function handleSaveTerritory() {
             const number = modalTerritoryNumber.value.trim();
             const name = modalTerritoryName.value.trim();
     
             if (!number || !name) {
                 alert('Please fill out both the territory number and name.');
-                return false; // Indicate failure
+                return false; 
             }
     
             await addToStore('territories', {
@@ -195,36 +213,55 @@ document.addEventListener('DOMContentLoaded', async () => {
                 createdAt: new Date().toISOString()
             });
             await renderTerritories();
-            return true; // Indicate success
+            return true;
         }
-        
+    
+        // --- Core Logic for Saving a House ---
+        async function handleSaveHouse() {
+            const houseNumber = modalHouseNumber.value.trim();
+            if (!houseNumber) {
+                alert('Please enter a house number.');
+                return false;
+            }
+    
+            const territory = await getFromStore('territories', currentTerritoryId);
+            const fullAddress = `${houseNumber} ${territory.name}`;
+    
+            const newHouse = {
+                territoryId: currentTerritoryId,
+                address: fullAddress,
+                hasMailbox: document.querySelector('.toggle-btn[data-prop="hasMailbox"]').classList.contains('active'),
+                noTrespassing: document.querySelector('.toggle-btn[data-prop="noTrespassing"]').classList.contains('active'),
+                isCurrentlyNH: document.querySelector('.toggle-btn[data-prop="isCurrentlyNH"]').classList.contains('active'),
+                hasGate: document.querySelector('.toggle-btn[data-prop="hasGate"]').classList.contains('active')
+            };
+    
+            await addToStore('houses', newHouse);
+            await renderHouses(currentTerritoryId);
+            return true;
+        }
+    
+    
         // --- Main Click Handler ---
         document.addEventListener('click', async (e) => {
             const target = e.target;
-        
-            // --- BUTTON-SPECIFIC ACTIONS FIRST ---
-        
-            // Log 'NH' Button (MOVED UP)
+    
+            // Log 'NH' Button
             if (target.classList.contains('log-nh-btn')) {
-                e.stopPropagation(); // Stop the click from bubbling up to the parent <li>
+                e.stopPropagation();
                 const houseId = Number(target.dataset.id);
                 if (!houseId) return;
-        
                 await addToStore('visits', {
                     houseId: houseId, date: new Date().toISOString(),
                     notes: 'Not at home.', personName: '', isNotAtHome: true
                 });
-                
                 const house = await getFromStore('houses', houseId);
                 house.isCurrentlyNH = true;
                 await updateInStore('houses', house);
-                
                 await renderHouses(currentTerritoryId);
-                return; // Action is complete, exit the handler
+                return;
             }
-        
-            // --- GENERAL NAVIGATION ACTIONS ---
-        
+    
             // Navigate to house list
             const territoryLi = target.closest('#territory-list li');
             if (territoryLi && !target.classList.contains('delete-btn') && !territoryLi.classList.contains('placeholder')) {
@@ -233,47 +270,45 @@ document.addEventListener('DOMContentLoaded', async () => {
                 showView('house-list-view');
                 return;
             }
-        
-            // Navigate to house details (NOW WORKS CORRECTLY)
+    
+            // Navigate to house details
             const houseLi = target.closest('#house-list li');
-            // Ensure we aren't clicking a button inside the li that has its own action
             if (houseLi && !target.closest('button') && !houseLi.classList.contains('placeholder')) {
                 currentHouseId = Number(houseLi.dataset.id);
                 await renderHouseDetails(currentHouseId);
                 showView('house-detail-view');
                 return;
             }
-
+    
             // Back buttons
             if (target.classList.contains('back-btn')) {
                 const targetView = target.dataset.target;
                 if (targetView === 'house-list-view') await renderHouses(currentTerritoryId);
                 showView(targetView);
             }
-
+    
             // Sorting buttons
             if (target.classList.contains('sort-btn')) {
                 territorySort = target.dataset.sort;
                 await renderTerritories();
             }
-
+    
             // Deletion logic
             if (target.classList.contains('delete-btn')) {
                 const id = Number(target.dataset.id);
                 const type = target.dataset.type;
-
                 if (type === 'territory' && confirm('Are you sure you want to delete this entire territory and all its houses? This cannot be undone.')) {
                     const houses = await getByIndex('houses', 'territoryId', id);
-                    for(const house of houses) {
+                    for (const house of houses) {
                         const visits = await getByIndex('visits', 'houseId', house.id);
-                        for(const visit of visits) await deleteFromStore('visits', visit.id);
+                        for (const visit of visits) await deleteFromStore('visits', visit.id);
                         await deleteFromStore('houses', house.id);
                     }
                     await deleteFromStore('territories', id);
                     await renderTerritories();
                 } else if (type === 'house' && confirm('Are you sure you want to delete this house and all its visit history?')) {
                     const visits = await getByIndex('visits', 'houseId', id);
-                    for(const visit of visits) await deleteFromStore('visits', visit.id);
+                    for (const visit of visits) await deleteFromStore('visits', visit.id);
                     await deleteFromStore('houses', id);
                     await renderHouses(currentTerritoryId);
                 } else if (type === 'visit' && confirm('Delete this visit note?')) {
@@ -281,7 +316,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     await renderHouseDetails(currentHouseId);
                 }
             }
-
+    
             // Edit visit date
             if (target.classList.contains('edit-date-btn')) {
                 const visitId = Number(target.dataset.id);
@@ -292,81 +327,88 @@ document.addEventListener('DOMContentLoaded', async () => {
                     visit.date = new Date(newDateStr);
                     await updateInStore('visits', visit);
                     await renderHouseDetails(currentHouseId);
-                } else if(newDateStr) {
+                } else if (newDateStr) {
                     alert('Invalid date format.');
                 }
             }
         });
-
+    
         // --- Individual Button Event Listeners ---
+    
         document.getElementById('add-territory-btn').addEventListener('click', showTerritoryModal);
-        // --- NEW Territory Modal Event Listeners ---
+        
+        // --- Territory Modal Event Listeners ---
         document.getElementById('modal-territory-save-btn').addEventListener('click', async () => {
             const success = await handleSaveTerritory();
             if (success) {
                 hideTerritoryModal();
             }
         });
-        
         document.getElementById('modal-territory-save-new-btn').addEventListener('click', async () => {
             const success = await handleSaveTerritory();
             if (success) {
-                // Success! Keep the territory number, clear the name, and focus the name field.
-                    modalTerritoryName.value = '';
-                    modalTerritoryName.focus(); // Set focus to the next field to be filled
+                modalTerritoryName.value = '';
+                modalTerritoryName.focus();
             }
         });
-        
         document.getElementById('modal-territory-cancel-btn').addEventListener('click', hideTerritoryModal);
-        
-        // Also handle the 'X' close button on the new modal
         territoryModal.querySelector('.close-modal-btn').addEventListener('click', hideTerritoryModal);
-
-        document.getElementById('add-house-btn').addEventListener('click', async () => {
-            const houseNumber = prompt('Enter the house number:');
-            if (houseNumber) {
-                const territory = await getFromStore('territories', currentTerritoryId);
-                const fullAddress = `${houseNumber} ${territory.name}`;
-                await addToStore('houses', { 
-                    territoryId: currentTerritoryId, address: fullAddress,
-                    hasMailbox: false, noTrespassing: false, isCurrentlyNH: false,
-                    hasGate: false 
-                });
-                await renderHouses(currentTerritoryId);
+    
+        // --- House Modal Event Listeners ---
+        houseModalToggles.addEventListener('click', (e) => {
+            const btn = e.target.closest('.toggle-btn');
+            if (btn) {
+                btn.classList.toggle('active');
             }
         });
-        
+        document.getElementById('modal-house-save-btn').addEventListener('click', async () => {
+            const success = await handleSaveHouse();
+            if (success) {
+                hideHouseModal();
+            }
+        });
+        document.getElementById('modal-house-save-new-btn').addEventListener('click', async () => {
+            const success = await handleSaveHouse();
+            if (success) {
+                modalHouseNumber.value = '';
+                modalHouseNumber.focus();
+            }
+        });
+        document.getElementById('modal-house-cancel-btn').addEventListener('click', hideHouseModal);
+        houseModal.querySelector('.close-modal-btn').addEventListener('click', hideHouseModal);
+    
+    
+        // --- View-Specific Button Listeners ---
+        document.getElementById('add-house-btn').addEventListener('click', showHouseModal);
         document.getElementById('add-visit-btn').addEventListener('click', showNoteModal);
-
-        // MODAL event listeners
+    
+        // NOTE MODAL event listeners
         document.getElementById('modal-save-note-btn').addEventListener('click', async () => {
             const notes = modalVisitNotes.value;
             if (!notes) {
                 alert('Please enter some notes for the visit.');
                 return;
             }
-
             await addToStore('visits', {
-                houseId: currentHouseId, date: new Date().toISOString(),
-                notes: notes, personName: modalPersonName.value || '',
+                houseId: currentHouseId,
+                date: new Date().toISOString(),
+                notes: notes,
+                personName: modalPersonName.value || '',
                 isNotAtHome: false
             });
-            
             const house = await getFromStore('houses', currentHouseId);
             if (modalRemoveNHCheck.checked) {
                 house.isCurrentlyNH = false;
             } else if (house.isCurrentlyNH) {
-                 house.isCurrentlyNH = false;
+                house.isCurrentlyNH = false;
             }
-
             await updateInStore('houses', house);
             hideNoteModal();
             await renderHouseDetails(currentHouseId);
         });
-        
         document.getElementById('modal-cancel-btn').addEventListener('click', hideNoteModal);
-        document.querySelector('.close-modal-btn').addEventListener('click', hideNoteModal);
-
+        noteModal.querySelector('.close-modal-btn').addEventListener('click', hideNoteModal);
+    
         // House Detail Checkboxes
         document.getElementById('mailbox-check').addEventListener('change', async (e) => {
             if (!currentHouseId) return;
@@ -377,7 +419,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('notrespass-check').addEventListener('change', async (e) => {
             if (!currentHouseId) return;
             const house = await getFromStore('houses', currentHouseId);
-            house.noTrespassing = e.target.checked; // <--- Corrected line
+            house.noTrespassing = e.target.checked;
             await updateInStore('houses', house);
         });
         document.getElementById('gate-check').addEventListener('change', async (e) => {
@@ -393,7 +435,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await updateInStore('houses', house);
             await renderHouseDetails(currentHouseId);
         });
-
+    
         // Data Management Event Listeners
         document.getElementById('export-mscribe-btn').addEventListener('click', handleBackup);
         document.getElementById('export-csv-btn').addEventListener('click', handleExportCSV);
