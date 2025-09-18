@@ -436,16 +436,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             await renderHouseDetails(currentHouseId);
         });
     
-        // Data Management Event Listeners
-        document.getElementById('export-mscribe-btn').addEventListener('click', handleBackup);
+    // Data Management Event Listeners
+        document.getElementById('export-full-btn').addEventListener('click', handleFullBackup); // NEW
+        document.getElementById('export-mscribe-btn').addEventListener('click', handleTerritoryBackup); // RENAMED
         document.getElementById('export-csv-btn').addEventListener('click', handleExportCSV);
         document.getElementById('export-pdf-btn').addEventListener('click', handleExportPDF);
         document.getElementById('restore-btn').addEventListener('click', () => document.getElementById('restore-file-input').click());
         document.getElementById('restore-file-input').addEventListener('change', handleRestore);
-    }
+        }
 
     // --- BACKUP & RESTORE FUNCTIONS ---
-    async function handleBackup() {
+    async function handleTerritoryBackup() { 
         const territory = await getFromStore('territories', currentTerritoryId);
         const houses = await getByIndex('houses', 'territoryId', currentTerritoryId);
         let visits = [];
@@ -467,34 +468,121 @@ document.addEventListener('DOMContentLoaded', async () => {
         a.click();
         URL.revokeObjectURL(a.href);
     }
+
+    // Full backup
+    async function handleFullBackup() {
+        console.log("Starting full database backup...");
+        try {
+            const backupData = {
+                type: 'full_backup', // TYPE IDENTIFIER
+                territories: await getAllFromStore('territories'),
+                houses: await getAllFromStore('houses'),
+                visits: await getAllFromStore('visits')
+            };
     
+            const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `ministry_scribe_full_backup_${new Date().toISOString().split('T')[0]}.mscribe`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+            console.log("Full backup successful.");
+        } catch (error) {
+            console.error("Full backup failed:", error);
+            alert("Could not perform the full backup.");
+        }
+    }
+
     async function handleRestore(event) {
         const file = event.target.files[0];
         if (!file) return;
-
-        if (!confirm('Are you sure? Restoring will ERASE all data currently in the app and replace it with the backup file.')) {
-            event.target.value = '';
-            return;
-        }
-
+    
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
                 const data = JSON.parse(e.target.result);
-                await clearAllStores();
-                if (data.territories) for(const item of data.territories) await addToStore('territories', item);
-                if (data.houses) for(const item of data.houses) await addToStore('houses', item);
-                if (data.visits) for(const item of data.visits) await addToStore('visits', item);
-                alert('Restore successful!');
-                await renderTerritories();
-                showView('territory-list-view');
+    
+                // --- SMART RESTORE LOGIC ---
+                if (data.type === 'full_backup') {
+                    // Handle Full Restore
+                    if (confirm('This is a FULL backup file. Restoring will ERASE all data currently in the app. Are you sure?')) {
+                        await clearAllStores();
+                        if (data.territories) for (const item of data.territories) await addToStore('territories', item);
+                        if (data.houses) for (const item of data.houses) await addToStore('houses', item);
+                        if (data.visits) for (const item of data.visits) await addToStore('visits', item);
+                        alert('Full restore successful!');
+                        await renderTerritories();
+                        showView('territory-list-view');
+                    }
+                } else if (data.type === 'territory_backup' && data.territories && data.territories.length > 0) {
+                    // Handle Single Territory Merge/Update
+                    const backupTerritory = data.territories[0];
+                    const territoryName = backupTerritory.name;
+    
+                    if (confirm(`This file contains the territory "${territoryName}". This will overwrite the existing territory data. Continue?`)) {
+                        // Find if a territory with the same name already exists
+                        const allTerritories = await getAllFromStore('territories');
+                        const existingTerritory = allTerritories.find(t => t.name === territoryName);
+    
+                        let targetTerritoryId;
+    
+                        if (existingTerritory) {
+                            // Territory exists, OVERWRITE its data
+                            console.log(`Updating existing territory: ${territoryName}`);
+                            targetTerritoryId = existingTerritory.id;
+    
+                            // Delete all old houses and visits for this territory
+                            const oldHouses = await getByIndex('houses', 'territoryId', targetTerritoryId);
+                            for (const house of oldHouses) {
+                                const oldVisits = await getByIndex('visits', 'houseId', house.id);
+                                for (const visit of oldVisits) {
+                                    await deleteFromStore('visits', visit.id);
+                                }
+                                await deleteFromStore('houses', house.id);
+                            }
+                        } else {
+                            // Territory is new, ADD it
+                            console.log(`Adding new territory: ${territoryName}`);
+                            // Add the new territory to get a new ID
+                            const newId = await addToStore('territories', {
+                                name: backupTerritory.name,
+                                number: backupTerritory.number,
+                                createdAt: backupTerritory.createdAt
+                            });
+                            targetTerritoryId = newId;
+                        }
+    
+                        // Add houses and visits from the backup file, pointing to the correct territory ID
+                        for (const house of data.houses) {
+                            house.territoryId = targetTerritoryId;
+                            // We must delete the old ID to let IndexedDB auto-generate a new one
+                            delete house.id; 
+                            const newHouseId = await addToStore('houses', house);
+                            
+                            // Find visits for this house and add them with the new house ID
+                            const visitsForThisHouse = data.visits.filter(v => v.houseId === house.id);
+                            for (const visit of visitsForThisHouse) {
+                                visit.houseId = newHouseId;
+                                delete visit.id;
+                                await addToStore('visits', visit);
+                            }
+                        }
+                        
+                        alert(`Territory "${territoryName}" has been imported successfully!`);
+                        await renderTerritories();
+                        showView('territory-list-view');
+                    }
+                } else {
+                    alert('Restore failed. The file format is not recognized.');
+                }
             } catch (err) {
-                alert('Restore failed. The file may be corrupt.');
+                alert('Restore failed. The file may be corrupt or invalid.');
                 console.error(err);
+            } finally {
+                event.target.value = ''; // Clear the input
             }
         };
         reader.readAsText(file);
-        event.target.value = '';
     }
     
     async function handleExportCSV() {
