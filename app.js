@@ -36,6 +36,51 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function renderTerritories() {
         territoryList.innerHTML = '';
         let territories = await getAllFromStore('territories');
+
+      // --- NEW: Filter territories based on the search filter ---
+    if (filter) {
+        const searchTerm = filter.toLowerCase();
+        territories = territories.filter(territory => {
+            const nameMatch = territory.name.toLowerCase().includes(searchTerm);
+            // Also search the territory number, ensuring it's treated as a string
+            const numberMatch = String(territory.number || '').toLowerCase().includes(searchTerm);
+            return nameMatch || numberMatch;
+        });
+    }
+
+    // Sorting logic (remains the same)
+    territories.sort((a, b) => {
+        if (territorySort === 'name') {
+            return a.name.localeCompare(b.name);
+        } else if (territorySort === 'number') {
+            const naturalSort = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+            return naturalSort(a.number || '', b.number || '');
+        }
+        return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+
+    // --- UPDATED: Display logic for empty or filtered list ---
+    if (territories.length === 0) {
+        if (filter) {
+            territoryList.innerHTML = `<li class="placeholder">No territories match "${filter}".</li>`;
+        } else {
+            territoryList.innerHTML = '<li class="placeholder">Click "+ Add New Territory" to begin.</li>';
+        }
+        return;
+    }
+
+    for (const territory of territories) {
+        const houses = await getByIndex('houses', 'territoryId', territory.id);
+        const li = document.createElement('li');
+        li.dataset.id = territory.id;
+        const numberDisplay = territory.number ? `<strong>#${territory.number}</strong> -` : 'No # -';
+        li.innerHTML = `
+            <span>${numberDisplay} ${territory.name} (${houses.length} houses)</span>
+            <button class="delete-btn" data-id="${territory.id}" data-type="territory">X</button>
+        `;
+        territoryList.appendChild(li);
+    }
+}  
     
         // Sorter for strings containing numbers (Natural Sort)
         const naturalSort = (a, b) => {
@@ -43,7 +88,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
         };
         
-        // UPDATED: Sorting logic to use natural sort for 'number'
+        // Sorting logic to use natural sort for 'number'
         territories.sort((a, b) => {
             if (territorySort === 'name') {
                 return a.name.localeCompare(b.name);
@@ -331,6 +376,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     alert('Invalid date format.');
                 }
             }
+        });
+
+        // --- Search Input Listener ---
+        const searchInput = document.getElementById('search-territory-input');
+        searchInput.addEventListener('input', (e) => {
+            // As the user types, re-render the territory list with the filter
+            renderTerritories(e.target.value.trim());
         });
     
         // --- Individual Button Event Listeners ---
