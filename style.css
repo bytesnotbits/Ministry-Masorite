@@ -75,7 +75,7 @@ button.primary-action {
     border: none;
     width: 100%;
     padding: 15px;
-    margin-top: 20px;
+    margin-bottom: 20px;
 }
 button:hover { opacity: 0.9; }
 
