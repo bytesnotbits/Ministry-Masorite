@@ -33,95 +33,63 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- RENDERING ---
-    async function renderTerritories() {
+    async function renderTerritories(filter = '') {
         territoryList.innerHTML = '';
         let territories = await getAllFromStore('territories');
 
-      // --- NEW: Filter territories based on the search filter ---
-    if (filter) {
-        const searchTerm = filter.toLowerCase();
-        territories = territories.filter(territory => {
-            const nameMatch = territory.name.toLowerCase().includes(searchTerm);
-            // Also search the territory number, ensuring it's treated as a string
-            const numberMatch = String(territory.number || '').toLowerCase().includes(searchTerm);
-            return nameMatch || numberMatch;
-        });
-    }
-
-    // Sorting logic (remains the same)
-    territories.sort((a, b) => {
-        if (territorySort === 'name') {
-            return a.name.localeCompare(b.name);
-        } else if (territorySort === 'number') {
-            const naturalSort = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
-            return naturalSort(a.number || '', b.number || '');
-        }
-        return new Date(b.createdAt) - new Date(a.createdAt);
-    });
-
-    // --- UPDATED: Display logic for empty or filtered list ---
-    if (territories.length === 0) {
+        // --- Filter territories based on the search filter ---
         if (filter) {
-            territoryList.innerHTML = `<li class="placeholder">No territories match "${filter}".</li>`;
-        } else {
-            territoryList.innerHTML = '<li class="placeholder">Click "+ Add New Territory" to begin.</li>';
+            const searchTerm = filter.toLowerCase();
+            territories = territories.filter(territory => {
+                const nameMatch = territory.name.toLowerCase().includes(searchTerm);
+                const numberMatch = String(territory.number || '').toLowerCase().includes(searchTerm);
+                return nameMatch || numberMatch;
+            });
         }
-        return;
-    }
 
-    for (const territory of territories) {
-        const houses = await getByIndex('houses', 'territoryId', territory.id);
-        const li = document.createElement('li');
-        li.dataset.id = territory.id;
-        const numberDisplay = territory.number ? `<strong>#${territory.number}</strong> -` : 'No # -';
-        li.innerHTML = `
-            <span>${numberDisplay} ${territory.name} (${houses.length} houses)</span>
-            <button class="delete-btn" data-id="${territory.id}" data-type="territory">X</button>
-        `;
-        territoryList.appendChild(li);
-    }
-}  
-    
-        // Sorter for strings containing numbers (Natural Sort)
-        const naturalSort = (a, b) => {
-            // Use Intl.Collator for robust, locale-aware natural sorting
-            return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
-        };
-        
-        // Sorting logic to use natural sort for 'number'
+        // --- Sorting logic ---
         territories.sort((a, b) => {
             if (territorySort === 'name') {
                 return a.name.localeCompare(b.name);
             } else if (territorySort === 'number') {
-                // Use natural sort for territory numbers
-                // Provide a default empty string for any old data without a .number property
+                const naturalSort = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
                 return naturalSort(a.number || '', b.number || '');
             }
-            // Default sort by date
             return new Date(b.createdAt) - new Date(a.createdAt);
         });
-    
-        if (territories.length === 0) {
-            territoryList.innerHTML = '<li class="placeholder">Click "+ Add New Territory" to begin.</li>';
-            return;
-        }
-    
-        for (const territory of territories) {
-            const houses = await getByIndex('houses', 'territoryId', territory.id);
-            const li = document.createElement('li');
-            li.dataset.id = territory.id;
-    
-            // Display the territory number (works perfectly with strings)
-            const numberDisplay = territory.number ? `<strong>#${territory.number}</strong> -` : 'No # -';
-    
-            li.innerHTML = `
-                <span>${numberDisplay} ${territory.name} (${houses.length} houses)</span>
-                <button class="delete-btn" data-id="${territory.id}" data-type="territory">X</button>
-            `;
-            territoryList.appendChild(li);
-        }
-    }
 
+        // --- Display logic for empty or filtered list ---
+        if (territories.length === 0) {
+            if (filter) {
+                territoryList.innerHTML = `<li class="placeholder">No territories match "${filter}".</li>`;
+            } else {
+                territoryList.innerHTML = '<li class="placeholder">Click "+ Add New Territory" to begin.</li>';
+            }
+        } else {
+            // --- Render the list items ---
+            for (const territory of territories) {
+                const houses = await getByIndex('houses', 'territoryId', territory.id);
+                const li = document.createElement('li');
+                li.dataset.id = territory.id;
+                const numberDisplay = territory.number ? `<strong>#${territory.number}</strong> -` : 'No # -';
+                li.innerHTML = `
+                    <span>${numberDisplay} ${territory.name} (${houses.length} houses)</span>
+                    <button class="delete-btn" data-id="${territory.id}" data-type="territory">X</button>
+                `;
+                territoryList.appendChild(li);
+            }
+        }
+
+        // --- LOGIC: SHOW/HIDE SEARCH BAR ---
+        const searchInput = document.getElementById('search-territory-input');
+        const totalTerritories = (await getAllFromStore('territories')).length;
+        const SEARCH_VISIBILITY_THRESHOLD = 10; 
+
+        const shouldShowSearch = totalTerritories > SEARCH_VISIBILITY_THRESHOLD;
+        searchInput.classList.toggle('hidden', !shouldShowSearch);
+    }
+    
+    // --- RENDER HOUSES AND DETAILS ---
     async function renderHouses(territoryId) {
         houseList.innerHTML = '';
         const territory = await getFromStore('territories', territoryId);
@@ -508,10 +476,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         
         const backupData = {
-            territories: [territory],
-            houses,
-            visits
-        };
+        type: 'territory_backup', // <<< ADD THIS LINE
+        territories: [territory],
+        houses,
+        visits
+    };
 
         const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
         const a = document.createElement('a');
