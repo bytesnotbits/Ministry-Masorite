@@ -18,6 +18,7 @@
         <!-- This is the main screen showing the list of territories -->
         <div id="territory-list-view" class="view active">
             <h2>My Territories</h2>
+            <button id="add-territory-btn" class="primary-action">+ Add New Territory</button>
             <div class="controls">
                 <span>Sort by:</span>
                 <button class="sort-btn" data-sort="number">Territory #</button>
@@ -25,8 +26,7 @@
                 <button class="sort-btn" data-sort="date">Date Added</button>
             </div>
             <ul id="territory-list"></ul>
-            <button id="add-territory-btn" class="primary-action">+ Add New Territory</button>
-
+            
             <div class="data-management-section">
                 <h3>Data Management</h3>
                 <button id="restore-btn">Restore from Backup (.mscribe)</button>
@@ -39,9 +39,9 @@
         <div id="house-list-view" class="view">
             <button class="back-btn" data-target="territory-list-view">&larr; Back to Territories</button>
             <h2 id="house-list-title"></h2>
-            <ul id="house-list"></ul>
             <button id="add-house-btn" class="primary-action">+ Add New House</button>
-
+            <ul id="house-list"></ul>
+            
             <div class="data-management-section">
                 <h3>Export This Territory</h3>
                 <button id="export-mscribe-btn">Export this Street (.mscribe)</button>
