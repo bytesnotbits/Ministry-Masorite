@@ -139,6 +139,16 @@ button.back-btn {
 .inline-form button { flex-shrink: 0; }
 textarea { width: 100%; box-sizing: border-box; }
 
+#search-territory-input {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-sizing: border-box; /* Ensures padding doesn't affect the width */
+    margin-bottom: 10px;
+}
+
 /* Data Management Section */
 .data-management-section {
     margin-top: 30px;
