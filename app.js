@@ -308,7 +308,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     
         // --- Main Click Handler ---
-        document.addEventListener('click', async (e) => {
+         document.addEventListener('click', async (e) => {
+            const target = e.target; // Moved to the top of the function
+    
+            // NEW: Edit person button
             if (target.classList.contains('edit-person-btn')) {
                 const personId = Number(target.dataset.id);
                 const person = await getFromStore('people', personId);
@@ -320,6 +323,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
 
+            // NEW: Delete person button
             if (target.classList.contains('delete-person-btn')) {
                 const personId = Number(target.dataset.id);
                 if (confirm('Are you sure you want to delete this person? This will not delete their past visit notes.')) {
@@ -327,8 +331,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     await renderHouseDetails(currentHouseId);
                 }
             }
-            const target = e.target;
-    
+            
             // Log 'NH' Button
             if (target.classList.contains('log-nh-btn')) {
                 e.stopPropagation();
