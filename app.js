@@ -245,6 +245,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             newPersonFields.classList.add('hidden');
         };
 
+        noteModal.querySelector('.close-modal-btn').addEventListener('click', hideNoteModal);
+        document.getElementById('modal-cancel-btn').addEventListener('click', hideNoteModal);
+
         personSelect.addEventListener('change', () => {
             newPersonFields.classList.toggle('hidden', personSelect.value !== 'new_person');
         });
