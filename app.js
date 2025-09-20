@@ -195,13 +195,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     function setupEventListeners() {
         // --- Get Note Modal Elements ---
         const noteModal = document.getElementById('note-modal');
-        const modalPersonName = document.getElementById('modal-person-name');
         const modalVisitNotes = document.getElementById('modal-visit-notes');
-        const modalRemoveNHCheck = document.getElementById('modal-remove-nh-check');
         const personSelect = document.getElementById('modal-person-select');
         const newPersonFields = document.getElementById('new-person-fields');
         const newPersonNameInput = document.getElementById('modal-new-person-name');
         const isRvCheck = document.getElementById('modal-is-rv-check');
+        const modalRemoveNHCheck = document.getElementById('modal-remove-nh-check');
     
         // --- Get Territory Modal Elements ---
         const territoryModal = document.getElementById('territory-modal');
@@ -320,12 +319,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             return true;
         }
     
-    
         // --- Main Click Handler ---
          document.addEventListener('click', async (e) => {
-            const target = e.target; // Moved to the top of the function
+            const target = e.target;
     
-            // NEW: Edit person button
+            // Edit person button
             if (target.classList.contains('edit-person-btn')) {
                 const personId = Number(target.dataset.id);
                 const person = await getFromStore('people', personId);
@@ -337,7 +335,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
 
-            // NEW: Delete person button
+            // Delete person button
             if (target.classList.contains('delete-person-btn')) {
                 const personId = Number(target.dataset.id);
                 if (confirm('Are you sure you want to delete this person? This will not delete their past visit notes.')) {
@@ -373,7 +371,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     
             // Navigate to house details
             const houseLi = target.closest('#house-list li');
-            // MODIFIED: Simplified the condition to be more robust on mobile.
             if (houseLi && !houseLi.classList.contains('placeholder')) {
                 currentHouseId = Number(houseLi.dataset.id);
                 await renderHouseDetails(currentHouseId);
@@ -399,15 +396,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const id = Number(target.dataset.id);
                 const type = target.dataset.type;
                 if (type === 'territory' && confirm('Are you sure you want to delete this entire territory and all its houses? This cannot be undone.')) {
-                    // ... territory deletion logic ...
+                    const houses = await getByIndex('houses', 'territoryId', id);
+                    for (const house of houses) {
+                        const visits = await getByIndex('visits', 'houseId', house.id);
+                        for (const visit of visits) await deleteFromStore('visits', visit.id);
+                        const people = await getByIndex('people', 'houseId', house.id);
+                        for (const person of people) await deleteFromStore('people', person.id);
+                        await deleteFromStore('houses', house.id);
+                    }
                     await deleteFromStore('territories', id);
                     await renderTerritories();
                 } else if (type === 'house' && confirm('Are you sure you want to delete this house and all its visit history?')) {
                     const visits = await getByIndex('visits', 'houseId', id);
                     for (const visit of visits) await deleteFromStore('visits', visit.id);
+                    const people = await getByIndex('people', 'houseId', id);
+                    for (const person of people) await deleteFromStore('people', person.id);
                     await deleteFromStore('houses', id);
                     await renderHouses(currentTerritoryId);
-                    return; // ADDED: Stop execution after deleting a house
+                    return;
                 } else if (type === 'visit' && confirm('Delete this visit note?')) {
                     await deleteFromStore('visits', id);
                     await renderHouseDetails(currentHouseId);
@@ -433,24 +439,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         // --- Search Input Listener ---
         const searchInput = document.getElementById('search-territory-input');
         searchInput.addEventListener('input', (e) => {
-            // As the user types, re-render the territory list with the filter
             renderTerritories(e.target.value.trim());
         });
     
         // --- Individual Button Event Listeners ---
-    
         document.getElementById('add-territory-btn').addEventListener('click', showTerritoryModal);
         
         // --- Territory Modal Event Listeners ---
         document.getElementById('modal-territory-save-btn').addEventListener('click', async () => {
-            const success = await handleSaveTerritory();
-            if (success) {
-                hideTerritoryModal();
-            }
+            if (await handleSaveTerritory()) hideTerritoryModal();
         });
         document.getElementById('modal-territory-save-new-btn').addEventListener('click', async () => {
-            const success = await handleSaveTerritory();
-            if (success) {
+            if (await handleSaveTerritory()) {
                 modalTerritoryName.value = '';
                 modalTerritoryName.focus();
             }
@@ -461,26 +461,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         // --- House Modal Event Listeners ---
         houseModalToggles.addEventListener('click', (e) => {
             const btn = e.target.closest('.toggle-btn');
-            if (btn) {
-                btn.classList.toggle('active');
-            }
+            if (btn) btn.classList.toggle('active');
         });
         document.getElementById('modal-house-save-btn').addEventListener('click', async () => {
-            const success = await handleSaveHouse();
-            if (success) {
-                hideHouseModal();
-            }
+            if (await handleSaveHouse()) hideHouseModal();
         });
         document.getElementById('modal-house-save-new-btn').addEventListener('click', async () => {
-            const success = await handleSaveHouse();
-            if (success) {
+            if (await handleSaveHouse()) {
                 modalHouseNumber.value = '';
                 modalHouseNumber.focus();
             }
         });
         document.getElementById('modal-house-cancel-btn').addEventListener('click', hideHouseModal);
         houseModal.querySelector('.close-modal-btn').addEventListener('click', hideHouseModal);
-    
     
         // --- View-Specific Button Listeners ---
         document.getElementById('add-house-btn').addEventListener('click', showHouseModal);
@@ -496,31 +489,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             let personId = null;
 
-            // Check if we are adding a new person or using an existing one
             if (personSelect.value === 'new_person') {
                 const newName = newPersonNameInput.value.trim();
                 if (newName) {
-                    const newPerson = {
-                        houseId: currentHouseId,
-                        name: newName,
-                        isRV: isRvCheck.checked
-                    };
+                    const newPerson = { houseId: currentHouseId, name: newName, isRV: isRvCheck.checked };
                     personId = await addToStore('people', newPerson);
                 }
             } else if (personSelect.value) {
                 personId = Number(personSelect.value);
             }
 
-            // Now save the visit note with the personId
             await addToStore('visits', {
                 houseId: currentHouseId,
                 date: new Date().toISOString(),
                 notes: notes,
-                personId: personId, // Store the ID, not the name
+                personId: personId,
                 isNotAtHome: false
             });
             
-            // Update the house's NH status
             const house = await getFromStore('houses', currentHouseId);
             if (modalRemoveNHCheck.checked || house.isCurrentlyNH) {
                 house.isCurrentlyNH = false;
@@ -528,178 +514,123 @@ document.addEventListener('DOMContentLoaded', async () => {
             await updateInStore('houses', house);
             
             hideNoteModal();
-            await renderHouseDetails(currentHouseId); // Re-render everything
+            await renderHouseDetails(currentHouseId);
         });
 
-        // --- NEW: Add event listener for house detail checkboxes ---
+        // Event listener for house detail checkboxes with iOS fix
         document.getElementById('house-detail-view').addEventListener('click', (e) => {
-            // We only care about clicks on our specific checkboxes
             if (e.target.type !== 'checkbox' || !['not-at-home-check', 'mailbox-check', 'notrespass-check', 'gate-check'].includes(e.target.id)) {
                 return;
             }
-
-            // The target element from the event
             const checkbox = e.target;
-
-            // Use setTimeout to allow the browser to update the checkbox's 'checked' state
-            // before we try to read it. This is a critical fix for iOS Safari.
             setTimeout(async () => {
                 const house = await getFromStore('houses', currentHouseId);
-                if (!house) {
-                    console.error("Could not find house to update.");
-                    return;
-                }
-
-                // Now we can safely read the 'checked' property
+                if (!house) return;
                 const isChecked = checkbox.checked;
-                console.log(`Updating ${checkbox.id} to: ${isChecked}`); // Diagnostic log
-
                 switch (checkbox.id) {
-                    case 'not-at-home-check':
-                        house.isCurrentlyNH = isChecked;
-                        break;
-                    case 'mailbox-check':
-                        house.hasMailbox = isChecked;
-                        break;
-                    case 'notrespass-check':
-                        house.noTrespassing = isChecked;
-                        break;
-                    case 'gate-check':
-                        house.hasGate = isChecked;
-                        break;
+                    case 'not-at-home-check': house.isCurrentlyNH = isChecked; break;
+                    case 'mailbox-check': house.hasMailbox = isChecked; break;
+                    case 'notrespass-check': house.noTrespassing = isChecked; break;
+                    case 'gate-check': house.hasGate = isChecked; break;
                 }
-
                 await updateInStore('houses', house);
-                console.log('House details update saved.');
             }, 0);
         });
 
-
         // Data Management Event Listeners
-        document.getElementById('export-full-btn').addEventListener('click', handleFullBackup); // NEW
-        document.getElementById('export-mscribe-btn').addEventListener('click', handleTerritoryBackup); // RENAMED
+        document.getElementById('export-full-btn').addEventListener('click', handleFullBackup);
+        document.getElementById('export-mscribe-btn').addEventListener('click', handleTerritoryBackup);
         document.getElementById('export-csv-btn').addEventListener('click', handleExportCSV);
         document.getElementById('export-pdf-btn').addEventListener('click', handleExportPDF);
         document.getElementById('restore-btn').addEventListener('click', () => document.getElementById('restore-file-input').click());
         document.getElementById('restore-file-input').addEventListener('change', handleRestore);
-        }
+    }
 
     // --- BACKUP & RESTORE FUNCTIONS ---
     async function handleTerritoryBackup() {
         const territory = await getFromStore('territories', currentTerritoryId);
         const houses = await getByIndex('houses', 'territoryId', currentTerritoryId);
         let visits = [];
-        let people = [];
+        let people = []; // Corrected
         for (const house of houses) {
             const houseVisits = await getByIndex('visits', 'houseId', house.id);
             visits.push(...houseVisits);
-            const housePeople = await getByIndex('people', 'houseId', house.id);
-            people.push(...housePeople);
+            const housePeople = await getByIndex('people', 'houseId', house.id); // Corrected
+            people.push(...housePeople); // Corrected
         }
 
         const backupData = {
             type: 'territory_backup',
             territories: [territory],
             houses,
-            visits
-            people
+            visits,
+            people // Corrected
         };
 
         const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
         const filename = `${territory.name.replace(/[^\w\s]/gi, '').replace(/\s/g, '_')}.mscribe`;
 
-        // --- Try to use the Web Share API first ---
         if (navigator.share && navigator.canShare) {
             const file = new File([blob], filename, { type: 'application/json' });
             if (navigator.canShare({ files: [file] })) {
                 try {
-                    await navigator.share({
-                        title: 'Territory Backup',
-                        text: `Ministry Scribe backup for ${territory.name}`,
-                        files: [file]
-                    });
-                    console.log('Territory backup shared successfully.');
-                    return; // <-- IMPORTANT: Exit function only on success.
+                    await navigator.share({ title: 'Territory Backup', text: `Ministry Scribe backup for ${territory.name}`, files: [file] });
+                    return;
                 } catch (err) {
-                    // If user cancels the share, we do nothing and exit.
-                    if (err.name === 'AbortError') {
-                        console.log('Share cancelled by user.');
-                        return;
-                    }
-                    // For any other error, log a warning and proceed to the fallback.
+                    if (err.name === 'AbortError') return;
                     console.warn('Web Share API failed, falling back to download.', err);
                 }
             }
         }
 
-        // --- Fallback for browsers that don't support sharing OR if sharing failed ---
-        console.log('Web Share not supported or failed, using download fallback.');
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = filename;
-        document.body.appendChild(a); // Append to body for greater compatibility
+        document.body.appendChild(a);
         a.click();
-        document.body.removeChild(a); // Clean up
+        document.body.removeChild(a);
         URL.revokeObjectURL(a.href);
     }
 
-
-
-    // Full backup
     async function handleFullBackup() {
-        console.log("Starting full database backup...");
         try {
             const backupData = {
                 type: 'full_backup',
                 territories: await getAllFromStore('territories'),
                 houses: await getAllFromStore('houses'),
-                visits: await getAllFromStore('visits')
-                people: await getAllFromStore('people')
+                visits: await getAllFromStore('visits'),
+                people: await getAllFromStore('people') // Corrected
             };
 
             const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
             const filename = `ministry_scribe_full_backup_${new Date().toISOString().split('T')[0]}.mscribe`;
 
-            // --- Try to use the Web Share API first ---
             if (navigator.share && navigator.canShare) {
                 const file = new File([blob], filename, { type: 'application/json' });
                 if (navigator.canShare({ files: [file] })) {
                     try {
-                        await navigator.share({
-                            title: 'Full Ministry Scribe Backup',
-                            text: 'Full database backup for Ministry Scribe.',
-                            files: [file]
-                        });
-                        console.log('Full backup shared successfully.');
-                        return; // <-- IMPORTANT: Exit function only on success.
+                        await navigator.share({ title: 'Full Ministry Scribe Backup', text: 'Full database backup for Ministry Scribe.', files: [file] });
+                        return;
                     } catch (err) {
-                        // If user cancels the share, we do nothing and exit.
-                        if (err.name === 'AbortError') {
-                            console.log('Share cancelled by user.');
-                            return;
-                        }
-                        // For any other error, log a warning and proceed to the fallback.
+                        if (err.name === 'AbortError') return;
                         console.warn('Web Share API failed, falling back to download.', err);
                     }
                 }
             }
             
-            // --- Fallback for browsers that don't support sharing OR if sharing failed ---
-            console.log('Web Share not supported or failed, using download fallback.');
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
             a.download = filename;
-            document.body.appendChild(a); // Append to body
+            document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a); // Clean up
+            document.body.removeChild(a);
             URL.revokeObjectURL(a.href);
 
         } catch (error) {
-            console.error("Full backup failed during data gathering:", error);
+            console.error("Full backup failed:", error);
             alert("Could not perform the full backup.");
         }
     }
-
 
     async function handleRestore(event) {
         const file = event.target.files[0];
@@ -710,107 +641,77 @@ document.addEventListener('DOMContentLoaded', async () => {
             try {
                 const data = JSON.parse(e.target.result);
     
-                // --- SMART RESTORE LOGIC ---
                 if (data.type === 'full_backup') {
-                    // Handle Full Restore
-                    if (confirm('This is a FULL backup file. Restoring will ERASE all data currently in the app. Are you sure?')) {
+                    if (confirm('This is a FULL backup. Restoring will ERASE all current data. Are you sure?')) {
                         await clearAllStores();
                         if (data.territories) for (const item of data.territories) await addToStore('territories', item);
                         if (data.houses) for (const item of data.houses) await addToStore('houses', item);
                         if (data.visits) for (const item of data.visits) await addToStore('visits', item);
-                        if (data.people) for (const item of data.people) await addToStore('people', item);
+                        if (data.people) for (const item of data.people) await addToStore('people', item); // Corrected
                         alert('Full restore successful!');
                         await renderTerritories();
                         showView('territory-list-view');
                     }
                 } else if (data.type === 'territory_backup' && data.territories && data.territories.length > 0) {
-                    // Handle Single Territory Merge/Update
                     const backupTerritory = data.territories[0];
                     const territoryName = backupTerritory.name;
     
-                    if (confirm(`This file contains the territory "${territoryName}". This will overwrite the existing territory data. Continue?`)) {
-                        // Find if a territory with the same name already exists
+                    if (confirm(`This will import and overwrite the territory "${territoryName}". Continue?`)) {
                         const allTerritories = await getAllFromStore('territories');
                         const existingTerritory = allTerritories.find(t => t.name === territoryName);
     
                         let targetTerritoryId;
-    
                         if (existingTerritory) {
-                            // Territory exists, OVERWRITE its data
-                            console.log(`Updating existing territory: ${territoryName}`);
                             targetTerritoryId = existingTerritory.id;
-    
-                            // Delete all old houses and visits for this territory
                             const oldHouses = await getByIndex('houses', 'territoryId', targetTerritoryId);
                             for (const house of oldHouses) {
-                                const oldVisits = await getByIndex('visits', 'houseId', house.id);
-                                for (const visit of oldVisits) {
-                                    await deleteFromStore('visits', visit.id);
-                                }
+                                await deleteFromStore('visits', null, 'houseId', house.id);
+                                await deleteFromStore('people', null, 'houseId', house.id);
                                 await deleteFromStore('houses', house.id);
                             }
                         } else {
-                            // Territory is new, ADD it
-                            console.log(`Adding new territory: ${territoryName}`);
-                            // Add the new territory to get a new ID
-                            const newId = await addToStore('territories', {
-                                name: backupTerritory.name,
-                                number: backupTerritory.number,
-                                createdAt: backupTerritory.createdAt
-                            });
-                            targetTerritoryId = newId;
+                            targetTerritoryId = await addToStore('territories', { name: backupTerritory.name, number: backupTerritory.number, createdAt: backupTerritory.createdAt });
                         }
     
-                        // Add houses, people, and visits from the backup file, pointing to the correct territory ID
-                        for (const house of data.houses) {
-                            const oldHouseId = house.id; // Store the ID from the backup file
-                            // We must delete the old ID to let IndexedDB auto-generate a new one
-                            delete house.id; 
-                            house.territoryId = targetTerritoryId;                       
+                        // Corrected and robust restore logic
+                        for (const house of data.houses || []) {
+                            const oldHouseId = house.id;
+                            delete house.id;
+                            house.territoryId = targetTerritoryId;
                             const newHouseId = await addToStore('houses', house);
 
-                            // Find PEOPLE for this house and add them with the new house ID
-                            if (data.people) {
-                                const peopleForThisHouse = data.people.filter(p => p.houseId === oldHouseId);
-                                for (const person of peopleForThisHouse) {
-                                    const oldPersonId = person.id; // Store the old person ID
-                                    delete person.id;
-                                    person.houseId = newHouseId;
-                                    const newPersonId = await addToStore('people', person);
-                                
-                            // Find visits for THIS PERSON and update them with the new IDs
-                                const visitsForThisPerson = data.visits.filter(v => v.personId === oldPersonId);
-                                for (const visit of visitsForThisPerson) {
+                            for (const person of (data.people || []).filter(p => p.houseId === oldHouseId)) {
+                                const oldPersonId = person.id;
+                                delete person.id;
+                                person.houseId = newHouseId;
+                                const newPersonId = await addToStore('people', person);
+
+                                for (const visit of (data.visits || []).filter(v => v.personId === oldPersonId)) {
                                     delete visit.id;
                                     visit.houseId = newHouseId;
-                                    visit.personId = newPersonId; // Link to the newly created person
+                                    visit.personId = newPersonId;
                                     await addToStore('visits', visit);
                                 }
                             }
-                        }
-                    }
-                            
-                            // Find visits for this house and add them with the new house ID
-                            const visitsForThisHouse = data.visits.filter(v => v.houseId === house.id);
-                            for (const visit of visitsForThisHouse) {
-                                visit.houseId = newHouseId;
+                            for (const visit of (data.visits || []).filter(v => v.houseId === oldHouseId && !v.personId)) {
                                 delete visit.id;
+                                visit.houseId = newHouseId;
                                 await addToStore('visits', visit);
                             }
                         }
                         
-                        alert(`Territory "${territoryName}" has been imported successfully!`);
+                        alert(`Territory "${territoryName}" imported successfully!`);
                         await renderTerritories();
                         showView('territory-list-view');
                     }
                 } else {
-                    alert('Restore failed. The file format is not recognized.');
+                    alert('Restore failed. Unrecognized file format.');
                 }
             } catch (err) {
-                alert('Restore failed. The file may be corrupt or invalid.');
+                alert('Restore failed. The file may be corrupt.');
                 console.error(err);
             } finally {
-                event.target.value = ''; // Clear the input
+                event.target.value = '';
             }
         };
         reader.readAsText(file);
@@ -824,11 +725,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         for (const house of houses) {
             const visits = (await getByIndex('visits', 'houseId', house.id)).sort((a,b) => new Date(b.date) - new Date(a.date));
+            const peopleAtHouse = await getByIndex('people', 'houseId', house.id);
             const lastVisit = visits[0];
+            
+            let personName = '';
+            if (lastVisit) {
+                if (lastVisit.personId) {
+                    const person = peopleAtHouse.find(p => p.id === lastVisit.personId);
+                    if (person) personName = person.name;
+                } else if (lastVisit.personName) {
+                    personName = lastVisit.personName;
+                }
+            }
+
             const cleanNote = lastVisit ? `"${lastVisit.notes.replace(/"/g, '""')}"` : 'N/A';
             const status = house.isCurrentlyNH ? "Not at Home" : "OK";
             
-            csvContent += `"${house.address}",${status},${house.hasMailbox},${house.noTrespassing},${house.hasGate},${lastVisit ? new Date(lastVisit.date).toLocaleDateString() : 'N/A'},${cleanNote},"${lastVisit ? lastVisit.personName || '' : ''}"\n`;
+            csvContent += `"${house.address}",${status},${house.hasMailbox},${house.noTrespassing},${house.hasGate},${lastVisit ? new Date(lastVisit.date).toLocaleDateString() : 'N/A'},${cleanNote},"${personName}"\n`;
         }
 
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -866,6 +779,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             y += 7;
 
             const visits = (await getByIndex('visits', 'houseId', house.id)).sort((a, b) => new Date(b.date) - new Date(a.date));
+            const peopleAtHouse = await getByIndex('people', 'houseId', house.id);
+
             if (visits.length > 0) {
                  doc.setFont(undefined, 'bold');
                  doc.text("Visit History:", 16, y);
@@ -873,9 +788,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                  doc.setFont(undefined, 'normal');
                 for(const visit of visits) {
                      if (y > 280) { doc.addPage(); y = 20; }
-                     const personInfo = visit.personName ? `(Spoke with ${visit.personName})` : '';
+
+                     let personName = '';
+                     if (visit.personId) {
+                         const person = peopleAtHouse.find(p => p.id === visit.personId);
+                         if (person) personName = person.name;
+                     } else if (visit.personName) {
+                         personName = visit.personName;
+                     }
+                     const personInfo = personName ? `(Spoke with ${personName})` : '';
+
                      const visitText = `${new Date(visit.date).toLocaleDateString()} ${personInfo}: ${visit.notes}`;
-                     const splitText = doc.splitTextToSize(visitText, 170); // Wrap text
+                     const splitText = doc.splitTextToSize(visitText, 170);
                      doc.text(splitText, 18, y);
                      y += (splitText.length * 4) + 2;
                 }
