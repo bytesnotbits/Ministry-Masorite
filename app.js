@@ -466,7 +466,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
     // --- BACKUP & RESTORE FUNCTIONS ---
-    async function handleTerritoryBackup() { 
+    async function handleTerritoryBackup() {
         const territory = await getFromStore('territories', currentTerritoryId);
         const houses = await getByIndex('houses', 'territoryId', currentTerritoryId);
         let visits = [];
@@ -474,45 +474,108 @@ document.addEventListener('DOMContentLoaded', async () => {
             const houseVisits = await getByIndex('visits', 'houseId', house.id);
             visits.push(...houseVisits);
         }
-        
+
         const backupData = {
-        type: 'territory_backup', // <<< ADD THIS LINE
-        territories: [territory],
-        houses,
-        visits
-    };
+            type: 'territory_backup',
+            territories: [territory],
+            houses,
+            visits
+        };
 
         const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+        const filename = `${territory.name.replace(/[^\w\s]/gi, '').replace(/\s/g, '_')}.mscribe`;
+
+        // --- Try to use the Web Share API first ---
+        if (navigator.share && navigator.canShare) {
+            const file = new File([blob], filename, { type: 'application/json' });
+            if (navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        title: 'Territory Backup',
+                        text: `Ministry Scribe backup for ${territory.name}`,
+                        files: [file]
+                    });
+                    console.log('Territory backup shared successfully.');
+                    return; // <-- IMPORTANT: Exit function only on success.
+                } catch (err) {
+                    // If user cancels the share, we do nothing and exit.
+                    if (err.name === 'AbortError') {
+                        console.log('Share cancelled by user.');
+                        return;
+                    }
+                    // For any other error, log a warning and proceed to the fallback.
+                    console.warn('Web Share API failed, falling back to download.', err);
+                }
+            }
+        }
+
+        // --- Fallback for browsers that don't support sharing OR if sharing failed ---
+        console.log('Web Share not supported or failed, using download fallback.');
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `${territory.name.replace(/[^\w\s]/gi, '').replace(/\s/g, '_')}.mscribe`;
+        a.download = filename;
+        document.body.appendChild(a); // Append to body for greater compatibility
         a.click();
+        document.body.removeChild(a); // Clean up
         URL.revokeObjectURL(a.href);
     }
+
+
 
     // Full backup
     async function handleFullBackup() {
         console.log("Starting full database backup...");
         try {
             const backupData = {
-                type: 'full_backup', // TYPE IDENTIFIER
+                type: 'full_backup',
                 territories: await getAllFromStore('territories'),
                 houses: await getAllFromStore('houses'),
                 visits: await getAllFromStore('visits')
             };
-    
+
             const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+            const filename = `ministry_scribe_full_backup_${new Date().toISOString().split('T')[0]}.mscribe`;
+
+            // --- Try to use the Web Share API first ---
+            if (navigator.share && navigator.canShare) {
+                const file = new File([blob], filename, { type: 'application/json' });
+                if (navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            title: 'Full Ministry Scribe Backup',
+                            text: 'Full database backup for Ministry Scribe.',
+                            files: [file]
+                        });
+                        console.log('Full backup shared successfully.');
+                        return; // <-- IMPORTANT: Exit function only on success.
+                    } catch (err) {
+                        // If user cancels the share, we do nothing and exit.
+                        if (err.name === 'AbortError') {
+                            console.log('Share cancelled by user.');
+                            return;
+                        }
+                        // For any other error, log a warning and proceed to the fallback.
+                        console.warn('Web Share API failed, falling back to download.', err);
+                    }
+                }
+            }
+            
+            // --- Fallback for browsers that don't support sharing OR if sharing failed ---
+            console.log('Web Share not supported or failed, using download fallback.');
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `ministry_scribe_full_backup_${new Date().toISOString().split('T')[0]}.mscribe`;
+            a.download = filename;
+            document.body.appendChild(a); // Append to body
             a.click();
+            document.body.removeChild(a); // Clean up
             URL.revokeObjectURL(a.href);
-            console.log("Full backup successful.");
+
         } catch (error) {
-            console.error("Full backup failed:", error);
+            console.error("Full backup failed during data gathering:", error);
             alert("Could not perform the full backup.");
         }
     }
+
 
     async function handleRestore(event) {
         const file = event.target.files[0];
