@@ -140,13 +140,45 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('notrespass-check').checked = house.noTrespassing;
         document.getElementById('gate-check').checked = house.hasGate || false;
         document.getElementById('not-at-home-check').checked = house.isCurrentlyNH || false;
-        
+
+        // --- NEW: POPULATE PEOPLE LIST ---
+        const peopleList = document.getElementById('people-list');
+        peopleList.innerHTML = '';
+        const people = await getByIndex('people', 'houseId', houseId);
+
+        if (people.length > 0) {
+            for (const person of people) {
+                const li = document.createElement('li');
+                const rvBadge = person.isRV ? '<span class="rv-badge">RV</span>' : '';
+                li.innerHTML = `
+                    <span>${person.name}${rvBadge}</span>
+                    <div style="position: absolute; bottom: 5px; right: 10px;">
+                        <button class="edit-person-btn" data-id="${person.id}">Edit</button>
+                        <button class="delete-person-btn" data-id="${person.id}">Delete</button>
+                    </div>
+                `;
+                peopleList.appendChild(li);
+            }
+        } else {
+            peopleList.innerHTML = '<li class="placeholder">No individuals recorded yet.</li>';
+        }
+
+        // --- RENDER VISIT HISTORY (with name lookup) ---
         visitList.innerHTML = '';
         const visits = (await getByIndex('visits', 'houseId', houseId)).sort((a, b) => new Date(b.date) - new Date(a.date));
 
         for (const visit of visits) {
             const li = document.createElement('li');
-            const personInfo = visit.personName ? `Spoke with: <strong>${visit.personName}</strong><br>` : '';
+            let personInfo = '';
+            if (visit.personId) {
+                // New system: look up the name from the people array
+                const person = people.find(p => p.id === visit.personId);
+                if (person) personInfo = `Spoke with: <strong>${person.name}</strong><br>`;
+            } else if (visit.personName) {
+                // Backwards compatibility for old notes
+                personInfo = `Spoke with: <strong>${visit.personName}</strong><br>`;
+            }
+
             li.innerHTML = `
                 <div>
                     <span>${new Date(visit.date).toLocaleDateString()}</span>
@@ -166,6 +198,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const modalPersonName = document.getElementById('modal-person-name');
         const modalVisitNotes = document.getElementById('modal-visit-notes');
         const modalRemoveNHCheck = document.getElementById('modal-remove-nh-check');
+        const personSelect = document.getElementById('modal-person-select');
+        const newPersonFields = document.getElementById('new-person-fields');
+        const newPersonNameInput = document.getElementById('modal-new-person-name');
+        const isRvCheck = document.getElementById('modal-is-rv-check');
     
         // --- Get Territory Modal Elements ---
         const territoryModal = document.getElementById('territory-modal');
@@ -178,14 +214,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         const houseModalToggles = document.querySelector('#house-modal .modal-toggles');
     
         // --- Show/Hide Note Modal Functions ---
-        const showNoteModal = () => noteModal.classList.remove('hidden');
-        const hideNoteModal = () => {
-            noteModal.classList.add('hidden');
-            modalPersonName.value = '';
-            modalVisitNotes.value = '';
-            modalRemoveNHCheck.checked = false;
+        const showNoteModal = async () => {
+            // Populate the dropdown before showing the modal
+            personSelect.innerHTML = '<option value="">[No Person]</option>';
+            const people = await getByIndex('people', 'houseId', currentHouseId);
+            for (const person of people) {
+                const option = document.createElement('option');
+                option.value = person.id;
+                option.textContent = person.name + (person.isRV ? ' (RV)' : '');
+                personSelect.appendChild(option);
+            }
+            personSelect.innerHTML += '<option value="new_person">[Add New Person]</option>';
+  
+            // Reset fields
+            newPersonFields.classList.add('hidden');
+            newPersonNameInput.value = '';
+            isRvCheck.checked = false;
+            
+            noteModal.classList.remove('hidden');
         };
-    
+
+        personSelect.addEventListener('change', () => {
+            newPersonFields.classList.toggle('hidden', personSelect.value !== 'new_person');
+        });
+
         // --- Show/Hide Territory Modal Functions ---
         const showTerritoryModal = () => {
             territoryModal.classList.remove('hidden');
@@ -257,6 +309,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     
         // --- Main Click Handler ---
         document.addEventListener('click', async (e) => {
+            if (target.classList.contains('edit-person-btn')) {
+                const personId = Number(target.dataset.id);
+                const person = await getFromStore('people', personId);
+                const newName = prompt('Enter the new name:', person.name);
+                if (newName) {
+                    person.name = newName;
+                    await updateInStore('people', person);
+                    await renderHouseDetails(currentHouseId);
+                }
+            }
+
+            if (target.classList.contains('delete-person-btn')) {
+                const personId = Number(target.dataset.id);
+                if (confirm('Are you sure you want to delete this person? This will not delete their past visit notes.')) {
+                    await deleteFromStore('people', personId);
+                    await renderHouseDetails(currentHouseId);
+                }
+            }
             const target = e.target;
     
             // Log 'NH' Button
@@ -409,51 +479,42 @@ document.addEventListener('DOMContentLoaded', async () => {
                 alert('Please enter some notes for the visit.');
                 return;
             }
+
+            let personId = null;
+
+            // Check if we are adding a new person or using an existing one
+            if (personSelect.value === 'new_person') {
+                const newName = newPersonNameInput.value.trim();
+                if (newName) {
+                    const newPerson = {
+                        houseId: currentHouseId,
+                        name: newName,
+                        isRV: isRvCheck.checked
+                    };
+                    personId = await addToStore('people', newPerson);
+                }
+            } else if (personSelect.value) {
+                personId = Number(personSelect.value);
+            }
+
+            // Now save the visit note with the personId
             await addToStore('visits', {
                 houseId: currentHouseId,
                 date: new Date().toISOString(),
                 notes: notes,
-                personName: modalPersonName.value || '',
+                personId: personId, // Store the ID, not the name
                 isNotAtHome: false
             });
+            
+            // Update the house's NH status
             const house = await getFromStore('houses', currentHouseId);
-            if (modalRemoveNHCheck.checked) {
-                house.isCurrentlyNH = false;
-            } else if (house.isCurrentlyNH) {
+            if (modalRemoveNHCheck.checked || house.isCurrentlyNH) {
                 house.isCurrentlyNH = false;
             }
             await updateInStore('houses', house);
+            
             hideNoteModal();
-            await renderHouseDetails(currentHouseId);
-        });
-        document.getElementById('modal-cancel-btn').addEventListener('click', hideNoteModal);
-        noteModal.querySelector('.close-modal-btn').addEventListener('click', hideNoteModal);
-    
-        // House Detail Checkboxes
-        document.getElementById('mailbox-check').addEventListener('change', async (e) => {
-            if (!currentHouseId) return;
-            const house = await getFromStore('houses', currentHouseId);
-            house.hasMailbox = e.target.checked;
-            await updateInStore('houses', house);
-        });
-        document.getElementById('notrespass-check').addEventListener('change', async (e) => {
-            if (!currentHouseId) return;
-            const house = await getFromStore('houses', currentHouseId);
-            house.noTrespassing = e.target.checked;
-            await updateInStore('houses', house);
-        });
-        document.getElementById('gate-check').addEventListener('change', async (e) => {
-            if (!currentHouseId) return;
-            const house = await getFromStore('houses', currentHouseId);
-            house.hasGate = e.target.checked;
-            await updateInStore('houses', house);
-        });
-        document.getElementById('not-at-home-check').addEventListener('change', async (e) => {
-            if (!currentHouseId) return;
-            const house = await getFromStore('houses', currentHouseId);
-            house.isCurrentlyNH = e.target.checked;
-            await updateInStore('houses', house);
-            await renderHouseDetails(currentHouseId);
+            await renderHouseDetails(currentHouseId); // Re-render everything
         });
     
     // Data Management Event Listeners

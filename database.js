@@ -20,6 +20,11 @@ function initDB() {
                 const visitsStore = db.createObjectStore('visits', { keyPath: 'id', autoIncrement: true });
                 visitsStore.createIndex('houseId', 'houseId', { unique: false });
             }
+
+            if (!db.objectStoreNames.contains('people')) {
+                const peopleStore = db.createObjectStore('people', { keyPath: 'id', autoIncrement: true });
+                peopleStore.createIndex('houseId', 'houseId', { unique: false });
+            }
         };
 
         request.onsuccess = (event) => {
