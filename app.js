@@ -518,7 +518,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         // --- NEW: Add event listener for house detail checkboxes ---
-        document.getElementById('house-detail-view').addEventListener('change', async (e) => {
+        document.getElementById('house-detail-view').addEventListener('click', async (e) => {
             if (e.target.type !== 'checkbox') return; // Only act on checkboxes
 
             const house = await getFromStore('houses', currentHouseId);
