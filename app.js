@@ -589,9 +589,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const territory = await getFromStore('territories', currentTerritoryId);
         const houses = await getByIndex('houses', 'territoryId', currentTerritoryId);
         let visits = [];
+        let people = [];
         for (const house of houses) {
             const houseVisits = await getByIndex('visits', 'houseId', house.id);
             visits.push(...houseVisits);
+            const housePeople = await getByIndex('people', 'houseId', house.id);
+            people.push(...housePeople);
         }
 
         const backupData = {
@@ -599,6 +602,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             territories: [territory],
             houses,
             visits
+            people
         };
 
         const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
@@ -650,6 +654,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 territories: await getAllFromStore('territories'),
                 houses: await getAllFromStore('houses'),
                 visits: await getAllFromStore('visits')
+                people: await getAllFromStore('people')
             };
 
             const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
@@ -713,6 +718,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         if (data.territories) for (const item of data.territories) await addToStore('territories', item);
                         if (data.houses) for (const item of data.houses) await addToStore('houses', item);
                         if (data.visits) for (const item of data.visits) await addToStore('visits', item);
+                        if (data.people) for (const item of data.people) await addToStore('people', item);
                         alert('Full restore successful!');
                         await renderTerritories();
                         showView('territory-list-view');
@@ -755,12 +761,34 @@ document.addEventListener('DOMContentLoaded', async () => {
                             targetTerritoryId = newId;
                         }
     
-                        // Add houses and visits from the backup file, pointing to the correct territory ID
+                        // Add houses, people, and visits from the backup file, pointing to the correct territory ID
                         for (const house of data.houses) {
-                            house.territoryId = targetTerritoryId;
+                            const oldHouseId = house.id; // Store the ID from the backup file
                             // We must delete the old ID to let IndexedDB auto-generate a new one
                             delete house.id; 
+                            house.territoryId = targetTerritoryId;                       
                             const newHouseId = await addToStore('houses', house);
+
+                            // Find PEOPLE for this house and add them with the new house ID
+                            if (data.people) {
+                                const peopleForThisHouse = data.people.filter(p => p.houseId === oldHouseId);
+                                for (const person of peopleForThisHouse) {
+                                    const oldPersonId = person.id; // Store the old person ID
+                                    delete person.id;
+                                    person.houseId = newHouseId;
+                                    const newPersonId = await addToStore('people', person);
+                                
+                            // Find visits for THIS PERSON and update them with the new IDs
+                                const visitsForThisPerson = data.visits.filter(v => v.personId === oldPersonId);
+                                for (const visit of visitsForThisPerson) {
+                                    delete visit.id;
+                                    visit.houseId = newHouseId;
+                                    visit.personId = newPersonId; // Link to the newly created person
+                                    await addToStore('visits', visit);
+                                }
+                            }
+                        }
+                    }
                             
                             // Find visits for this house and add them with the new house ID
                             const visitsForThisHouse = data.visits.filter(v => v.houseId === house.id);

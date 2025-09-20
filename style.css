@@ -250,7 +250,8 @@ textarea { width: 100%; box-sizing: border-box; }
 }
 
 .modal-content input[type="text"],
-.modal-content textarea {
+.modal-content textarea,
+.modal-content select {
     width: 100%;
     font-size: 16px;
     padding: 10px;
