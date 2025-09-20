@@ -234,6 +234,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             noteModal.classList.remove('hidden');
         };
 
+        const hideNoteModal = () => {
+            noteModal.classList.add('hidden');
+            // Reset all the form fields to their default state for the next use
+            document.getElementById('modal-visit-notes').value = '';
+            document.getElementById('modal-person-select').value = '';
+            document.getElementById('modal-remove-nh-check').checked = false;
+            newPersonNameInput.value = '';
+            isRvCheck.checked = false;
+            newPersonFields.classList.add('hidden');
+        };
+
         personSelect.addEventListener('change', () => {
             newPersonFields.classList.toggle('hidden', personSelect.value !== 'new_person');
         });
