@@ -518,35 +518,50 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         // --- NEW: Add event listener for house detail checkboxes ---
-        document.getElementById('house-detail-view').addEventListener('click', async (e) => {
-            if (e.target.type !== 'checkbox') return; // Only act on checkboxes
-
-            const house = await getFromStore('houses', currentHouseId);
-            if (!house) return;
-
-            switch (e.target.id) {
-                case 'not-at-home-check':
-                    house.isCurrentlyNH = e.target.checked;
-                    break;
-                case 'mailbox-check':
-                    house.hasMailbox = e.target.checked;
-                    break;
-                case 'notrespass-check':
-                    house.noTrespassing = e.target.checked;
-                    break;
-                case 'gate-check':
-                    house.hasGate = e.target.checked;
-                    break;
+        document.getElementById('house-detail-view').addEventListener('click', (e) => {
+            // We only care about clicks on our specific checkboxes
+            if (e.target.type !== 'checkbox' || !['not-at-home-check', 'mailbox-check', 'notrespass-check', 'gate-check'].includes(e.target.id)) {
+                return;
             }
 
-            await updateInStore('houses', house);
-            console.log('House details updated.');
+            // The target element from the event
+            const checkbox = e.target;
+
+            // Use setTimeout to allow the browser to update the checkbox's 'checked' state
+            // before we try to read it. This is a critical fix for iOS Safari.
+            setTimeout(async () => {
+                const house = await getFromStore('houses', currentHouseId);
+                if (!house) {
+                    console.error("Could not find house to update.");
+                    return;
+                }
+
+                // Now we can safely read the 'checked' property
+                const isChecked = checkbox.checked;
+                console.log(`Updating ${checkbox.id} to: ${isChecked}`); // Diagnostic log
+
+                switch (checkbox.id) {
+                    case 'not-at-home-check':
+                        house.isCurrentlyNH = isChecked;
+                        break;
+                    case 'mailbox-check':
+                        house.hasMailbox = isChecked;
+                        break;
+                    case 'notrespass-check':
+                        house.noTrespassing = isChecked;
+                        break;
+                    case 'gate-check':
+                        house.hasGate = isChecked;
+                        break;
+                }
+
+                await updateInStore('houses', house);
+                console.log('House details update saved.');
+            }, 0);
         });
 
+
         // Data Management Event Listeners
-        document.getElementById('export-full-btn').addEventListener('click', handleFullBackup);
-    
-    // Data Management Event Listeners
         document.getElementById('export-full-btn').addEventListener('click', handleFullBackup); // NEW
         document.getElementById('export-mscribe-btn').addEventListener('click', handleTerritoryBackup); // RENAMED
         document.getElementById('export-csv-btn').addEventListener('click', handleExportCSV);
