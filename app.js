@@ -474,57 +474,56 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('add-visit-btn').addEventListener('click', showNoteModal);
     
         // NOTE MODAL event listeners
-        // --- NOTE MODAL EVENT LISTENERS ---
         document.getElementById('modal-save-note-btn').addEventListener('click', async () => {
-            const notes = modalVisitNotes.value.trim();
-            const personName = personInput.value.trim();
+        const notes = modalVisitNotes.value.trim();
+        const personName = personInput.value.trim();
 
-            if (!notes) {
-                alert('Please enter some notes for the visit.');
-                return;
+        if (!notes) {
+            alert('Please enter some notes for the visit.');
+            return;
+        }
+
+        let personId = null;
+
+        // Logic to determine if we're using an existing person or creating a new one
+        if (selectedPersonId) {
+            // User selected an existing person from the list
+            personId = selectedPersonId;
+            // Check if the RV status was changed and update if necessary
+            const person = await getFromStore('people', personId);
+            if (person.isRV !== isRvCheck.checked) {
+                person.isRV = isRvCheck.checked;
+                await updateInStore('people', person);
             }
-
-            let personId = null;
-
-            // Logic to determine if we're using an existing person or creating a new one
-            if (selectedPersonId) {
-                // User selected an existing person from the list
-                personId = selectedPersonId;
-                // Check if the RV status was changed and update if necessary
-                const person = await getFromStore('people', personId);
-                if (person.isRV !== isRvCheck.checked) {
-                    person.isRV = isRvCheck.checked;
-                    await updateInStore('people', person);
-                }
-            } else if (personName) {
-                // User typed a new name
-                const newPerson = {
-                    houseId: currentHouseId,
-                    name: personName,
-                    isRV: isRvCheck.checked
-                };
-                personId = await addToStore('people', newPerson);
-            }
-
-            // Now save the visit note
-            await addToStore('visits', {
+        } else if (personName) {
+            // User typed a new name
+            const newPerson = {
                 houseId: currentHouseId,
-                date: new Date().toISOString(),
-                notes: notes,
-                personId: personId, // Store the ID
-                isNotAtHome: false
-            });
-            
-            // Update the house's NH status
-            const house = await getFromStore('houses', currentHouseId);
-            if (modalRemoveNHCheck.checked || house.isCurrentlyNH) {
-                house.isCurrentlyNH = false;
-                await updateInStore('houses', house);
-            }
-            
-            noteModal.classList.add('hidden');
-            await renderHouseDetails(currentHouseId);
+                name: personName,
+                isRV: isRvCheck.checked
+            };
+            personId = await addToStore('people', newPerson);
+        }
+
+        // Now save the visit note
+        await addToStore('visits', {
+            houseId: currentHouseId,
+            date: new Date().toISOString(), // <-- THIS LINE IS NOW CORRECT
+            notes: notes,
+            personId: personId, // Store the ID
+            isNotAtHome: false
         });
+        
+        // Update the house's NH status
+        const house = await getFromStore('houses', currentHouseId);
+        if (modalRemoveNHCheck.checked || house.isCurrentlyNH) {
+            house.isCurrentlyNH = false;
+            await updateInStore('houses', house);
+        }
+        
+        noteModal.classList.add('hidden');
+        await renderHouseDetails(currentHouseId);
+    });
 
     // Add listeners for the cancel and close buttons
     document.getElementById('modal-cancel-btn').addEventListener('click', () => noteModal.classList.add('hidden'));
