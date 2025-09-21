@@ -157,10 +157,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <button class="icon-btn delete-person-btn" data-id="${person.id}" title="Delete Person">X</button>
                     </div>
                 `;
-
                 peopleList.appendChild(li);
             }
-        } else {
+        }
+            else {
             peopleList.innerHTML = '<li class="placeholder">No individuals recorded yet.</li>';
         }
 
