@@ -509,7 +509,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Now save the visit note
             await addToStore('visits', {
                 houseId: currentHouseId,
-                date: newtoISOString(),
+                date: new Date().toISOString(),
                 notes: notes,
                 personId: personId, // Store the ID
                 isNotAtHome: false
