@@ -166,6 +166,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const modalPersonName = document.getElementById('modal-person-name');
         const modalVisitNotes = document.getElementById('modal-visit-notes');
         const modalRemoveNHCheck = document.getElementById('modal-remove-nh-check');
+        const personInput = document.getElementById('modal-person-input');
+        const personSuggestions = document.getElementById('modal-person-suggestions');
+        const rvToggleWrapper = document.getElementById('rv-toggle-wrapper');
+        const isRvCheck = document.getElementById('modal-is-rv-check');
+
+        let selectedPersonId = null;
     
         // --- Get Territory Modal Elements ---
         const territoryModal = document.getElementById('territory-modal');
@@ -178,13 +184,78 @@ document.addEventListener('DOMContentLoaded', async () => {
         const houseModalToggles = document.querySelector('#house-modal .modal-toggles');
     
         // --- Show/Hide Note Modal Functions ---
-        const showNoteModal = () => noteModal.classList.remove('hidden');
-        const hideNoteModal = () => {
-            noteModal.classList.add('hidden');
-            modalPersonName.value = '';
-            modalVisitNotes.value = '';
-            modalRemoveNHCheck.checked = false;
-        };
+        const showNoteModal = async () => {
+        // 1. Reset everything
+        personInput.value = '';
+        modalVisitNotes.value = '';
+        personSuggestions.innerHTML = '';
+        personSuggestions.classList.add('hidden');
+        rvToggleWrapper.style.display = 'none'; // Hide RV toggle initially
+        isRvCheck.checked = false;
+        modalRemoveNHCheck.checked = false;
+        selectedPersonId = null;
+
+        // 2. Fetch people and build the suggestion list
+        const people = await getByIndex('people', 'houseId', currentHouseId);
+        for (const person of people) {
+            const item = document.createElement('div');
+            item.className = 'suggestion-item';
+            item.textContent = person.name;
+            item.dataset.id = person.id;
+            item.dataset.name = person.name;
+            item.dataset.isRv = person.isRV; // Store RV status
+
+            if (person.isRV) {
+                const badge = document.createElement('small');
+                badge.textContent = 'RV';
+                item.appendChild(badge);
+            }
+            personSuggestions.appendChild(item);
+        }
+
+        // 3. Show the modal
+        noteModal.classList.remove('hidden');
+        personInput.focus();
+    };
+
+    // --- COMBOBOX EVENT LISTENERS ---
+
+    // Show suggestions on focus
+    personInput.addEventListener('focus', () => {
+        personSuggestions.classList.remove('hidden');
+    });
+
+    // Hide suggestions on blur (with a delay to allow clicks on items)
+    personInput.addEventListener('blur', () => {
+        setTimeout(() => {
+            personSuggestions.classList.add('hidden');
+        }, 150); // Delay allows click event to fire on suggestion items
+    });
+
+    // Filter suggestions as user types
+    personInput.addEventListener('input', () => {
+        const filterText = personInput.value.toLowerCase();
+        selectedPersonId = null; // Clear selection when user types
+        rvToggleWrapper.style.display = 'block'; // Show RV toggle for new person
+
+        const items = personSuggestions.querySelectorAll('.suggestion-item');
+        items.forEach(item => {
+            const itemName = item.dataset.name.toLowerCase();
+            item.style.display = itemName.includes(filterText) ? '' : 'none';
+        });
+    });
+
+    // Handle clicking on a suggestion
+    personSuggestions.addEventListener('click', (e) => {
+        const item = e.target.closest('.suggestion-item');
+        if (item) {
+            personInput.value = item.dataset.name;
+            selectedPersonId = Number(item.dataset.id);
+            isRvCheck.checked = (item.dataset.isRv === 'true'); // Set RV checkbox
+            rvToggleWrapper.style.display = 'block'; // Show RV toggle
+            personSuggestions.classList.add('hidden');
+        }
+    });
     
         // --- Show/Hide Territory Modal Functions ---
         const showTerritoryModal = () => {
@@ -403,58 +474,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('add-visit-btn').addEventListener('click', showNoteModal);
     
         // NOTE MODAL event listeners
+        // --- NOTE MODAL EVENT LISTENERS ---
         document.getElementById('modal-save-note-btn').addEventListener('click', async () => {
-            const notes = modalVisitNotes.value;
+            const notes = modalVisitNotes.value.trim();
+            const personName = personInput.value.trim();
+
             if (!notes) {
                 alert('Please enter some notes for the visit.');
                 return;
             }
+
+            let personId = null;
+
+            // Logic to determine if we're using an existing person or creating a new one
+            if (selectedPersonId) {
+                // User selected an existing person from the list
+                personId = selectedPersonId;
+                // Check if the RV status was changed and update if necessary
+                const person = await getFromStore('people', personId);
+                if (person.isRV !== isRvCheck.checked) {
+                    person.isRV = isRvCheck.checked;
+                    await updateInStore('people', person);
+                }
+            } else if (personName) {
+                // User typed a new name
+                const newPerson = {
+                    houseId: currentHouseId,
+                    name: personName,
+                    isRV: isRvCheck.checked
+                };
+                personId = await addToStore('people', newPerson);
+            }
+
+            // Now save the visit note
             await addToStore('visits', {
                 houseId: currentHouseId,
-                date: new Date().toISOString(),
+                date: newtoISOString(),
                 notes: notes,
-                personName: modalPersonName.value || '',
+                personId: personId, // Store the ID
                 isNotAtHome: false
             });
+            
+            // Update the house's NH status
             const house = await getFromStore('houses', currentHouseId);
-            if (modalRemoveNHCheck.checked) {
+            if (modalRemoveNHCheck.checked || house.isCurrentlyNH) {
                 house.isCurrentlyNH = false;
-            } else if (house.isCurrentlyNH) {
-                house.isCurrentlyNH = false;
+                await updateInStore('houses', house);
             }
-            await updateInStore('houses', house);
-            hideNoteModal();
+            
+            noteModal.classList.add('hidden');
             await renderHouseDetails(currentHouseId);
         });
-        document.getElementById('modal-cancel-btn').addEventListener('click', hideNoteModal);
-        noteModal.querySelector('.close-modal-btn').addEventListener('click', hideNoteModal);
-    
-        // House Detail Checkboxes
-        document.getElementById('mailbox-check').addEventListener('change', async (e) => {
-            if (!currentHouseId) return;
-            const house = await getFromStore('houses', currentHouseId);
-            house.hasMailbox = e.target.checked;
-            await updateInStore('houses', house);
-        });
-        document.getElementById('notrespass-check').addEventListener('change', async (e) => {
-            if (!currentHouseId) return;
-            const house = await getFromStore('houses', currentHouseId);
-            house.noTrespassing = e.target.checked;
-            await updateInStore('houses', house);
-        });
-        document.getElementById('gate-check').addEventListener('change', async (e) => {
-            if (!currentHouseId) return;
-            const house = await getFromStore('houses', currentHouseId);
-            house.hasGate = e.target.checked;
-            await updateInStore('houses', house);
-        });
-        document.getElementById('not-at-home-check').addEventListener('change', async (e) => {
-            if (!currentHouseId) return;
-            const house = await getFromStore('houses', currentHouseId);
-            house.isCurrentlyNH = e.target.checked;
-            await updateInStore('houses', house);
-            await renderHouseDetails(currentHouseId);
-        });
+
+    // Add listeners for the cancel and close buttons
+    document.getElementById('modal-cancel-btn').addEventListener('click', () => noteModal.classList.add('hidden'));
+    noteModal.querySelector('.close-modal-btn').addEventListener('click', () => noteModal.classList.add('hidden'));
     
     // Data Management Event Listeners
         document.getElementById('export-full-btn').addEventListener('click', handleFullBackup); // NEW
