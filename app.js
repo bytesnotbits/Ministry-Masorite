@@ -134,19 +134,51 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function renderHouseDetails(houseId) {
-        const house = await getFromStore('houses', houseId);
-        document.getElementById('house-detail-address').textContent = house.address;
-        document.getElementById('mailbox-check').checked = house.hasMailbox;
-        document.getElementById('notrespass-check').checked = house.noTrespassing;
-        document.getElementById('gate-check').checked = house.hasGate || false;
-        document.getElementById('not-at-home-check').checked = house.isCurrentlyNH || false;
-        
+            const house = await getFromStore('houses', houseId);
+            document.getElementById('house-detail-address').textContent = house.address;
+            document.getElementById('mailbox-check').checked = house.hasMailbox;
+            document.getElementById('notrespass-check').checked = house.noTrespassing;
+            document.getElementById('gate-check').checked = house.hasGate || false;
+            document.getElementById('not-at-home-check').checked = house.isCurrentlyNH || false;
+
+            // --- NEW: POPULATE PEOPLE LIST ---
+            const peopleList = document.getElementById('people-list');
+            peopleList.innerHTML = '';
+            const people = await getByIndex('people', 'houseId', houseId);
+
+            if (people.length > 0) {
+                for (const person of people) {
+                    const li = document.createElement('li');
+                    const rvBadge = person.isRV ? '<span class="rv-badge">RV</span>' : '';
+                    li.innerHTML = `
+                        <span>${person.name}${rvBadge}</span>
+                        <div style="position: absolute; bottom: 5px; right: 10px;">
+                            <button class="edit-person-btn" data-id="${person.id}">Edit</button>
+                            <button class="delete-person-btn" data-id="${person.id}">Delete</button>
+                        </div>
+                    `;
+                    peopleList.appendChild(li);
+                }
+            } else {
+                peopleList.innerHTML = '<li class="placeholder">No individuals recorded yet.</li>';
+            }
+
+        // --- UPGRADED: RENDER VISIT HISTORY (with name lookup) ---
         visitList.innerHTML = '';
         const visits = (await getByIndex('visits', 'houseId', houseId)).sort((a, b) => new Date(b.date) - new Date(a.date));
 
         for (const visit of visits) {
             const li = document.createElement('li');
-            const personInfo = visit.personName ? `Spoke with: <strong>${visit.personName}</strong><br>` : '';
+            let personInfo = '';
+            if (visit.personId) {
+                // New system: look up the name from the people array
+                const person = people.find(p => p.id === visit.personId);
+                if (person) personInfo = `Spoke with: <strong>${person.name}</strong><br>`;
+            } else if (visit.personName) {
+                // Backwards compatibility for old notes
+                personInfo = `Spoke with: <strong>${visit.personName}</strong><br>`;
+            }
+
             li.innerHTML = `
                 <div>
                     <span>${new Date(visit.date).toLocaleDateString()}</span>
@@ -159,6 +191,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             visitList.appendChild(li);
         }
     }
+
 
     function setupEventListeners() {
         // --- Get Note Modal Elements ---
@@ -329,6 +362,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         // --- Main Click Handler ---
         document.addEventListener('click', async (e) => {
             const target = e.target;
+
+        if (target.classList.contains('edit-person-btn')) {
+                const personId = Number(target.dataset.id);
+                const person = await getFromStore('people', personId);
+                const newName = prompt('Enter the new name:', person.name);
+                if (newName && newName.trim()) {
+                    person.name = newName.trim();
+                    await updateInStore('people', person);
+                    await renderHouseDetails(currentHouseId);
+                }
+            }
+
+            if (target.classList.contains('delete-person-btn')) {
+                const personId = Number(target.dataset.id);
+                if (confirm('Are you sure you want to delete this person? This will not delete their past visit notes, which will appear without a name.')) {
+                    await deleteFromStore('people', personId);
+                    await renderHouseDetails(currentHouseId);
+                }
+            }
     
             // Log 'NH' Button
             if (target.classList.contains('log-nh-btn')) {
@@ -386,6 +438,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     for (const house of houses) {
                         const visits = await getByIndex('visits', 'houseId', house.id);
                         for (const visit of visits) await deleteFromStore('visits', visit.id);
+                        const people = await getByIndex('people', 'houseId', house.id);
+                        for (const person of people) await deleteFromStore('people', person.id);
                         await deleteFromStore('houses', house.id);
                     }
                     await deleteFromStore('territories', id);
@@ -393,6 +447,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } else if (type === 'house' && confirm('Are you sure you want to delete this house and all its visit history?')) {
                     const visits = await getByIndex('visits', 'houseId', id);
                     for (const visit of visits) await deleteFromStore('visits', visit.id);
+                    const people = await getByIndex('people', 'houseId', id);
+                    for (const person of people) await deleteFromStore('people', person.id);
                     await deleteFromStore('houses', id);
                     await renderHouses(currentTerritoryId);
                 } else if (type === 'visit' && confirm('Delete this visit note?')) {
