@@ -87,21 +87,18 @@
                 <button class="close-modal-btn">&times;</button>
                 <h3>Add Visit Note</h3>
 
-                <label for="modal-person-select">Person Met</label>
-                <select id="modal-person-select">
-                    <option value="">[No Person]</option>
-                    <!-- Existing people will be populated here by JS -->
-                    <option value="new_person">[Add New Person]</option>
-                </select>
-
-                <div id="new-person-fields" class="hidden">
-                    <label for="modal-new-person-name">New Person's Name</label>
-                    <input type="text" id="modal-new-person-name">
-                    <label class="modal-toggle">
-                        <input type="checkbox" id="modal-is-rv-check">
-                        Mark as Return Visit (RV)
-                    </label>
+                                <label for="modal-person-input">Person Met</label>
+                <div class="combobox-container">
+                    <input type="text" id="modal-person-input" placeholder="Type or select a name..." autocomplete="off">
+                    <div id="modal-suggestions-list" class="suggestions-list hidden">
+                        <!-- Suggestions will be populated by JavaScript -->
+                    </div>
                 </div>
+
+                <label class="modal-toggle" id="modal-rv-toggle">
+                    <input type="checkbox" id="modal-is-rv-check">
+                    Mark as Return Visit (RV)
+                </label>
 
                 <label for="modal-visit-notes">Visit Notes</label>
                 <textarea id="modal-visit-notes" rows="4"></textarea>
@@ -167,7 +164,7 @@
 
 <footer class="p-4 text-sm text-left mt-4">
         <ul class="list-disc pl-5 mt-1">
-            <li>Version 0.21.01 improve UI/UX for householder name edit/delete buttons</li>
+            <li>Version 0.21.02 improve UI/UX for householder name edit/delete buttons</li>
         </ul>
     </footer>
     
