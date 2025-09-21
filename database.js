@@ -1,6 +1,6 @@
 // --- DATABASE INITIALIZATION ---
 const DB_NAME = 'MinistryScribeDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // STEP 1: Incremented version to trigger upgrade
 let db;
 
 function initDB() {
@@ -19,6 +19,11 @@ function initDB() {
             if (!db.objectStoreNames.contains('visits')) {
                 const visitsStore = db.createObjectStore('visits', { keyPath: 'id', autoIncrement: true });
                 visitsStore.createIndex('houseId', 'houseId', { unique: false });
+            }
+            // STEP 2: Add the new 'people' object store
+            if (!db.objectStoreNames.contains('people')) {
+                const peopleStore = db.createObjectStore('people', { keyPath: 'id', autoIncrement: true });
+                peopleStore.createIndex('houseId', 'houseId', { unique: false });
             }
         };
 
@@ -97,7 +102,8 @@ function getByIndex(storeName, indexName, value) {
 }
 
 async function clearAllStores() {
-    const storeNames = ['territories', 'houses', 'visits'];
+    // STEP 3: Add 'people' to the list of stores to clear
+    const storeNames = ['territories', 'houses', 'visits', 'people'];
     const transaction = db.transaction(storeNames, 'readwrite');
     for (const storeName of storeNames) {
         transaction.objectStore(storeName).clear();
