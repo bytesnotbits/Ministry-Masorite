@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentTerritoryId = null;
     let currentHouseId = null;
     let territorySort = 'name';
+    let selectedPersonId = null;
 
     // --- DOM ELEMENTS ---
     const views = document.querySelectorAll('.view');
@@ -197,9 +198,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // --- Get Note Modal Elements ---
         const noteModal = document.getElementById('note-modal');
         const modalVisitNotes = document.getElementById('modal-visit-notes');
-        const personSelect = document.getElementById('modal-person-select');
-        const newPersonFields = document.getElementById('new-person-fields');
-        const newPersonNameInput = document.getElementById('modal-new-person-name');
+        const personInput = document.getElementById('modal-person-input');
+        const suggestionsList = document.getElementById('modal-suggestions-list');
+        const rvToggle = document.getElementById('modal-rv-toggle');
         const isRvCheck = document.getElementById('modal-is-rv-check');
         const modalRemoveNHCheck = document.getElementById('modal-remove-nh-check');
     
@@ -215,42 +216,96 @@ document.addEventListener('DOMContentLoaded', async () => {
     
         // --- Show/Hide Note Modal Functions ---
         const showNoteModal = async () => {
-            // Populate the dropdown before showing the modal
-            personSelect.innerHTML = '<option value="">[No Person]</option>';
-            const people = await getByIndex('people', 'houseId', currentHouseId);
-            for (const person of people) {
-                const option = document.createElement('option');
-                option.value = person.id;
-                option.textContent = person.name + (person.isRV ? ' (RV)' : '');
-                personSelect.appendChild(option);
-            }
-            personSelect.innerHTML += '<option value="new_person">[Add New Person]</option>';
-  
-            // Reset fields
-            newPersonFields.classList.add('hidden');
-            newPersonNameInput.value = '';
+            // We will populate the suggestions list when the user focuses on the input.
+            // So, this function now just needs to reset the state and show the modal.
+            personInput.value = '';
+            selectedPersonId = null;
+            rvToggle.style.display = 'none'; // Hide RV toggle initially
             isRvCheck.checked = false;
             
             noteModal.classList.remove('hidden');
+            // We don't focus on the personInput here, to allow for a cleaner UI presentation.
+            // The user can choose to start with notes or the person's name.
         };
+
 
         const hideNoteModal = () => {
             noteModal.classList.add('hidden');
             // Reset all the form fields to their default state for the next use
-            document.getElementById('modal-visit-notes').value = '';
-            document.getElementById('modal-person-select').value = '';
-            document.getElementById('modal-remove-nh-check').checked = false;
-            newPersonNameInput.value = '';
+            modalVisitNotes.value = '';
+            personInput.value = '';
+            modalRemoveNHCheck.checked = false;
             isRvCheck.checked = false;
-            newPersonFields.classList.add('hidden');
+            rvToggle.style.display = 'none';
+            suggestionsList.classList.add('hidden');
+            selectedPersonId = null; // Reset the selected person
         };
+
+                // --- NEW: Combobox Logic ---
+        let allPeople = []; // Cache for people in the current house
+
+        async function populateAndShowSuggestions() {
+            suggestionsList.innerHTML = '';
+            allPeople = await getByIndex('people', 'houseId', currentHouseId);
+            
+            const filter = personInput.value.toLowerCase();
+            const filteredPeople = allPeople.filter(p => p.name.toLowerCase().includes(filter));
+
+            for (const person of filteredPeople) {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.textContent = person.name + (person.isRV ? ' (RV)' : '');
+                item.dataset.id = person.id;
+                item.dataset.name = person.name;
+                suggestionsList.appendChild(item);
+            }
+
+            // Option to add a new person
+            if (personInput.value.trim() !== '' && !filteredPeople.some(p => p.name.toLowerCase() === filter)) {
+                const newItem = document.createElement('div');
+                newItem.className = 'suggestion-item is-new';
+                newItem.textContent = `+ Create "${personInput.value}"`;
+                newItem.dataset.id = 'new';
+                suggestionsList.appendChild(newItem);
+            }
+
+            suggestionsList.classList.remove('hidden');
+        }
+
+        personInput.addEventListener('focus', populateAndShowSuggestions);
+        personInput.addEventListener('input', () => {
+            selectedPersonId = null; // User is typing, so deselect any previous choice
+            rvToggle.style.display = 'block'; // Show RV toggle when they start typing a new name
+            populateAndShowSuggestions();
+        });
+
+        // Hide suggestions when clicking away from the input
+        document.addEventListener('click', (e) => {
+            if (!personInput.contains(e.target) && !suggestionsList.contains(e.target)) {
+                suggestionsList.classList.add('hidden');
+            }
+        });
+
+        suggestionsList.addEventListener('click', (e) => {
+            const item = e.target.closest('.suggestion-item');
+            if (!item) return;
+
+            const personId = item.dataset.id;
+            
+            if (personId === 'new') {
+                // User clicked "+ Create new". Keep the text, hide list.
+                selectedPersonId = null; // Ensure it's null for new person creation
+            } else {
+                // User selected an existing person
+                selectedPersonId = Number(personId);
+                personInput.value = item.dataset.name;
+                rvToggle.style.display = 'none'; // Hide RV toggle for existing people
+            }
+            suggestionsList.classList.add('hidden');
+        });
 
         noteModal.querySelector('.close-modal-btn').addEventListener('click', hideNoteModal);
         document.getElementById('modal-cancel-btn').addEventListener('click', hideNoteModal);
-
-        personSelect.addEventListener('change', () => {
-            newPersonFields.classList.toggle('hidden', personSelect.value !== 'new_person');
-        });
 
         // --- Show/Hide Territory Modal Functions ---
         const showTerritoryModal = () => {
@@ -481,37 +536,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('add-visit-btn').addEventListener('click', showNoteModal);
     
         // NOTE MODAL event listeners
-        document.getElementById('modal-save-note-btn').addEventListener('click', async () => {
+                document.getElementById('modal-save-note-btn').addEventListener('click', async () => {
             const notes = modalVisitNotes.value;
             if (!notes) {
                 alert('Please enter some notes for the visit.');
                 return;
             }
 
-            let personId = null;
+            let personIdToSave = selectedPersonId; // Start with the pre-selected ID
 
-            if (personSelect.value === 'new_person') {
-                const newName = newPersonNameInput.value.trim();
-                if (newName) {
-                    const newPerson = { houseId: currentHouseId, name: newName, isRV: isRvCheck.checked };
-                    personId = await addToStore('people', newPerson);
-                }
-            } else if (personSelect.value) {
-                personId = Number(personSelect.value);
+            // If no ID is selected, check if new text was entered to create a new person
+            if (!personIdToSave && personInput.value.trim() !== '') {
+                const newName = personInput.value.trim();
+                const newPerson = { houseId: currentHouseId, name: newName, isRV: isRvCheck.checked };
+                personIdToSave = await addToStore('people', newPerson);
             }
 
+            // Now, save the visit note with the correct personId
             await addToStore('visits', {
                 houseId: currentHouseId,
                 date: new Date().toISOString(),
                 notes: notes,
-                personId: personId,
+                personId: personIdToSave, // Use the final ID
                 isNotAtHome: false
             });
             
+            // Update the 'NH' status of the house
             const house = await getFromStore('houses', currentHouseId);
-            if (modalRemoveNHCheck.checked || house.isCurrentlyNH) {
+
+            // A visit was made, so it's no longer 'Not at Home'
+            if (house.isCurrentlyNH) {
                 house.isCurrentlyNH = false;
             }
+            // Check if 'Remove NH' was explicitly ticked (though the above covers it)
+            if (modalRemoveNHCheck.checked) {
+                house.isCurrentlyNH = false;
+            }
+
             await updateInStore('houses', house);
             
             hideNoteModal();
