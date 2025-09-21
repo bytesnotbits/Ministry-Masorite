@@ -364,3 +364,47 @@ textarea { width: 100%; box-sizing: border-box; }
 .icon-btn.delete-person-btn:hover {
     color: #e00;
 }
+
+/* STYLES FOR COMBOBOX */
+.combobox-container {
+    position: relative; /* Establishes a positioning context for the suggestions list */
+    margin-bottom: 15px; /* Adds space below the input */
+}
+
+.suggestions-list {
+    position: absolute; /* Lifts the list out of the normal flow */
+    top: 100%; /* Positions it right below the input field */
+    left: 0;
+    right: 0;
+    background-color: var(--white);
+    border: 1px solid #ccc;
+    border-top: none; /* Avoids a double border with the input */
+    border-radius: 0 0 8px 8px; /* Rounds the bottom corners */
+    z-index: 1001; /* Ensures it appears above other modal content */
+    max-height: 150px; /* Limits the height for long lists */
+    overflow-y: auto; /* Adds a scrollbar if the list is too long */
+}
+
+.suggestions-list.hidden {
+    display: none;
+}
+
+.suggestion-item {
+    padding: 12px 15px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.suggestion-item:hover, .suggestion-item.active {
+    background-color: var(--primary-color);
+    color: var(--white);
+}
+
+.suggestion-item.is-new {
+    font-style: italic;
+    color: #555;
+}
+
+#modal-rv-toggle {
+    display: none; /* Hidden by default, JS will show it */
+}
