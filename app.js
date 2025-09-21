@@ -427,7 +427,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
             // Navigate to house details
             const houseLi = target.closest('#house-list li');
-            if (houseLi && !houseLi.classList.contains('placeholder')) {
+            if (houseLi && !target.classList.contains('delete-btn') && !houseLi.classList.contains('placeholder')) {
                 currentHouseId = Number(houseLi.dataset.id);
                 await renderHouseDetails(currentHouseId);
                 showView('house-detail-view');
