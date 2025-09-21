@@ -529,10 +529,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Add listeners for the cancel and close buttons
     document.getElementById('modal-cancel-btn').addEventListener('click', () => noteModal.classList.add('hidden'));
     noteModal.querySelector('.close-modal-btn').addEventListener('click', () => noteModal.classList.add('hidden'));
+
+    // Event listener for house detail checkboxes with iOS fix
+        document.getElementById('house-detail-view').addEventListener('click', (e) => {
+            if (e.target.type !== 'checkbox' || !['not-at-home-check', 'mailbox-check', 'notrespass-check', 'gate-check'].includes(e.target.id)) {
+                return;
+            }
+            const checkbox = e.target;
+            setTimeout(async () => {
+                const house = await getFromStore('houses', currentHouseId);
+                if (!house) return;
+                
+                const isChecked = checkbox.checked;
+                switch (checkbox.id) {
+                    case 'not-at-home-check': 
+                        house.isCurrentlyNH = isChecked; 
+                        break;
+                    case 'mailbox-check': 
+                        house.hasMailbox = isChecked; 
+                        break;
+                    case 'notrespass-check': 
+                        house.noTrespassing = isChecked; 
+                        break;
+                    case 'gate-check': 
+                        house.hasGate = isChecked; 
+                        break;
+                }
+                await updateInStore('houses', house);
+            }, 0);
+        });
     
     // Data Management Event Listeners
-        document.getElementById('export-full-btn').addEventListener('click', handleFullBackup); // NEW
-        document.getElementById('export-mscribe-btn').addEventListener('click', handleTerritoryBackup); // RENAMED
+        document.getElementById('export-full-btn').addEventListener('click', handleFullBackup);
+        document.getElementById('export-mscribe-btn').addEventListener('click', handleTerritoryBackup);
         document.getElementById('export-csv-btn').addEventListener('click', handleExportCSV);
         document.getElementById('export-pdf-btn').addEventListener('click', handleExportPDF);
         document.getElementById('restore-btn').addEventListener('click', () => document.getElementById('restore-file-input').click());
