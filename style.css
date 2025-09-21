@@ -408,3 +408,26 @@ textarea { width: 100%; box-sizing: border-box; }
 #modal-rv-toggle {
     display: none; /* Hidden by default, JS will show it */
 }
+
+/* STYLES FOR VERSION FOOTER */
+.version-footer {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.version-footer h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.version-footer p {
+    font-size: 14px;
+    color: var(--light-text);
+    margin: 4px 0; /* Adds a small amount of space between each line */
+    /* These next lines explicitly override list styles to be safe */
+    background-color: transparent;
+    padding: 0;
+    box-shadow: none;
+    cursor: default;
+}
