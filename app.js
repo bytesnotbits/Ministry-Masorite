@@ -151,12 +151,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const li = document.createElement('li');
                 const rvBadge = person.isRV ? '<span class="rv-badge">RV</span>' : '';
                 li.innerHTML = `
-                    <span>${person.name}${rvBadge}</span>
-                    <div style="position: absolute; bottom: 5px; right: 10px;">
-                        <button class="edit-person-btn" data-id="${person.id}">Edit</button>
-                        <button class="delete-person-btn" data-id="${person.id}">Delete</button>
+                    <span class="person-name">${person.name}${rvBadge}</span>
+                    <div class="person-actions">
+                        <button class="icon-btn edit-person-btn" data-id="${person.id}" title="Edit Name">✏️</button>
+                        <button class="icon-btn delete-person-btn" data-id="${person.id}" title="Delete Person">X</button>
                     </div>
                 `;
+
                 peopleList.appendChild(li);
             }
         } else {

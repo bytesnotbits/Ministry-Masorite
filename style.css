@@ -320,3 +320,47 @@ textarea { width: 100%; box-sizing: border-box; }
     padding-top: 10px;
     border-top: 1px solid var(--border-color);
 }
+
+/* STYLES FOR PEOPLE LIST IN HOUSE DETAILS */
+#people-list li {
+    display: flex; /* Use flexbox for easy alignment */
+    justify-content: space-between; /* Pushes name and actions to opposite ends */
+    align-items: center; /* Vertically aligns items in the middle */
+    padding-bottom: 15px; /* Override the default large padding */
+    padding-top: 15px;
+}
+
+.person-name {
+    font-size: 18px; /* Make the name a bit larger */
+}
+
+.person-actions {
+    display: flex;
+    gap: 10px; /* Adds space between the two icons */
+}
+
+/* STYLES FOR THE NEW ICON BUTTONS */
+.icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    font-size: 22px; /* Makes the icons larger */
+    line-height: 1; /* Ensures tight vertical alignment */
+    color: var(--light-text);
+    transition: color 0.2s;
+}
+
+.icon-btn:hover {
+    color: var(--dark-text);
+}
+
+/* Make the delete icon red, consistent with other delete buttons */
+.icon-btn.delete-person-btn {
+    color: #a00;
+    font-weight: bold;
+}
+
+.icon-btn.delete-person-btn:hover {
+    color: #e00;
+}
