@@ -303,3 +303,46 @@ textarea { width: 100%; box-sizing: border-box; }
     color: var(--white);
     border-color: var(--primary-color);
 }
+
+/* STYLES FOR THE HOUSEHOLDER NAME COMBOBOX */
+.combobox-wrapper {
+    position: relative; /* This is crucial for positioning the suggestions */
+    margin-bottom: 10px;
+}
+
+.suggestions-list {
+    position: absolute;
+    top: 100%; /* Position it right below the input field */
+    left: 0;
+    right: 0;
+    background-color: var(--white);
+    border: 1px solid #ccc;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    z-index: 1001; /* Make sure it appears above other content */
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.suggestions-list.hidden {
+    display: none;
+}
+
+.suggestion-item {
+    padding: 10px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.suggestion-item:hover {
+    background-color: var(--light-gray);
+}
+
+.suggestion-item small {
+    color: var(--light-text);
+    margin-left: 8px;
+}
+
+#rv-toggle-wrapper {
+    margin-top: 10px;
+}

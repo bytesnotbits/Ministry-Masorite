@@ -86,17 +86,31 @@
             <div class="modal-content">
                 <button class="close-modal-btn">&times;</button>
                 <h3>Add Visit Note</h3>
-                <label for="modal-person-name">Person's Name (optional)</label>
-                <input type="text" id="modal-person-name">
-        
+
+                <!-- NEW COMBOBOX STRUCTURE -->
+                <div class="combobox-wrapper">
+                    <label for="modal-person-input">Person Met</label>
+                    <input type="text" id="modal-person-input" placeholder="Select or type a name...">
+                    <div id="modal-person-suggestions" class="suggestions-list hidden">
+                        <!-- Suggestions will be populated by JS -->
+                    </div>
+                </div>
+                
+                <div id="rv-toggle-wrapper">
+                    <label class="modal-toggle">
+                        <input type="checkbox" id="modal-is-rv-check">
+                        Mark as Return Visit (RV)
+                    </label>
+                </div>
+                
                 <label for="modal-visit-notes">Visit Notes</label>
                 <textarea id="modal-visit-notes" rows="4"></textarea>
-        
+
                 <label class="modal-toggle">
                     <input type="checkbox" id="modal-remove-nh-check">
                     Remove 'NH' Status?
                 </label>
-        
+
                 <div class="modal-actions">
                     <button id="modal-cancel-btn">Cancel</button>
                     <button id="modal-save-note-btn" class="primary-action">Save Note</button>
