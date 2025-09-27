@@ -31,6 +31,7 @@
             
             <div class="data-management-section">
                 <h3>Data Management</h3>
+                <button id="show-rvs-btn">Show All RVs</button>
                 <button id="restore-btn">Restore from Backup (.mscribe)</button>
                 <button id="export-full-btn">Export Full Backup (.mscribe)</button>
                 <input type="file" id="restore-file-input" accept=".mscribe" hidden>
@@ -44,9 +45,9 @@
                 <p><Strong>Done:</Strong> Fix Update Date calculation error</p>
                 <p><Strong>Done:</Strong> Add HH:MM to visit date</time></p>
                 <p><Strong>Done:</Strong> Confirm HH:MM can be properly edited along with date</p>
-                <p><strong>TODO:</strong> Edit Territory name/number</p>
+                <p><strong>Done:</strong> Edit Territory name/number</p>
+                <p><strong>TODO:</strong> Filter view for RVs</p>
                 <p><strong>TODO:</strong> Implement Not Interested attribute</p>
-                <p><strong>TODO:</strong> Filter view for RVst</p>
                 <p><strong>TODO:</strong> Filter view for unvisited houses by street</p>
                 <p><strong>TODO:</strong> Sort RVs by street name/number, last visit date (ascending/descending)</p>
                 <p><strong>TODO:</strong> Implement DNC</p>
@@ -99,6 +100,15 @@
                     <!-- Visit notes will be dynamically inserted here -->
                  </ul>
              </div>
+        </div>
+
+        <!-- RV LIST VIEW -->
+        <div id="rv-list-view" class="view">
+            <button class="back-btn" data-target="territory-list-view">&larr; Back to Territories</button>
+            <h2>Return Visits (RVs)</h2>
+            <ul id="rv-list">
+                <!-- RVs will be dynamically inserted here -->
+            </ul>
         </div>
 
         <!-- NOTE-TAKING MODAL -->

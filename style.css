@@ -439,3 +439,19 @@ textarea { width: 100%; box-sizing: border-box; }
     right: 45px; /* Position it to the left of the delete 'X' */
     font-size: 22px;
 }
+
+/* STYLES FOR RV LIST VIEW */
+#rv-list li {
+    padding-bottom: 15px; /* Reduce the large default bottom padding */
+}
+
+.rv-details {
+    font-size: 14px;
+    color: var(--light-text);
+    margin-top: 8px;
+    line-height: 1.5;
+}
+
+.rv-details strong {
+    color: var(--dark-text);
+}

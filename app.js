@@ -170,6 +170,57 @@ document.addEventListener('DOMContentLoaded', async () => {
             peopleList.innerHTML = '<li class="placeholder">No individuals recorded yet.</li>';
         }
 
+    //This function will perform the core task of finding all people marked as RVs and collecting their related data for display. 
+    // For the best performance, it will fetch all the data tables at once and then assemble the information in memory.
+    async function renderRVList() {
+        const rvList = document.getElementById('rv-list');
+        rvList.innerHTML = '';
+
+        // --- For performance, load all data at once ---
+        const allPeople = await getAllFromStore('people');
+        const allHouses = await getAllFromStore('houses');
+        const allTerritories = await getAllFromStore('territories');
+        const allVisits = await getAllFromStore('visits');
+
+        const rvs = allPeople.filter(p => p.isRV);
+
+        if (rvs.length === 0) {
+            rvList.innerHTML = '<li class="placeholder">No individuals are marked as an RV yet.</li>';
+            return;
+        }
+
+        // --- Process and display each RV ---
+        for (const person of rvs) {
+            const house = allHouses.find(h => h.id === person.houseId);
+            if (!house) continue; // Skip if the house has been deleted
+
+            const territory = allTerritories.find(t => t.id === house.territoryId);
+            if (!territory) continue; // Skip if the territory has been deleted
+
+            // Find the most recent visit for this specific person
+            const personVisits = allVisits
+                .filter(v => v.personId === person.id)
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            const lastVisit = personVisits[0];
+            const lastVisitDate = lastVisit ? new Date(lastVisit.date).toLocaleDateString() : 'No visits recorded';
+
+            const li = document.createElement('li');
+            // Store the house ID so we can navigate to it on click
+            li.dataset.houseId = house.id;
+
+            li.innerHTML = `
+                <strong>${person.name}</strong>
+                <div class="rv-details">
+                    Last Visited: <strong>${lastVisitDate}</strong><br>
+                    Territory: ${territory.name} (#${territory.number})<br>
+                    Address: ${house.address}
+                </div>
+            `;
+            rvList.appendChild(li);
+        }
+    }
+
         // --- RENDER VISIT HISTORY (with name lookup) ---
         visitList.innerHTML = '';
         const visits = (await getByIndex('visits', 'houseId', houseId)).sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -416,6 +467,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         // --- Main Click Handler ---
          document.addEventListener('click', async (e) => {
             const target = e.target;
+
+            // Navigate from RV list to house details
+            // Add logic to the main click handler so that when a user taps on an RV in the list, it takes them to the correct house detail page.
+            const rvLi = target.closest('#rv-list li');
+            if (rvLi && !rvLi.classList.contains('placeholder')) {
+                currentHouseId = Number(rvLi.dataset.houseId);
+                // Find the house to set the correct territory context for the 'back' button
+                const house = await getFromStore('houses', currentHouseId);
+                if (house) {
+                    currentTerritoryId = house.territoryId;
+                    await renderHouseDetails(currentHouseId);
+                    showView('house-detail-view');
+                }
+                return;
+            }
 
             // Edit territory button
             const editTerritoryBtn = target.closest('.edit-territory-btn');
@@ -683,6 +749,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         // Data Management Event Listeners
+            // Hook Up the "Show All RVs" Button
+        document.getElementById('show-rvs-btn').addEventListener('click', async () => {
+            await renderRVList();
+            showView('rv-list-view');
+        });
+        document.getElementById('export-full-btn').addEventListener('click', handleFullBackup);
         document.getElementById('export-full-btn').addEventListener('click', handleFullBackup);
         document.getElementById('export-mscribe-btn').addEventListener('click', handleTerritoryBackup);
         document.getElementById('export-csv-btn').addEventListener('click', handleExportCSV);
