@@ -170,6 +170,49 @@ document.addEventListener('DOMContentLoaded', async () => {
             peopleList.innerHTML = '<li class="placeholder">No individuals recorded yet.</li>';
         }
 
+        // --- RENDER VISIT HISTORY (with name lookup) ---
+        visitList.innerHTML = '';
+        const visits = (await getByIndex('visits', 'houseId', houseId)).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        for (const visit of visits) {
+            const li = document.createElement('li');
+            let personInfo = '';
+            if (visit.personId) {
+                // New system: look up the name from the people array
+                const person = people.find(p => p.id === visit.personId);
+                if (person) personInfo = `Spoke with: <strong>${person.name}</strong><br>`;
+            } else if (visit.personName) {
+                // Backwards compatibility for old notes
+                personInfo = `Spoke with: <strong>${visit.personName}</strong><br>`;
+            }
+
+            
+            // Instead of just toLocaleDateString(), we now use toLocaleString() with specific options to get a nicely formatted date and time.
+            // We also changed the edit button's text from "✏️ Change Date" to "✏️ Change" to reflect that you can now edit the time as well.
+            const visitDate = new Date(visit.date);
+            const formattedDateTime = visitDate.toLocaleString([], {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+
+            li.innerHTML = `
+                <div>
+                    <span>${formattedDateTime}</span>
+                    <span class="edit-date-btn" data-id="${visit.id}">✏️ Change</span>
+                </div>
+                ${personInfo}
+                <p>${visit.notes}</p>
+                <button class="delete-btn" data-id="${visit.id}" data-type="visit">X</button>
+            `;
+            // End toLocaleDateString() modification
+
+                        visitList.appendChild(li);
+                    }
+    }
+
     //This function will perform the core task of finding all people marked as RVs and collecting their related data for display. 
     // For the best performance, it will fetch all the data tables at once and then assemble the information in memory.
     async function renderRVList() {
@@ -221,48 +264,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-        // --- RENDER VISIT HISTORY (with name lookup) ---
-        visitList.innerHTML = '';
-        const visits = (await getByIndex('visits', 'houseId', houseId)).sort((a, b) => new Date(b.date) - new Date(a.date));
-
-        for (const visit of visits) {
-            const li = document.createElement('li');
-            let personInfo = '';
-            if (visit.personId) {
-                // New system: look up the name from the people array
-                const person = people.find(p => p.id === visit.personId);
-                if (person) personInfo = `Spoke with: <strong>${person.name}</strong><br>`;
-            } else if (visit.personName) {
-                // Backwards compatibility for old notes
-                personInfo = `Spoke with: <strong>${visit.personName}</strong><br>`;
-            }
-
-            
-            // Instead of just toLocaleDateString(), we now use toLocaleString() with specific options to get a nicely formatted date and time.
-            // We also changed the edit button's text from "✏️ Change Date" to "✏️ Change" to reflect that you can now edit the time as well.
-            const visitDate = new Date(visit.date);
-            const formattedDateTime = visitDate.toLocaleString([], {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit'
-            });
-
-            li.innerHTML = `
-                <div>
-                    <span>${formattedDateTime}</span>
-                    <span class="edit-date-btn" data-id="${visit.id}">✏️ Change</span>
-                </div>
-                ${personInfo}
-                <p>${visit.notes}</p>
-                <button class="delete-btn" data-id="${visit.id}" data-type="visit">X</button>
-            `;
-            // End toLocaleDateString() modification
-
-                        visitList.appendChild(li);
-                    }
-                }
 
     function setupEventListeners() {
         // --- Get Note Modal Elements ---
