@@ -181,18 +181,32 @@ document.addEventListener('DOMContentLoaded', async () => {
                 personInfo = `Spoke with: <strong>${visit.personName}</strong><br>`;
             }
 
+            
+            // Instead of just toLocaleDateString(), we now use toLocaleString() with specific options to get a nicely formatted date and time.
+            // We also changed the edit button's text from "✏️ Change Date" to "✏️ Change" to reflect that you can now edit the time as well.
+            const visitDate = new Date(visit.date);
+            const formattedDateTime = visitDate.toLocaleString([], {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+
             li.innerHTML = `
                 <div>
-                    <span>${new Date(visit.date).toLocaleDateString()}</span>
-                    <span class="edit-date-btn" data-id="${visit.id}">✏️ Change Date</span>
+                    <span>${formattedDateTime}</span>
+                    <span class="edit-date-btn" data-id="${visit.id}">✏️ Change</span>
                 </div>
                 ${personInfo}
                 <p>${visit.notes}</p>
                 <button class="delete-btn" data-id="${visit.id}" data-type="visit">X</button>
             `;
-            visitList.appendChild(li);
-        }
-    }
+            // End toLocaleDateString() modification
+
+                        visitList.appendChild(li);
+                    }
+                }
 
     function setupEventListeners() {
         // --- Get Note Modal Elements ---
@@ -476,18 +490,30 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
     
-            // Edit visit date
+            // Edit visit date and time
             if (target.classList.contains('edit-date-btn')) {
                 const visitId = Number(target.dataset.id);
                 const visit = await getFromStore('visits', visitId);
-                const currentDate = new Date(visit.date).toISOString().split('T')[0];
-                const newDateStr = prompt('Enter new date (YYYY-MM-DD):', currentDate);
-                if (newDateStr && !isNaN(new Date(newDateStr))) {
-                    visit.date = new Date(newDateStr);
+
+                // --- Create a user-friendly default value for the prompt ---
+                const d = new Date(visit.date);
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                const hours = String(d.getHours()).padStart(2, '0');
+                const minutes = String(d.getMinutes()).padStart(2, '0');
+                const currentDateTime = `${year}-${month}-${day} ${hours}:${minutes}`;
+
+                const newDateTimeStr = prompt('Enter new date and time (YYYY-MM-DD HH:MM):', currentDateTime);
+
+                // --- If user provides a valid string, update the date ---
+                if (newDateTimeStr && !isNaN(new Date(newDateTimeStr))) {
+                    // This correctly parses the local time and avoids the timezone bug
+                    visit.date = new Date(newDateTimeStr).toISOString();
                     await updateInStore('visits', visit);
                     await renderHouseDetails(currentHouseId);
-                } else if (newDateStr) {
-                    alert('Invalid date format.');
+                } else if (newDateTimeStr) {
+                    alert('Invalid date/time format. Please use YYYY-MM-DD HH:MM.');
                 }
             }
         });
