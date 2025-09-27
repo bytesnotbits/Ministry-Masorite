@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentHouseId = null;
     let territorySort = 'name';
     let selectedPersonId = null;
+    let currentEditTerritoryId = null;
 
     // --- DOM ELEMENTS ---
     const views = document.querySelectorAll('.view');
@@ -73,8 +74,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const li = document.createElement('li');
                 li.dataset.id = territory.id;
                 const numberDisplay = territory.number ? `<strong>#${territory.number}</strong> -` : 'No # -';
+
+                // Add a new button with the class edit-territory-btn, which we'll use to trigger the edit logic.
+                // Add the generic icon-btn class to it, so it will inherit some base styles we can build on.
                 li.innerHTML = `
                     <span>${numberDisplay} ${territory.name} (${houses.length} houses)</span>
+                    <button class="icon-btn edit-territory-btn" data-id="${territory.id}" title="Edit Territory">✏️</button>
                     <button class="delete-btn" data-id="${territory.id}" data-type="territory">X</button>
                 `;
                 territoryList.appendChild(li);
@@ -321,46 +326,65 @@ document.addEventListener('DOMContentLoaded', async () => {
         noteModal.querySelector('.close-modal-btn').addEventListener('click', hideNoteModal);
         document.getElementById('modal-cancel-btn').addEventListener('click', hideNoteModal);
 
-        // --- Show/Hide Territory Modal Functions ---
-        const showTerritoryModal = () => {
+        // --- Show/Hide Territory Modal Functions (with Edit Logic) ---
+        const showTerritoryModal = (territoryToEdit = null) => {
+            const modalTitle = territoryModal.querySelector('h3');
+            const saveAndNewBtn = document.getElementById('modal-territory-save-new-btn');
+
+            if (territoryToEdit) {
+                // --- EDIT MODE ---
+                modalTitle.textContent = 'Edit Territory';
+                modalTerritoryNumber.value = territoryToEdit.number;
+                modalTerritoryName.value = territoryToEdit.name;
+                currentEditTerritoryId = territoryToEdit.id;
+                saveAndNewBtn.classList.add('hidden'); // Hide "Save & New" in edit mode
+            } else {
+                // --- ADD MODE ---
+                modalTitle.textContent = 'Add New Territory';
+                modalTerritoryNumber.value = '';
+                modalTerritoryName.value = '';
+                currentEditTerritoryId = null;
+                saveAndNewBtn.classList.remove('hidden');
+            }
+
             territoryModal.classList.remove('hidden');
-            modalTerritoryNumber.focus(); 
+            modalTerritoryNumber.focus();
         };
+
         const hideTerritoryModal = () => {
             territoryModal.classList.add('hidden');
-            modalTerritoryNumber.value = '';
-            modalTerritoryName.value = '';
+            currentEditTerritoryId = null; // Reset edit state on close
         };
-    
-        // --- Show/Hide House Modal Functions ---
-        const showHouseModal = () => {
-            houseModal.classList.remove('hidden');
-            modalHouseNumber.focus();
-        };
-        const hideHouseModal = () => {
-            houseModal.classList.add('hidden');
-            modalHouseNumber.value = '';
-            houseModalToggles.querySelectorAll('.toggle-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
+            
+                // --- Show/Hide House Modal Functions ---
+                const showHouseModal = () => {
+                    houseModal.classList.remove('hidden');
+                    modalHouseNumber.focus();
+                };
+                const hideHouseModal = () => {
+                    houseModal.classList.add('hidden');
+                    modalHouseNumber.value = '';
+                    houseModalToggles.querySelectorAll('.toggle-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
         };
     
         // --- Core Logic for Saving a Territory ---
         async function handleSaveTerritory() {
             const number = modalTerritoryNumber.value.trim();
             const name = modalTerritoryName.value.trim();
-    
+
             if (!number || !name) {
                 alert('Please fill out both the territory number and name.');
                 return false; 
             }
-    
+
             await addToStore('territories', {
                 name,
                 number,
                 createdAt: new Date().toISOString()
             });
-            await renderTerritories();
+            // The render and hide logic is now handled by the event listener itself
             return true;
         }
     
@@ -392,6 +416,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         // --- Main Click Handler ---
          document.addEventListener('click', async (e) => {
             const target = e.target;
+
+            // Edit territory button
+            const editTerritoryBtn = target.closest('.edit-territory-btn');
+            if (editTerritoryBtn) {
+                const territoryId = Number(editTerritoryBtn.dataset.id);
+                const territory = await getFromStore('territories', territoryId);
+                showTerritoryModal(territory);
+                return; 
+            }
     
             // Edit person button
             if (target.classList.contains('edit-person-btn')) {
@@ -525,11 +558,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     
         // --- Individual Button Event Listeners ---
-        document.getElementById('add-territory-btn').addEventListener('click', showTerritoryModal);
+        document.getElementById('add-territory-btn').addEventListener('click', () => showTerritoryModal());
         
         // --- Territory Modal Event Listeners ---
         document.getElementById('modal-territory-save-btn').addEventListener('click', async () => {
-            if (await handleSaveTerritory()) hideTerritoryModal();
+            const number = modalTerritoryNumber.value.trim();
+            const name = modalTerritoryName.value.trim();
+
+            if (!number || !name) {
+                alert('Please fill out both the territory number and name.');
+                return;
+            }
+
+            if (currentEditTerritoryId) {
+                // --- UPDATE existing territory ---
+                const territory = await getFromStore('territories', currentEditTerritoryId);
+                territory.number = number;
+                territory.name = name;
+                await updateInStore('territories', territory);
+            } else {
+                // --- ADD new territory (using the existing handler's logic) ---
+                await addToStore('territories', {
+                    name,
+                    number,
+                    createdAt: new Date().toISOString()
+                });
+            }
+
+            hideTerritoryModal();
+            await renderTerritories();
         });
         document.getElementById('modal-territory-save-new-btn').addEventListener('click', async () => {
             if (await handleSaveTerritory()) {

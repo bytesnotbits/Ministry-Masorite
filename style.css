@@ -431,3 +431,11 @@ textarea { width: 100%; box-sizing: border-box; }
     box-shadow: none;
     cursor: default;
 }
+
+/* STYLES FOR TERRITORY EDIT BUTTON */
+.edit-territory-btn {
+    position: absolute;
+    top: 15px;
+    right: 45px; /* Position it to the left of the delete 'X' */
+    font-size: 22px;
+}
