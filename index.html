@@ -47,11 +47,11 @@
                 <p><Strong>Done:</Strong> 0.23.00 Confirm HH:MM can be properly edited along with date</p>
                 <p><strong>Done:</strong> 0.23.00 Edit Territory name/number</p>
                 <p><strong>Done:</strong> 0.24.01 Filter view for RVs</p>
-                <p><strong>Done:</strong> 0.25.01 Implement Not Interested attribute</p>
-                <p><strong>TODO:</strong> Implement DNC (maybe)</p>
-                <p><strong>TODO:</strong> Filter view for unvisited houses by street</p>
+                <p><strong>Done:</strong> Implement Not Interested attribute</p>
+                <p><strong>Done:</strong> Filter view for unvisited houses by street</p>
+                <p><strong>TODO:</strong> Implement DNC (maybe?)</p>
                 <p><strong>TODO:</strong> Sort RVs by street name/number, last visit date (ascending/descending)</p>
-                <p><strong>TODO:</strong> Filter view, only see NI</p>
+                <p><strong>TODO:</strong> Filter view, only see NH</p>
                 <p><strong>TODO:</strong> Houses should sort by house number</p>
                 <p><strong>TODO:</strong> Ascending/Decending sort options for houses</p>
                 <p><strong>TODO:</strong> Filter/Export only NH</p>
@@ -66,6 +66,12 @@
         <div id="house-list-view" class="view">
             <button class="back-btn" data-target="territory-list-view">&larr; Back to Territories</button>
             <h2 id="house-list-title"></h2>
+
+            <!-- NEW FILTER CONTROLS -->
+            <div class="filter-controls">
+                <button id="filter-unvisited-btn" class="filter-btn">Show Unvisited Only</button>
+            </div>
+            
             <button id="add-house-btn" class="primary-action">+ Add New House</button>
             <ul id="house-list"></ul>
             

@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let territorySort = 'name';
     let selectedPersonId = null;
     let currentEditTerritoryId = null;
+    let showOnlyUnvisited = false; // State for the unvisited filter
 
     // --- DOM ELEMENTS ---
     const views = document.querySelectorAll('.view');
@@ -95,19 +96,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         searchInput.classList.toggle('hidden', !shouldShowSearch);
     }
     
-    // --- RENDER HOUSES AND DETAILS ---
+    // --- RENDER HOUSES AND DETAILS (with filter logic) ---
     async function renderHouses(territoryId) {
         houseList.innerHTML = '';
         const territory = await getFromStore('territories', territoryId);
         document.getElementById('house-list-title').textContent = territory.name;
+
+        const allHouses = await getByIndex('houses', 'territoryId', territoryId);
+        let housesToRender = [];
+
+        // --- Apply the "Unvisited Only" filter if it's active ---
+        if (showOnlyUnvisited) {
+            for (const house of allHouses) {
+                const visits = await getByIndex('visits', 'houseId', house.id);
+                if (visits.length === 0) {
+                    housesToRender.push(house);
+                }
+            }
+        } else {
+            housesToRender = allHouses;
+        }
     
-        const houses = await getByIndex('houses', 'territoryId', territoryId);
-        if (houses.length === 0) {
-            houseList.innerHTML = '<li class="placeholder">No houses added to this territory yet.</li>';
+        if (housesToRender.length === 0) {
+            if (showOnlyUnvisited) {
+                houseList.innerHTML = '<li class="placeholder">No unvisited houses in this territory.</li>';
+            } else {
+                houseList.innerHTML = '<li class="placeholder">No houses added to this territory yet.</li>';
+            }
             return;
         }
     
-        for (const house of houses) {
+        for (const house of housesToRender) {
             const visits = (await getByIndex('visits', 'houseId', house.id)).sort((a,b) => new Date(b.date) - new Date(a.date));
             const lastVisit = visits[0];
     
@@ -186,17 +205,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const li = document.createElement('li');
             let personInfo = '';
             if (visit.personId) {
-                // New system: look up the name from the people array
                 const person = people.find(p => p.id === visit.personId);
                 if (person) personInfo = `Spoke with: <strong>${person.name}</strong><br>`;
             } else if (visit.personName) {
-                // Backwards compatibility for old notes
                 personInfo = `Spoke with: <strong>${visit.personName}</strong><br>`;
             }
 
             
-            // Instead of just toLocaleDateString(), we now use toLocaleString() with specific options to get a nicely formatted date and time.
-            // We also changed the edit button's text from "✏️ Change Date" to "✏️ Change" to reflect that you can now edit the time as well.
             const visitDate = new Date(visit.date);
             const formattedDateTime = visitDate.toLocaleString([], {
                 month: 'short',
@@ -215,19 +230,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <p>${visit.notes}</p>
                 <button class="delete-btn" data-id="${visit.id}" data-type="visit">X</button>
             `;
-            // End toLocaleDateString() modification
 
                         visitList.appendChild(li);
                     }
     }
 
-    //This function will perform the core task of finding all people marked as RVs and collecting their related data for display. 
-    // For the best performance, it will fetch all the data tables at once and then assemble the information in memory.
     async function renderRVList() {
         const rvList = document.getElementById('rv-list');
         rvList.innerHTML = '';
 
-        // --- For performance, load all data at once ---
         const allPeople = await getAllFromStore('people');
         const allHouses = await getAllFromStore('houses');
         const allTerritories = await getAllFromStore('territories');
@@ -240,15 +251,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // --- Process and display each RV ---
         for (const person of rvs) {
             const house = allHouses.find(h => h.id === person.houseId);
-            if (!house) continue; // Skip if the house has been deleted
+            if (!house) continue; 
 
             const territory = allTerritories.find(t => t.id === house.territoryId);
-            if (!territory) continue; // Skip if the territory has been deleted
+            if (!territory) continue; 
 
-            // Find the most recent visit for this specific person
             const personVisits = allVisits
                 .filter(v => v.personId === person.id)
                 .sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -257,7 +266,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const lastVisitDate = lastVisit ? new Date(lastVisit.date).toLocaleDateString() : 'No visits recorded';
 
             const li = document.createElement('li');
-            // Store the house ID so we can navigate to it on click
             li.dataset.houseId = house.id;
 
             li.innerHTML = `
@@ -274,7 +282,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
     function setupEventListeners() {
-        // --- Get Note Modal Elements ---
         const noteModal = document.getElementById('note-modal');
         const modalVisitNotes = document.getElementById('modal-visit-notes');
         const personInput = document.getElementById('modal-person-input');
@@ -283,45 +290,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isRvCheck = document.getElementById('modal-is-rv-check');
         const modalRemoveNHCheck = document.getElementById('modal-remove-nh-check');
     
-        // --- Get Territory Modal Elements ---
         const territoryModal = document.getElementById('territory-modal');
         const modalTerritoryNumber = document.getElementById('modal-territory-number');
         const modalTerritoryName = document.getElementById('modal-territory-name');
     
-        // --- Get House Modal Elements ---
         const houseModal = document.getElementById('house-modal');
         const modalHouseNumber = document.getElementById('modal-house-number');
         const houseModalToggles = document.querySelector('#house-modal .modal-toggles');
     
-        // --- Show/Hide Note Modal Functions ---
         const showNoteModal = async () => {
-            // We will populate the suggestions list when the user focuses on the input.
-            // So, this function now just needs to reset the state and show the modal.
             personInput.value = '';
             selectedPersonId = null;
-            rvToggle.style.display = 'none'; // Hide RV toggle initially
+            rvToggle.style.display = 'none'; 
             isRvCheck.checked = false;
             
             noteModal.classList.remove('hidden');
-            // We don't focus on the personInput here, to allow for a cleaner UI presentation.
-            // The user can choose to start with notes or the person's name.
         };
 
 
         const hideNoteModal = () => {
             noteModal.classList.add('hidden');
-            // Reset all the form fields to their default state for the next use
             modalVisitNotes.value = '';
             personInput.value = '';
             modalRemoveNHCheck.checked = false;
             isRvCheck.checked = false;
             rvToggle.style.display = 'none';
             suggestionsList.classList.add('hidden');
-            selectedPersonId = null; // Reset the selected person
+            selectedPersonId = null;
         };
 
-                // --- NEW: Combobox Logic ---
-        let allPeople = []; // Cache for people in the current house
+        let allPeople = []; 
 
         async function populateAndShowSuggestions() {
             suggestionsList.innerHTML = '';
@@ -339,7 +337,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 suggestionsList.appendChild(item);
             }
 
-            // Option to add a new person
             if (personInput.value.trim() !== '' && !filteredPeople.some(p => p.name.toLowerCase() === filter)) {
                 const newItem = document.createElement('div');
                 newItem.className = 'suggestion-item is-new';
@@ -353,12 +350,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         personInput.addEventListener('focus', populateAndShowSuggestions);
         personInput.addEventListener('input', () => {
-            selectedPersonId = null; // User is typing, so deselect any previous choice
-            rvToggle.style.display = 'block'; // Show RV toggle when they start typing a new name
+            selectedPersonId = null; 
+            rvToggle.style.display = 'block';
             populateAndShowSuggestions();
         });
 
-        // Hide suggestions when clicking away from the input
         document.addEventListener('click', (e) => {
             if (!personInput.contains(e.target) && !suggestionsList.contains(e.target)) {
                 suggestionsList.classList.add('hidden');
@@ -372,13 +368,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const personId = item.dataset.id;
             
             if (personId === 'new') {
-                // User clicked "+ Create new". Keep the text, hide list.
-                selectedPersonId = null; // Ensure it's null for new person creation
+                selectedPersonId = null; 
             } else {
-                // User selected an existing person
                 selectedPersonId = Number(personId);
                 personInput.value = item.dataset.name;
-                rvToggle.style.display = 'none'; // Hide RV toggle for existing people
+                rvToggle.style.display = 'none';
             }
             suggestionsList.classList.add('hidden');
         });
@@ -386,20 +380,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         noteModal.querySelector('.close-modal-btn').addEventListener('click', hideNoteModal);
         document.getElementById('modal-cancel-btn').addEventListener('click', hideNoteModal);
 
-        // --- Show/Hide Territory Modal Functions (with Edit Logic) ---
         const showTerritoryModal = (territoryToEdit = null) => {
             const modalTitle = territoryModal.querySelector('h3');
             const saveAndNewBtn = document.getElementById('modal-territory-save-new-btn');
 
             if (territoryToEdit) {
-                // --- EDIT MODE ---
                 modalTitle.textContent = 'Edit Territory';
                 modalTerritoryNumber.value = territoryToEdit.number;
                 modalTerritoryName.value = territoryToEdit.name;
                 currentEditTerritoryId = territoryToEdit.id;
-                saveAndNewBtn.classList.add('hidden'); // Hide "Save & New" in edit mode
+                saveAndNewBtn.classList.add('hidden');
             } else {
-                // --- ADD MODE ---
                 modalTitle.textContent = 'Add New Territory';
                 modalTerritoryNumber.value = '';
                 modalTerritoryName.value = '';
@@ -413,10 +404,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const hideTerritoryModal = () => {
             territoryModal.classList.add('hidden');
-            currentEditTerritoryId = null; // Reset edit state on close
+            currentEditTerritoryId = null;
         };
             
-                // --- Show/Hide House Modal Functions ---
                 const showHouseModal = () => {
                     houseModal.classList.remove('hidden');
                     modalHouseNumber.focus();
@@ -429,7 +419,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     });
         };
     
-        // --- Core Logic for Saving a Territory ---
         async function handleSaveTerritory() {
             const number = modalTerritoryNumber.value.trim();
             const name = modalTerritoryName.value.trim();
@@ -444,11 +433,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 number,
                 createdAt: new Date().toISOString()
             });
-            // The render and hide logic is now handled by the event listener itself
             return true;
         }
     
-        // --- Core Logic for Saving a House ---
         async function handleSaveHouse() {
             const houseNumber = modalHouseNumber.value.trim();
             if (!houseNumber) {
@@ -473,16 +460,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             return true;
         }
     
-        // --- Main Click Handler ---
          document.addEventListener('click', async (e) => {
             const target = e.target;
 
-            // Navigate from RV list to house details
-            // Add logic to the main click handler so that when a user taps on an RV in the list, it takes them to the correct house detail page.
             const rvLi = target.closest('#rv-list li');
             if (rvLi && !rvLi.classList.contains('placeholder')) {
                 currentHouseId = Number(rvLi.dataset.houseId);
-                // Find the house to set the correct territory context for the 'back' button
                 const house = await getFromStore('houses', currentHouseId);
                 if (house) {
                     currentTerritoryId = house.territoryId;
@@ -492,7 +475,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            // Edit territory button
             const editTerritoryBtn = target.closest('.edit-territory-btn');
             if (editTerritoryBtn) {
                 const territoryId = Number(editTerritoryBtn.dataset.id);
@@ -501,7 +483,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return; 
             }
     
-            // Edit person button
             if (target.classList.contains('edit-person-btn')) {
                 const personId = Number(target.dataset.id);
                 const person = await getFromStore('people', personId);
@@ -513,7 +494,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
 
-            // Delete person button
             if (target.classList.contains('delete-person-btn')) {
                 const personId = Number(target.dataset.id);
                 if (confirm('Are you sure you want to delete this person? This will not delete their past visit notes.')) {
@@ -522,7 +502,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
             
-            // Log 'NH' Button
             if (target.classList.contains('log-nh-btn')) {
                 e.stopPropagation();
                 const houseId = Number(target.dataset.id);
@@ -538,16 +517,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
     
-            // Navigate to house list
             const territoryLi = target.closest('#territory-list li');
             if (territoryLi && !target.classList.contains('delete-btn') && !territoryLi.classList.contains('placeholder')) {
                 currentTerritoryId = Number(territoryLi.dataset.id);
+                showOnlyUnvisited = false; // Reset filter when changing territories
+                document.getElementById('filter-unvisited-btn').classList.remove('active');
+                document.getElementById('filter-unvisited-btn').textContent = 'Show Unvisited Only';
                 await renderHouses(currentTerritoryId);
                 showView('house-list-view');
                 return;
             }
     
-            // Navigate to house details
             const houseLi = target.closest('#house-list li');
             if (houseLi && !target.classList.contains('delete-btn') && !houseLi.classList.contains('placeholder')) {
                 currentHouseId = Number(houseLi.dataset.id);
@@ -556,20 +536,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
     
-            // Back buttons
             if (target.classList.contains('back-btn')) {
                 const targetView = target.dataset.target;
                 if (targetView === 'house-list-view') await renderHouses(currentTerritoryId);
                 showView(targetView);
             }
     
-            // Sorting buttons
             if (target.classList.contains('sort-btn')) {
                 territorySort = target.dataset.sort;
                 await renderTerritories();
             }
     
-            // Deletion logic
             if (target.classList.contains('delete-btn')) {
                 const id = Number(target.dataset.id);
                 const type = target.dataset.type;
@@ -598,12 +575,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
     
-            // Edit visit date and time
             if (target.classList.contains('edit-date-btn')) {
                 const visitId = Number(target.dataset.id);
                 const visit = await getFromStore('visits', visitId);
 
-                // --- Create a user-friendly default value for the prompt ---
                 const d = new Date(visit.date);
                 const year = d.getFullYear();
                 const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -614,9 +589,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 const newDateTimeStr = prompt('Enter new date and time (YYYY-MM-DD HH:MM):', currentDateTime);
 
-                // --- If user provides a valid string, update the date ---
                 if (newDateTimeStr && !isNaN(new Date(newDateTimeStr))) {
-                    // This correctly parses the local time and avoids the timezone bug
                     visit.date = new Date(newDateTimeStr).toISOString();
                     await updateInStore('visits', visit);
                     await renderHouseDetails(currentHouseId);
@@ -626,16 +599,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-        // --- Search Input Listener ---
         const searchInput = document.getElementById('search-territory-input');
         searchInput.addEventListener('input', (e) => {
             renderTerritories(e.target.value.trim());
         });
     
-        // --- Individual Button Event Listeners ---
         document.getElementById('add-territory-btn').addEventListener('click', () => showTerritoryModal());
         
-        // --- Territory Modal Event Listeners ---
         document.getElementById('modal-territory-save-btn').addEventListener('click', async () => {
             const number = modalTerritoryNumber.value.trim();
             const name = modalTerritoryName.value.trim();
@@ -646,13 +616,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             if (currentEditTerritoryId) {
-                // --- UPDATE existing territory ---
                 const territory = await getFromStore('territories', currentEditTerritoryId);
                 territory.number = number;
                 territory.name = name;
                 await updateInStore('territories', territory);
             } else {
-                // --- ADD new territory (using the existing handler's logic) ---
                 await addToStore('territories', {
                     name,
                     number,
@@ -672,7 +640,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('modal-territory-cancel-btn').addEventListener('click', hideTerritoryModal);
         territoryModal.querySelector('.close-modal-btn').addEventListener('click', hideTerritoryModal);
     
-        // --- House Modal Event Listeners ---
         houseModalToggles.addEventListener('click', (e) => {
             const btn = e.target.closest('.toggle-btn');
             if (btn) btn.classList.toggle('active');
@@ -689,11 +656,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('modal-house-cancel-btn').addEventListener('click', hideHouseModal);
         houseModal.querySelector('.close-modal-btn').addEventListener('click', hideHouseModal);
     
-        // --- View-Specific Button Listeners ---
         document.getElementById('add-house-btn').addEventListener('click', showHouseModal);
         document.getElementById('add-visit-btn').addEventListener('click', showNoteModal);
     
-        // NOTE MODAL event listeners
+        // --- NEW: Event listener for the unvisited filter button ---
+        document.getElementById('filter-unvisited-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('filter-unvisited-btn');
+            showOnlyUnvisited = !showOnlyUnvisited; // Toggle the filter state
+        
+            btn.classList.toggle('active', showOnlyUnvisited);
+            btn.textContent = showOnlyUnvisited ? 'Show All Houses' : 'Show Unvisited Only';
+        
+            await renderHouses(currentTerritoryId); // Re-render the list with the new filter
+        });
+
                 document.getElementById('modal-save-note-btn').addEventListener('click', async () => {
             const notes = modalVisitNotes.value;
             if (!notes) {
@@ -701,32 +677,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            let personIdToSave = selectedPersonId; // Start with the pre-selected ID
+            let personIdToSave = selectedPersonId;
 
-            // If no ID is selected, check if new text was entered to create a new person
             if (!personIdToSave && personInput.value.trim() !== '') {
                 const newName = personInput.value.trim();
                 const newPerson = { houseId: currentHouseId, name: newName, isRV: isRvCheck.checked };
                 personIdToSave = await addToStore('people', newPerson);
             }
 
-            // Now, save the visit note with the correct personId
             await addToStore('visits', {
                 houseId: currentHouseId,
                 date: new Date().toISOString(),
                 notes: notes,
-                personId: personIdToSave, // Use the final ID
+                personId: personIdToSave,
                 isNotAtHome: false
             });
             
-            // Update the 'NH' status of the house
             const house = await getFromStore('houses', currentHouseId);
 
-            // A visit was made, so it's no longer 'Not at Home'
             if (house.isCurrentlyNH) {
                 house.isCurrentlyNH = false;
             }
-            // Check if 'Remove NH' was explicitly ticked (though the above covers it)
             if (modalRemoveNHCheck.checked) {
                 house.isCurrentlyNH = false;
             }
@@ -737,7 +708,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             await renderHouseDetails(currentHouseId);
         });
 
-        // Event listener for house detail checkboxes with iOS fix
         document.getElementById('house-detail-view').addEventListener('click', (e) => {
             if (e.target.type !== 'checkbox' || !['not-at-home-check', 'not-interested-check', 'mailbox-check', 'notrespass-check', 'gate-check'].includes(e.target.id)) {
                 return;
@@ -758,8 +728,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }, 0);
         });
 
-        // Data Management Event Listeners
-            // Hook Up the "Show All RVs" Button
         document.getElementById('show-rvs-btn').addEventListener('click', async () => {
             await renderRVList();
             showView('rv-list-view');
@@ -900,7 +868,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                             targetTerritoryId = await addToStore('territories', { name: backupTerritory.name, number: backupTerritory.number, createdAt: backupTerritory.createdAt });
                         }
     
-                        // Corrected and robust restore logic
                         for (const house of data.houses || []) {
                             const oldHouseId = house.id;
                             delete house.id;
