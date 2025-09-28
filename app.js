@@ -739,7 +739,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Event listener for house detail checkboxes with iOS fix
         document.getElementById('house-detail-view').addEventListener('click', (e) => {
-            if (e.target.type !== 'checkbox' || !['not-at-home-check', 'mailbox-check', 'notrespass-check', 'gate-check'].includes(e.target.id)) {
+            if (e.target.type !== 'checkbox' || !['not-at-home-check', 'not-interested-check', 'mailbox-check', 'notrespass-check', 'gate-check'].includes(e.target.id)) {
                 return;
             }
             const checkbox = e.target;
