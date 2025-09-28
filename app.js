@@ -100,32 +100,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         searchInput.classList.toggle('hidden', !shouldShowSearch);
     }
     
-    // --- RENDER HOUSES AND DETAILS (with advanced filter logic) ---
+    // --- REFACTORED RENDER HOUSES AND DETAILS (with new logic) ---
     async function renderHouses(territoryId) {
         houseList.innerHTML = '';
         const territory = await getFromStore('territories', territoryId);
         document.getElementById('house-list-title').textContent = territory.name;
 
         const allHouses = await getByIndex('houses', 'territoryId', territoryId);
+        
+        // --- Performance Optimization: Fetch all visits for the territory at once ---
+        const houseVisitPromises = allHouses.map(house => getByIndex('visits', 'houseId', house.id));
+        const allVisitsArrays = await Promise.all(houseVisitPromises);
+        const visitsByHouseId = allHouses.reduce((acc, house, index) => {
+            acc[house.id] = allVisitsArrays[index] || [];
+            return acc;
+        }, {});
+
         let housesToRender = [];
 
-        // Loop through all houses and apply active filters
+        // --- Filtering Logic (using pre-fetched data) ---
         for (const house of allHouses) {
             let shouldBeHidden = false;
+            const visits = visitsByHouseId[house.id];
 
-            if (activeHouseFilters.ni && house.isNotInterested) {
-                shouldBeHidden = true;
-            }
-            if (!shouldBeHidden && activeHouseFilters.nt && house.noTrespassing) {
-                shouldBeHidden = true;
-            }
-            if (!shouldBeHidden && activeHouseFilters.gated && house.hasGate) {
-                shouldBeHidden = true;
-            }
-            // Check for 'visited' status last, as it requires a DB lookup
+            if (activeHouseFilters.ni && house.isNotInterested) shouldBeHidden = true;
+            if (!shouldBeHidden && activeHouseFilters.nt && house.noTrespassing) shouldBeHidden = true;
+            if (!shouldBeHidden && activeHouseFilters.gated && house.hasGate) shouldBeHidden = true;
+
+            // --- Updated "Hide Visited" Logic ---
+            // A house is "visited" only if it has a visit that is NOT an NH log.
             if (!shouldBeHidden && activeHouseFilters.visited) {
-                const visits = await getByIndex('visits', 'houseId', house.id);
-                if (visits.length > 0) {
+                const hasActualVisit = visits.some(visit => !visit.isNotAtHome);
+                if (hasActualVisit) {
                     shouldBeHidden = true;
                 }
             }
@@ -147,10 +153,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
     
+        // --- Rendering Logic (using pre-fetched data) ---
         for (const house of housesToRender) {
-            const visits = (await getByIndex('visits', 'houseId', house.id)).sort((a,b) => new Date(b.date) - new Date(a.date));
+            const visits = visitsByHouseId[house.id].sort((a, b) => new Date(b.date) - new Date(a.date));
             const lastVisit = visits[0];
-    
+            const visitCount = visits.length; // New visit counter
+
             let iconsHTML = '';
             if (house.hasMailbox) iconsHTML += `<span title="Mailbox Available">📭</span>`;
             if (house.noTrespassing) iconsHTML += `<span title="No Trespassing Sign">🚫</span>`;
@@ -173,7 +181,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <strong>${house.address}</strong> ${niBadge}
                 <div class="house-card-details">
                     ${lastActivityDate}<br>
-                    ${personMet}
+                    Attempts: <strong>${visitCount}</strong> | ${personMet}
                 </div>
                 <div class="icons">
                     ${iconsHTML}
@@ -184,6 +192,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             houseList.appendChild(li);
         }
     }
+
 
     async function renderHouseDetails(houseId) {
         const house = await getFromStore('houses', houseId);
@@ -705,19 +714,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 personIdToSave = await addToStore('people', newPerson);
             }
 
+            // A saved note is an "actual visit", so isNotAtHome is false.
             await addToStore('visits', {
                 houseId: currentHouseId,
                 date: new Date().toISOString(),
                 notes: notes,
                 personId: personIdToSave,
-                isNotAtHome: false
+                isNotAtHome: false 
             });
             
             const house = await getFromStore('houses', currentHouseId);
 
-            if (house.isCurrentlyNH) {
-                house.isCurrentlyNH = false;
-            }
+            // --- Updated NH Status Logic ---
+            // Only remove the NH status if the user explicitly checks the box.
             if (modalRemoveNHCheck.checked) {
                 house.isCurrentlyNH = false;
             }
