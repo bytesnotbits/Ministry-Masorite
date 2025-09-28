@@ -123,8 +123,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             const li = document.createElement('li');
             li.className = 'house-card';
             li.dataset.id = house.id;
+
+            // --- Add NI badge and class if needed ---
+            const niBadge = house.isNotInterested ? '<span class="ni-badge">NOT INTERESTED</span>' : '';
+            if (house.isNotInterested) {
+                li.classList.add('is-ni');
+            }
+
             li.innerHTML = `
-                <strong>${house.address}</strong>
+                <strong>${house.address}</strong> ${niBadge}
                 <div class="house-card-details">
                     ${lastActivityDate}<br>
                     ${personMet}
@@ -146,6 +153,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('notrespass-check').checked = house.noTrespassing;
         document.getElementById('gate-check').checked = house.hasGate || false;
         document.getElementById('not-at-home-check').checked = house.isCurrentlyNH || false;
+        document.getElementById('not-interested-check').checked = house.isNotInterested || false;
 
         // --- NEW: POPULATE PEOPLE LIST ---
         const peopleList = document.getElementById('people-list');
@@ -741,6 +749,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const isChecked = checkbox.checked;
                 switch (checkbox.id) {
                     case 'not-at-home-check': house.isCurrentlyNH = isChecked; break;
+                    case 'not-interested-check': house.isNotInterested = isChecked; break;
                     case 'mailbox-check': house.hasMailbox = isChecked; break;
                     case 'notrespass-check': house.noTrespassing = isChecked; break;
                     case 'gate-check': house.hasGate = isChecked; break;

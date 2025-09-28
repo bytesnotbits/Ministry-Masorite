@@ -455,3 +455,20 @@ textarea { width: 100%; box-sizing: border-box; }
 .rv-details strong {
     color: var(--dark-text);
 }
+
+/* STYLES FOR NOT INTERESTED (NI) BADGE */
+.ni-badge {
+    background-color: #a00; /* A strong red */
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-left: 10px;
+    vertical-align: middle; /* Aligns the badge nicely with the address text */
+}
+
+/* Optional: Add a subtle style to the entire list item for NI houses */
+.house-card.is-ni {
+    border-left: 4px solid #a00;
+}
