@@ -473,13 +473,16 @@ textarea { width: 100%; box-sizing: border-box; }
     border-left: 4px solid #a00;
 }
 
-/* NEW STYLES FOR FILTER CONTROLS */
+/* STYLES FOR ADVANCED FILTER CONTROLS */
 .filter-controls {
     margin-bottom: 15px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 .filter-btn {
-    width: 100%;
+    flex-grow: 1; /* Allows buttons to share space */
     background-color: #f0f0f0;
     border: 1px solid #ccc;
     color: #555;

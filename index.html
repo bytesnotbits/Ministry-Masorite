@@ -37,7 +37,7 @@
                 <input type="file" id="restore-file-input" accept=".mscribe" hidden>
             </div>
 
-            <div class="version-footer">
+             <div class="version-footer">
                 <h3>Version & TODO</h3>
                 <p><Strong>Done</Strong> 0.21.03 improve UI/UX for householder name edit/delete buttons</p>
                 <p><Strong>Done</Strong> 0.21.04 Move "+ Add New Visit Note" button to top of Note List</p>
@@ -47,8 +47,8 @@
                 <p><Strong>Done:</Strong> 0.23.00 Confirm HH:MM can be properly edited along with date</p>
                 <p><strong>Done:</strong> 0.23.00 Edit Territory name/number</p>
                 <p><strong>Done:</strong> 0.24.01 Filter view for RVs</p>
-                <p><strong>Done:</strong> Implement Not Interested attribute</p>
-                <p><strong>Done:</strong> Filter view for unvisited houses by street</p>
+                <p><strong>Done:</strong> 0.25.01 Implement Not Interested attribute</p>
+                <p><strong>Done:</strong> 0.26.01 Filter view for unvisited houses by street (updated scope to be able to filter out any attribute...NT, Gate, etc...)</p>
                 <p><strong>TODO:</strong> Implement DNC (maybe?)</p>
                 <p><strong>TODO:</strong> Sort RVs by street name/number, last visit date (ascending/descending)</p>
                 <p><strong>TODO:</strong> Filter view, only see NH</p>
@@ -67,9 +67,12 @@
             <button class="back-btn" data-target="territory-list-view">&larr; Back to Territories</button>
             <h2 id="house-list-title"></h2>
 
-            <!-- NEW FILTER CONTROLS -->
+            <!-- NEW ADVANCED FILTER CONTROLS -->
             <div class="filter-controls">
-                <button id="filter-unvisited-btn" class="filter-btn">Show Unvisited Only</button>
+                <button class="filter-btn" data-filter="visited">Hide Visited</button>
+                <button class="filter-btn" data-filter="ni">Hide NI</button>
+                <button class="filter-btn" data-filter="nt">Hide NT</button>
+                <button class="filter-btn" data-filter="gated">Hide Gated</button>
             </div>
             
             <button id="add-house-btn" class="primary-action">+ Add New House</button>

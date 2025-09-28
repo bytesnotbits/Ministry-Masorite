@@ -8,7 +8,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     let territorySort = 'name';
     let selectedPersonId = null;
     let currentEditTerritoryId = null;
-    let showOnlyUnvisited = false; // State for the unvisited filter
+    // New state object for the advanced filters
+    let activeHouseFilters = {
+        visited: false,
+        ni: false,
+        nt: false,
+        gated: false
+    };
 
     // --- DOM ELEMENTS ---
     const views = document.querySelectorAll('.view');
@@ -76,8 +82,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 li.dataset.id = territory.id;
                 const numberDisplay = territory.number ? `<strong>#${territory.number}</strong> -` : 'No # -';
 
-                // Add a new button with the class edit-territory-btn, which we'll use to trigger the edit logic.
-                // Add the generic icon-btn class to it, so it will inherit some base styles we can build on.
                 li.innerHTML = `
                     <span>${numberDisplay} ${territory.name} (${houses.length} houses)</span>
                     <button class="icon-btn edit-territory-btn" data-id="${territory.id}" title="Edit Territory">✏️</button>
@@ -96,7 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         searchInput.classList.toggle('hidden', !shouldShowSearch);
     }
     
-    // --- RENDER HOUSES AND DETAILS (with filter logic) ---
+    // --- RENDER HOUSES AND DETAILS (with advanced filter logic) ---
     async function renderHouses(territoryId) {
         houseList.innerHTML = '';
         const territory = await getFromStore('territories', territoryId);
@@ -105,23 +109,40 @@ document.addEventListener('DOMContentLoaded', async () => {
         const allHouses = await getByIndex('houses', 'territoryId', territoryId);
         let housesToRender = [];
 
-        // --- Apply the "Unvisited Only" filter if it's active ---
-        if (showOnlyUnvisited) {
-            for (const house of allHouses) {
+        // Loop through all houses and apply active filters
+        for (const house of allHouses) {
+            let shouldBeHidden = false;
+
+            if (activeHouseFilters.ni && house.isNotInterested) {
+                shouldBeHidden = true;
+            }
+            if (!shouldBeHidden && activeHouseFilters.nt && house.noTrespassing) {
+                shouldBeHidden = true;
+            }
+            if (!shouldBeHidden && activeHouseFilters.gated && house.hasGate) {
+                shouldBeHidden = true;
+            }
+            // Check for 'visited' status last, as it requires a DB lookup
+            if (!shouldBeHidden && activeHouseFilters.visited) {
                 const visits = await getByIndex('visits', 'houseId', house.id);
-                if (visits.length === 0) {
-                    housesToRender.push(house);
+                if (visits.length > 0) {
+                    shouldBeHidden = true;
                 }
             }
-        } else {
-            housesToRender = allHouses;
+
+            if (!shouldBeHidden) {
+                housesToRender.push(house);
+            }
         }
     
         if (housesToRender.length === 0) {
-            if (showOnlyUnvisited) {
-                houseList.innerHTML = '<li class="placeholder">No unvisited houses in this territory.</li>';
-            } else {
+            const hasActiveFilters = Object.values(activeHouseFilters).some(v => v);
+            if (hasActiveFilters) {
+                 houseList.innerHTML = '<li class="placeholder">No houses match the current filters.</li>';
+            } else if (allHouses.length === 0) {
                 houseList.innerHTML = '<li class="placeholder">No houses added to this territory yet.</li>';
+            } else {
+                 houseList.innerHTML = '<li class="placeholder">All houses are currently hidden by filters.</li>';
             }
             return;
         }
@@ -143,7 +164,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             li.className = 'house-card';
             li.dataset.id = house.id;
 
-            // --- Add NI badge and class if needed ---
             const niBadge = house.isNotInterested ? '<span class="ni-badge">NOT INTERESTED</span>' : '';
             if (house.isNotInterested) {
                 li.classList.add('is-ni');
@@ -174,7 +194,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('not-at-home-check').checked = house.isCurrentlyNH || false;
         document.getElementById('not-interested-check').checked = house.isNotInterested || false;
 
-        // --- NEW: POPULATE PEOPLE LIST ---
         const peopleList = document.getElementById('people-list');
         peopleList.innerHTML = '';
         const people = await getByIndex('people', 'houseId', houseId);
@@ -197,7 +216,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             peopleList.innerHTML = '<li class="placeholder">No individuals recorded yet.</li>';
         }
 
-        // --- RENDER VISIT HISTORY (with name lookup) ---
         visitList.innerHTML = '';
         const visits = (await getByIndex('visits', 'houseId', houseId)).sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -520,9 +538,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const territoryLi = target.closest('#territory-list li');
             if (territoryLi && !target.classList.contains('delete-btn') && !territoryLi.classList.contains('placeholder')) {
                 currentTerritoryId = Number(territoryLi.dataset.id);
-                showOnlyUnvisited = false; // Reset filter when changing territories
-                document.getElementById('filter-unvisited-btn').classList.remove('active');
-                document.getElementById('filter-unvisited-btn').textContent = 'Show Unvisited Only';
+                // Reset filters when changing territories
+                activeHouseFilters = { visited: false, ni: false, nt: false, gated: false };
+                document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+                
                 await renderHouses(currentTerritoryId);
                 showView('house-list-view');
                 return;
@@ -659,18 +678,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('add-house-btn').addEventListener('click', showHouseModal);
         document.getElementById('add-visit-btn').addEventListener('click', showNoteModal);
     
-        // --- NEW: Event listener for the unvisited filter button ---
-        document.getElementById('filter-unvisited-btn').addEventListener('click', async () => {
-            const btn = document.getElementById('filter-unvisited-btn');
-            showOnlyUnvisited = !showOnlyUnvisited; // Toggle the filter state
-        
-            btn.classList.toggle('active', showOnlyUnvisited);
-            btn.textContent = showOnlyUnvisited ? 'Show All Houses' : 'Show Unvisited Only';
-        
-            await renderHouses(currentTerritoryId); // Re-render the list with the new filter
+        // --- NEW: Event listener for the advanced filter buttons ---
+        document.querySelector('.filter-controls').addEventListener('click', async (e) => {
+            const btn = e.target.closest('.filter-btn');
+            if (!btn) return;
+
+            const filterType = btn.dataset.filter;
+            activeHouseFilters[filterType] = !activeHouseFilters[filterType];
+            btn.classList.toggle('active');
+            
+            await renderHouses(currentTerritoryId);
         });
 
-                document.getElementById('modal-save-note-btn').addEventListener('click', async () => {
+        document.getElementById('modal-save-note-btn').addEventListener('click', async () => {
             const notes = modalVisitNotes.value;
             if (!notes) {
                 alert('Please enter some notes for the visit.');
@@ -708,6 +728,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await renderHouseDetails(currentHouseId);
         });
 
+        // Event listener for house detail checkboxes with NI visit logging
         document.getElementById('house-detail-view').addEventListener('click', (e) => {
             if (e.target.type !== 'checkbox' || !['not-at-home-check', 'not-interested-check', 'mailbox-check', 'notrespass-check', 'gate-check'].includes(e.target.id)) {
                 return;
@@ -716,7 +737,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             setTimeout(async () => {
                 const house = await getFromStore('houses', currentHouseId);
                 if (!house) return;
+
                 const isChecked = checkbox.checked;
+                const wasNotInterested = house.isNotInterested;
+
                 switch (checkbox.id) {
                     case 'not-at-home-check': house.isCurrentlyNH = isChecked; break;
                     case 'not-interested-check': house.isNotInterested = isChecked; break;
@@ -725,6 +749,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     case 'gate-check': house.hasGate = isChecked; break;
                 }
                 await updateInStore('houses', house);
+                
+                // If the NI status was just changed to 'true', log a visit
+                if (checkbox.id === 'not-interested-check' && isChecked && !wasNotInterested) {
+                    await addToStore('visits', {
+                        houseId: currentHouseId,
+                        date: new Date().toISOString(),
+                        notes: "Marked as 'Not Interested'.",
+                        personId: null,
+                        isNotAtHome: false
+                    });
+                    await renderHouseDetails(currentHouseId); // Re-render to show the new visit
+                }
             }, 0);
         });
 
@@ -732,7 +768,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             await renderRVList();
             showView('rv-list-view');
         });
-        document.getElementById('export-full-btn').addEventListener('click', handleFullBackup);
         document.getElementById('export-full-btn').addEventListener('click', handleFullBackup);
         document.getElementById('export-mscribe-btn').addEventListener('click', handleTerritoryBackup);
         document.getElementById('export-csv-btn').addEventListener('click', handleExportCSV);
@@ -746,12 +781,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const territory = await getFromStore('territories', currentTerritoryId);
         const houses = await getByIndex('houses', 'territoryId', currentTerritoryId);
         let visits = [];
-        let people = []; // Corrected
+        let people = [];
         for (const house of houses) {
             const houseVisits = await getByIndex('visits', 'houseId', house.id);
             visits.push(...houseVisits);
-            const housePeople = await getByIndex('people', 'houseId', house.id); // Corrected
-            people.push(...housePeople); // Corrected
+            const housePeople = await getByIndex('people', 'houseId', house.id);
+            people.push(...housePeople);
         }
 
         const backupData = {
@@ -759,7 +794,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             territories: [territory],
             houses,
             visits,
-            people // Corrected
+            people
         };
 
         const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
@@ -794,7 +829,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 territories: await getAllFromStore('territories'),
                 houses: await getAllFromStore('houses'),
                 visits: await getAllFromStore('visits'),
-                people: await getAllFromStore('people') // Corrected
+                people: await getAllFromStore('people')
             };
 
             const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
@@ -842,7 +877,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         if (data.territories) for (const item of data.territories) await addToStore('territories', item);
                         if (data.houses) for (const item of data.houses) await addToStore('houses', item);
                         if (data.visits) for (const item of data.visits) await addToStore('visits', item);
-                        if (data.people) for (const item of data.people) await addToStore('people', item); // Corrected
+                        if (data.people) for (const item of data.people) await addToStore('people', item);
                         alert('Full restore successful!');
                         await renderTerritories();
                         showView('territory-list-view');
