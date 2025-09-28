@@ -128,7 +128,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!shouldBeHidden && activeHouseFilters.gated && house.hasGate) shouldBeHidden = true;
 
             // --- Updated "Hide Visited" Logic ---
-            // A house is "visited" only if it has a visit that is NOT an NH log.
             if (!shouldBeHidden && activeHouseFilters.visited) {
                 const hasActualVisit = visits.some(visit => !visit.isNotAtHome);
                 // Hide the house ONLY IF it has an actual visit AND it is NOT currently marked as NH.
@@ -136,7 +135,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     shouldBeHidden = true;
                 }
             }
-
 
             if (!shouldBeHidden) {
                 housesToRender.push(house);
