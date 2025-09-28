@@ -131,10 +131,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             // A house is "visited" only if it has a visit that is NOT an NH log.
             if (!shouldBeHidden && activeHouseFilters.visited) {
                 const hasActualVisit = visits.some(visit => !visit.isNotAtHome);
-                if (hasActualVisit) {
+                // Hide the house ONLY IF it has an actual visit AND it is NOT currently marked as NH.
+                if (hasActualVisit && !house.isCurrentlyNH) {
                     shouldBeHidden = true;
                 }
             }
+
 
             if (!shouldBeHidden) {
                 housesToRender.push(house);
