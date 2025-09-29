@@ -187,7 +187,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     ${iconsHTML}
                 </div>
                 <button class="delete-btn" data-id="${house.id}" data-type="house">X</button>
-                <button class="log-nh-btn" data-id="${house.id}">Log 'NH'</button>
+                <div class="card-actions">
+                    <button class="log-nh-btn" data-id="${house.id}">Log 'NH'</button>
+                    <button class="sent-letter-btn" data-id="${house.id}">Sent Letter</button>
+                    <button class="phone-call-btn" data-id="${house.id}">Log Call</button>
+                </div>
             `;
             houseList.appendChild(li);
         }
@@ -325,7 +329,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const modalHouseNumber = document.getElementById('modal-house-number');
         const houseModalToggles = document.querySelector('#house-modal .modal-toggles');
     
-        const showNoteModal = async () => {
+        const showNoteModal = async (title = 'Add Visit Note') => {
+            document.querySelector('#note-modal h3').textContent = title;
             personInput.value = '';
             selectedPersonId = null;
             rvToggle.style.display = 'none'; 
@@ -543,6 +548,37 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await renderHouses(currentTerritoryId);
                 return;
             }
+
+            if (target.classList.contains('sent-letter-btn')) {
+                e.stopPropagation();
+                const houseId = Number(target.dataset.id);
+                if (!houseId) return;
+
+                if (confirm("This will mark the house as visited and clear the 'NH' status. Are you sure?")) {
+                    await addToStore('visits', {
+                        houseId: houseId,
+                        date: new Date().toISOString(),
+                        notes: 'Letter sent.',
+                        personName: '',
+                        isNotAtHome: false
+                    });
+
+                    const house = await getFromStore('houses', houseId);
+                    house.isCurrentlyNH = false;
+                    await updateInStore('houses', house);
+                    await renderHouses(currentTerritoryId);
+                }
+                return;
+            }
+
+            if (target.classList.contains('phone-call-btn')) {
+                e.stopPropagation();
+                const houseId = Number(target.dataset.id);
+                if (!houseId) return;
+                currentHouseId = houseId;
+                showNoteModal('Log Phone Call');
+                return;
+            }
     
             const territoryLi = target.closest('#territory-list li');
             if (territoryLi && !target.classList.contains('delete-btn') && !territoryLi.classList.contains('placeholder')) {
@@ -685,7 +721,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         houseModal.querySelector('.close-modal-btn').addEventListener('click', hideHouseModal);
     
         document.getElementById('add-house-btn').addEventListener('click', showHouseModal);
-        document.getElementById('add-visit-btn').addEventListener('click', showNoteModal);
+        document.getElementById('add-visit-btn').addEventListener('click', () => showNoteModal('Add New Visit Note'));
     
         // --- NEW: Event listener for the advanced filter buttons ---
         document.querySelector('.filter-controls').addEventListener('click', async (e) => {

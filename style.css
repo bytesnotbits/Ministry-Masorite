@@ -495,3 +495,54 @@ textarea { width: 100%; box-sizing: border-box; }
     color: var(--white);
     border-color: var(--primary-color);
 }
+
+/* --- STYLES FOR CARD ACTION BUTTONS --- */
+
+/* Container for the buttons at the bottom of the card */
+.card-actions {
+    position: absolute;
+    bottom: 8px;
+    left: 10px;
+    right: 10px;
+    display: flex;
+    gap: 8px; /* Space between buttons */
+    justify-content: flex-start;
+}
+
+/* Base style for all small action buttons on the card */
+.card-actions button {
+    flex-grow: 1; /* Allow buttons to share the space */
+    padding: 6px 8px;
+    font-size: 13px;
+    font-weight: bold;
+    border-radius: 6px;
+    border: none;
+    color: white;
+    cursor: pointer;
+    text-align: center;
+    transition: opacity 0.2s;
+}
+
+.card-actions button:hover {
+    opacity: 0.85;
+}
+
+/* Overwrite specific button styles */
+.log-nh-btn {
+    position: static; /* Remove absolute positioning */
+    background-color: #f0ad4e; /* Keep the orange color for NH */
+}
+
+.sent-letter-btn {
+    background-color: #337ab7; /* A nice blue for letters */
+}
+
+.phone-call-btn {
+    background-color: #5cb85c; /* A friendly green for calls */
+}
+
+/* Adjust the main card padding to make space for the buttons */
+ul li {
+    /* This rule should already exist, just confirm the padding */
+    padding-bottom: 50px; 
+}
