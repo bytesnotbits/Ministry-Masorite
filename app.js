@@ -942,12 +942,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     
         const reader = new FileReader();
         reader.onload = async (e) => {
+            let data;
+            // --- STEP 1: Better error handling for file parsing ---
             try {
-                const data = JSON.parse(e.target.result);
-    
-                if (data.type === 'full_backup') {
+                data = JSON.parse(e.target.result);
+            } catch (err) {
+                // This catch block will trigger if the file is not valid JSON (e.g., an HTML page)
+                alert("Restore failed. The file is not a valid JSON file. Please ensure it was downloaded correctly from your cloud service using the 'Download' button and not edited in a word processor.");
+                console.error("JSON Parsing Error:", err);
+                event.target.value = ''; // Clear the input
+                return;
+            }
+
+            // --- STEP 2: More specific checks for file content ---
+            try {
+                if (data && data.type === 'full_backup') {
                     if (confirm('This is a FULL backup. Restoring will ERASE all current data. Are you sure?')) {
                         await clearAllStores();
+                        // Added checks to prevent errors if a table is missing in the backup
                         if (data.territories) for (const item of data.territories) await addToStore('territories', item);
                         if (data.houses) for (const item of data.houses) await addToStore('houses', item);
                         if (data.visits) for (const item of data.visits) await addToStore('visits', item);
@@ -956,7 +968,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         await renderTerritories();
                         showView('territory-list-view');
                     }
-                } else if (data.type === 'territory_backup' && data.territories && data.territories.length > 0) {
+                } else if (data && data.type === 'territory_backup') {
                     const backupTerritory = data.territories[0];
                     const territoryName = backupTerritory.name;
     
@@ -969,8 +981,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                             targetTerritoryId = existingTerritory.id;
                             const oldHouses = await getByIndex('houses', 'territoryId', targetTerritoryId);
                             for (const house of oldHouses) {
-                                await deleteFromStore('visits', null, 'houseId', house.id);
-                                await deleteFromStore('people', null, 'houseId', house.id);
+                                // A more robust way to delete related data
+                                const visits = await getByIndex('visits', 'houseId', house.id);
+                                for (const visit of visits) await deleteFromStore('visits', visit.id);
+                                const people = await getByIndex('people', 'houseId', house.id);
+                                for (const person of people) await deleteFromStore('people', person.id);
                                 await deleteFromStore('houses', house.id);
                             }
                         } else {
@@ -1008,17 +1023,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                         showView('territory-list-view');
                     }
                 } else {
-                    alert('Restore failed. Unrecognized file format.');
+                    // This error means the JSON was valid, but it wasn't a recognized backup file
+                    alert('Restore failed. The file is not a recognized Ministry Scribe backup file.');
                 }
             } catch (err) {
-                alert('Restore failed. The file may be corrupt.');
-                console.error(err);
+                // This is a final catch-all for any other unexpected errors during the restore process
+                alert('Restore failed due to an unexpected error. See the console for details.');
+                console.error("Restore Process Error:", err);
             } finally {
-                event.target.value = '';
+                event.target.value = ''; // Clear the input
             }
         };
         reader.readAsText(file);
     }
+
     
     async function handleExportCSV() {
         const territory = await getFromStore('territories', currentTerritoryId);
