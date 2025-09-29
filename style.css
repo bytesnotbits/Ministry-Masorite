@@ -49,6 +49,65 @@ ul li {
 ul li:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
 ul li.placeholder { text-align: center; color: var(--light-text); cursor: default; }
 
+/* This is the new flexbox container for the top row of the card */
+.card-header {
+    display: flex;
+    justify-content: space-between; /* Pushes children to opposite ends */
+    align-items: flex-start;     /* Aligns items to the top */
+    gap: 8px;                    /* Adds a small space between columns if they touch */
+    margin-bottom: 8px;          /* Adds space below the header */
+}
+
+.card-title {
+    flex-grow: 1; /* Allows the title to take up all available space */
+}
+
+.card-title strong {
+    font-size: 18px; /* Make the address a bit more prominent */
+    line-height: 1.2;
+}
+
+.card-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;      /* Space between the icon group and the delete 'X' */
+    flex-shrink: 0; /* Prevents this container from shrinking */
+}
+
+/* This replaces the old .icons style */
+.icons {
+    /* This is no longer absolutely positioned */
+    display: flex;
+    gap: 8px; /* Space between each icon */
+    font-size: 20px;
+    color: var(--light-text);
+}
+
+.icons span {
+    margin-right: 0; /* Remove old margin */
+}
+
+/* This replaces the old .delete-btn style */
+.delete-btn {
+    /* This is no longer absolutely positioned */
+    position: static; 
+    background: none;
+    color: #a00;
+    border: none;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1; /* Ensures tight alignment */
+    transition: color 0.2s;
+}
+
+.delete-btn:hover {
+    color: #e00;
+}
+
+/* --- END OF NEW CARD HEADER & ICON STYLES --- */
+
 .house-card .icons {
     font-size: 18px;
     margin-top: 8px;
@@ -86,20 +145,6 @@ button.back-btn {
     color: var(--primary-color);
     padding: 0;
     margin-bottom: 15px;
-}
-
-.delete-btn {
-    position: absolute;
-    top: 8px; /* Slightly adjusted for better visual alignment */
-    right: 12px;/* Slightly adjusted for better visual alignment */
-    background: none;
-    color: #a00;
-    border: none;
-    font-size: 24px; /* Larger font size for a clear 'X' */
-    font-weight: bold;
-    cursor: pointer;
-    padding: 0; /* Remove any default button padding */
-    transition: color 0.2s; /* Add a smooth transition for hover */
 }
 
 .delete-btn:hover {
@@ -174,14 +219,6 @@ textarea { width: 100%; box-sizing: border-box; }
 
 .house-card-details strong {
     color: var(--dark-text);
-}
-
-.house-card .icons {
-    /* This is an adjustment to existing style */
-    position: absolute;
-    top: 15px;
-    right: 45px;
-    font-size: 20px;
 }
 
 /* 'Log NH' BUTTON ON HOUSE CARDS */

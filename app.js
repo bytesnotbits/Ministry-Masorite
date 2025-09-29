@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         searchInput.classList.toggle('hidden', !shouldShowSearch);
     }
     
-    // --- REFACTORED RENDER HOUSES AND DETAILS (with new logic) ---
+    // --- REFACTORED RENDER HOUSES AND DETAILS (with new layout) ---
     async function renderHouses(territoryId) {
         houseList.innerHTML = '';
         const territory = await getFromStore('territories', territoryId);
@@ -127,10 +127,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!shouldBeHidden && activeHouseFilters.nt && house.noTrespassing) shouldBeHidden = true;
             if (!shouldBeHidden && activeHouseFilters.gated && house.hasGate) shouldBeHidden = true;
 
-            // --- Updated "Hide Visited" Logic ---
             if (!shouldBeHidden && activeHouseFilters.visited) {
                 const hasActualVisit = visits.some(visit => !visit.isNotAtHome);
-                // Hide the house ONLY IF it has an actual visit AND it is NOT currently marked as NH.
                 if (hasActualVisit && !house.isCurrentlyNH) {
                     shouldBeHidden = true;
                 }
@@ -157,7 +155,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         for (const house of housesToRender) {
             const visits = visitsByHouseId[house.id].sort((a, b) => new Date(b.date) - new Date(a.date));
             const lastVisit = visits[0];
-            const visitCount = visits.length; // New visit counter
+            const visitCount = visits.length;
 
             let iconsHTML = '';
             if (house.hasMailbox) iconsHTML += `<span title="Mailbox Available">📭</span>`;
@@ -177,21 +175,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                 li.classList.add('is-ni');
             }
 
-            // --- NEW: Logic to determine the state of the "Send Letter" button ---
             const hasSentLetter = visits.some(v => v.visitType === 'letter');
             const letterButtonClass = hasSentLetter ? 'sent-letter-btn letter-sent' : 'sent-letter-btn';
             const letterButtonText = hasSentLetter ? 'Letter Sent' : 'Send Letter';
 
+            // --- UPDATED INNERHTML WITH NEW FLEXBOX STRUCTURE ---
             li.innerHTML = `
-                <strong>${house.address}</strong> ${niBadge}
+                <div class="card-header">
+                    <div class="card-title">
+                        <strong>${house.address}</strong> ${niBadge}
+                    </div>
+                    <div class="card-controls">
+                        <div class="icons">${iconsHTML}</div>
+                        <button class="delete-btn" data-id="${house.id}" data-type="house">X</button>
+                    </div>
+                </div>
                 <div class="house-card-details">
                     ${lastActivityDate}<br>
                     Attempts: <strong>${visitCount}</strong> | ${personMet}
                 </div>
-                <div class="icons">
-                    ${iconsHTML}
-                </div>
-                <button class="delete-btn" data-id="${house.id}" data-type="house">X</button>
                 <div class="card-actions">
                     <button class="log-nh-btn" data-id="${house.id}">Log 'NH'</button>
                     <button class="${letterButtonClass}" data-id="${house.id}">${letterButtonText}</button>
@@ -201,7 +203,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             houseList.appendChild(li);
         }
     }
-
 
     async function renderHouseDetails(houseId) {
         const house = await getFromStore('houses', houseId);
