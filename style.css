@@ -537,6 +537,16 @@ textarea { width: 100%; box-sizing: border-box; }
     background-color: #337ab7; /* A nice blue for letters */
 }
 
+/* This new class will be added by JS to show the action is complete */
+.sent-letter-btn.letter-sent {
+    background-color: #777; /* A neutral gray to indicate "done" */
+    color: #eee;
+}
+
+.sent-letter-btn.letter-sent:hover {
+    opacity: 0.9; /* Slightly lighten on hover to show it's still clickable */
+}
+
 .phone-call-btn {
     background-color: #5cb85c; /* A friendly green for calls */
 }

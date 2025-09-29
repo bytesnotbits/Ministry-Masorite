@@ -177,6 +177,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 li.classList.add('is-ni');
             }
 
+            // --- NEW: Logic to determine the state of the "Send Letter" button ---
+            const hasSentLetter = visits.some(v => v.visitType === 'letter');
+            const letterButtonClass = hasSentLetter ? 'sent-letter-btn letter-sent' : 'sent-letter-btn';
+            const letterButtonText = hasSentLetter ? 'Letter Sent' : 'Send Letter';
+
             li.innerHTML = `
                 <strong>${house.address}</strong> ${niBadge}
                 <div class="house-card-details">
@@ -189,7 +194,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <button class="delete-btn" data-id="${house.id}" data-type="house">X</button>
                 <div class="card-actions">
                     <button class="log-nh-btn" data-id="${house.id}">Log 'NH'</button>
-                    <button class="sent-letter-btn" data-id="${house.id}">Sent Letter</button>
+                    <button class="${letterButtonClass}" data-id="${house.id}">${letterButtonText}</button>
                     <button class="phone-call-btn" data-id="${house.id}">Phone Call</button>
                 </div>
             `;
@@ -549,18 +554,38 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
+            // --- UPDATED: Letter button click logic with toggle functionality ---
             if (target.classList.contains('sent-letter-btn')) {
                 e.stopPropagation();
                 const houseId = Number(target.dataset.id);
-                if (!houseId) return;
+                const isLetterSent = target.classList.contains('letter-sent');
 
-                if (confirm("This will mark the house as visited and clear the 'NH' status. Are you sure?")) {
+                if (isLetterSent) {
+                    // This is the "UNDO" action
+                    if (confirm("This will remove the 'Letter Sent' visit record and reset the house to 'Not at Home'. Do you want to proceed?")) {
+                        const visits = await getByIndex('visits', 'houseId', houseId);
+                        // Find the most recent visit flagged as a letter
+                        const letterVisit = visits
+                            .filter(v => v.visitType === 'letter')
+                            .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+
+                        if (letterVisit) {
+                            await deleteFromStore('visits', letterVisit.id);
+                        }
+
+                        const house = await getFromStore('houses', houseId);
+                        house.isCurrentlyNH = true; // Revert status
+                        await updateInStore('houses', house);
+                        await renderHouses(currentTerritoryId);
+                    }
+                } else {
+                    // This is the "DO" action (sending the letter)
                     await addToStore('visits', {
                         houseId: houseId,
                         date: new Date().toISOString(),
                         notes: 'Letter sent.',
-                        personName: '',
-                        isNotAtHome: false
+                        isNotAtHome: false,
+                        visitType: 'letter' // The special flag
                     });
 
                     const house = await getFromStore('houses', houseId);
