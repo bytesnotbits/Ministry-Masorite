@@ -736,11 +736,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         document.getElementById('modal-save-note-btn').addEventListener('click', async () => {
-            const notes = modalVisitNotes.value;
-            if (!notes) {
-                alert('Please enter some notes for the visit.');
-                return;
-            }
+            const notes = modalVisitNotes.value.trim();
+            // Note validation removed to allow empty notes.
 
             let personIdToSave = selectedPersonId;
 
@@ -750,19 +747,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 personIdToSave = await addToStore('people', newPerson);
             }
 
-            // A saved note is an "actual visit", so isNotAtHome is false.
             await addToStore('visits', {
                 houseId: currentHouseId,
                 date: new Date().toISOString(),
-                notes: notes,
+                notes: notes || "Phone call logged.", // Add default text if empty
                 personId: personIdToSave,
                 isNotAtHome: false 
             });
             
             const house = await getFromStore('houses', currentHouseId);
 
-            // --- Updated NH Status Logic ---
-            // Only remove the NH status if the user explicitly checks the box.
             if (modalRemoveNHCheck.checked) {
                 house.isCurrentlyNH = false;
             }
@@ -770,7 +764,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             await updateInStore('houses', house);
             
             hideNoteModal();
-            await renderHouseDetails(currentHouseId);
+            
+            // --- UPDATED: Conditionally re-render the correct view ---
+            if (currentView === 'house-list-view') {
+                await renderHouses(currentTerritoryId);
+            } else { // Assumes house-detail-view
+                await renderHouseDetails(currentHouseId);
+            }
         });
 
         // Event listener for house detail checkboxes with NI visit logging
