@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="card-actions">
                     <button class="log-nh-btn" data-id="${house.id}">Log 'NH'</button>
                     <button class="sent-letter-btn" data-id="${house.id}">Sent Letter</button>
-                    <button class="phone-call-btn" data-id="${house.id}">Log Call</button>
+                    <button class="phone-call-btn" data-id="${house.id}">Phone Call</button>
                 </div>
             `;
             houseList.appendChild(li);
