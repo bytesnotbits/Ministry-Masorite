@@ -78,7 +78,7 @@ ul li.placeholder { text-align: center; color: var(--light-text); cursor: defaul
 .icons {
     /* This is no longer absolutely positioned */
     display: flex;
-    gap: 8px; /* Space between each icon */
+    gap: 4px; /* Space between each icon */
     font-size: 20px;
     color: var(--light-text);
 }

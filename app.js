@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         searchInput.classList.toggle('hidden', !shouldShowSearch);
     }
     
-    // --- REFACTORED RENDER HOUSES AND DETAILS (with new layout) ---
+// --- REFACTORED RENDER HOUSES AND DETAILS (with NI badge change) ---
     async function renderHouses(territoryId) {
         houseList.innerHTML = '';
         const territory = await getFromStore('territories', territoryId);
@@ -170,7 +170,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             li.className = 'house-card';
             li.dataset.id = house.id;
 
-            const niBadge = house.isNotInterested ? '<span class="ni-badge">NOT INTERESTED</span>' : '';
+            // --- THIS IS THE ONLY LINE THAT CHANGED IN THIS FUNCTION ---
+            const niBadge = house.isNotInterested ? '<span class="ni-badge">NI</span>' : '';
+            
             if (house.isNotInterested) {
                 li.classList.add('is-ni');
             }
@@ -179,7 +181,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const letterButtonClass = hasSentLetter ? 'sent-letter-btn letter-sent' : 'sent-letter-btn';
             const letterButtonText = hasSentLetter ? 'Letter Sent' : 'Send Letter';
 
-            // --- UPDATED INNERHTML WITH NEW FLEXBOX STRUCTURE ---
             li.innerHTML = `
                 <div class="card-header">
                     <div class="card-title">
@@ -203,7 +204,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             houseList.appendChild(li);
         }
     }
-
+    
     async function renderHouseDetails(houseId) {
         const house = await getFromStore('houses', houseId);
         document.getElementById('house-detail-address').textContent = house.address;
