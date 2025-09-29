@@ -84,8 +84,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 li.innerHTML = `
                     <span>${numberDisplay} ${territory.name} (${houses.length} houses)</span>
-                    <button class="icon-btn edit-territory-btn" data-id="${territory.id}" title="Edit Territory">✏️</button>
-                    <button class="delete-btn" data-id="${territory.id}" data-type="territory">X</button>
+                    <div class="territory-actions">
+                        <button class="icon-btn edit-territory-btn" data-id="${territory.id}" title="Edit Territory">✏️</button>
+                        <button class="delete-btn" data-id="${territory.id}" data-type="territory">X</button>
+                    </div>
                 `;
                 territoryList.appendChild(li);
             }
@@ -204,7 +206,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             houseList.appendChild(li);
         }
     }
-    
+
     async function renderHouseDetails(houseId) {
         const house = await getFromStore('houses', houseId);
         document.getElementById('house-detail-address').textContent = house.address;

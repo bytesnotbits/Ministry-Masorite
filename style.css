@@ -78,7 +78,7 @@ ul li.placeholder { text-align: center; color: var(--light-text); cursor: defaul
 .icons {
     /* This is no longer absolutely positioned */
     display: flex;
-    gap: 2px; /* Space between each icon */
+    gap: 4px; /* Space between each icon */
     font-size: 20px;
     color: var(--light-text);
 }
@@ -469,14 +469,6 @@ textarea { width: 100%; box-sizing: border-box; }
     cursor: default;
 }
 
-/* STYLES FOR TERRITORY EDIT BUTTON */
-.edit-territory-btn {
-    position: absolute;
-    top: 15px;
-    right: 45px; /* Position it to the left of the delete 'X' */
-    font-size: 22px;
-}
-
 /* STYLES FOR RV LIST VIEW */
 #rv-list li {
     padding-bottom: 15px; /* Reduce the large default bottom padding */
@@ -592,4 +584,19 @@ textarea { width: 100%; box-sizing: border-box; }
 ul li {
     /* This rule should already exist, just confirm the padding */
     padding-bottom: 50px; 
+}
+
+/* --- NEW STYLES FOR TERRITORY LIST LAYOUT --- */
+#territory-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px; /* Resetting padding for flex alignment */
+}
+
+.territory-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* Controls the space between the pencil and the X */
+    flex-shrink: 0; /* Prevents the buttons from shrinking */
 }
