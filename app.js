@@ -336,6 +336,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
         const houseModal = document.getElementById('house-modal');
         const modalHouseNumber = document.getElementById('modal-house-number');
+        const modalHouseNotes = document.getElementById('modal-house-notes');
         const houseModalToggles = document.querySelector('#house-modal .modal-toggles');
     
         const showNoteModal = async (title = 'Add Visit Note') => {
@@ -451,11 +452,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         const showHouseModal = () => {
             houseModal.classList.remove('hidden');
             modalHouseNumber.focus();
+            // Clear previous entries and set defaults
+            modalHouseNumber.value = '';
+            modalHouseNotes.value = '';
+            houseModalToggles.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+            // Set NH to true by default
+            houseModalToggles.querySelector('[data-prop="isCurrentlyNH"]').classList.add('active');
         };
 
         const hideHouseModal = () => {
             houseModal.classList.add('hidden');
             modalHouseNumber.value = '';
+            modalHouseNotes.value = '';
             houseModalToggles.querySelectorAll('.toggle-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
@@ -487,6 +495,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
             const territory = await getFromStore('territories', currentTerritoryId);
             const fullAddress = `${houseNumber} ${territory.name}`;
+            const initialNotes = modalHouseNotes.value.trim();
     
             const newHouse = {
                 territoryId: currentTerritoryId,
@@ -497,8 +506,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                 hasGate: document.querySelector('.toggle-btn[data-prop="hasGate"]').classList.contains('active')
             };
     
-            await addToStore('houses', newHouse);
-            await rerenderHousesAndPreserveScroll(); // To avoid scroll jump
+            const newHouseId = await addToStore('houses', newHouse);
+
+            // Add the "House Created" note
+            await addToStore('visits', {
+                houseId: newHouseId,
+                date: new Date().toISOString(),
+                notes: 'House record created.',
+                isNotAtHome: false
+            });
+
+            // Add the initial user notes if they exist
+            if (initialNotes) {
+                await addToStore('visits', {
+                    houseId: newHouseId,
+                    date: new Date().toISOString(),
+                    notes: initialNotes,
+                    isNotAtHome: false
+                });
+            }
+
+            await rerenderHousesAndPreserveScroll();
             return true;
         }
     
