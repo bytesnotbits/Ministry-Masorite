@@ -132,7 +132,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!shouldBeHidden && activeHouseFilters.gated && house.hasGate) shouldBeHidden = true;
 
             if (!shouldBeHidden && activeHouseFilters.visited) {
-                const hasActualVisit = visits.some(visit => !visit.isNotAtHome);
+                // MODIFIED: Only hide if an actual visit attempt was made
+                const hasActualVisit = visits.some(visit => (visit.isVisitAttempt !== false) && !visit.isNotAtHome);
                 if (hasActualVisit && !house.isCurrentlyNH) {
                     shouldBeHidden = true;
                 }
@@ -158,7 +159,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         for (const house of housesToRender) {
             const visits = visitsByHouseId[house.id].sort((a, b) => new Date(b.date) - new Date(a.date));
             const lastVisit = visits[0];
-            const visitCount = visits.length;
+            // MODIFIED: Only count records marked as a visit attempt.
+            // Using `!== false` provides backward compatibility for old records.
+            const visitCount = visits.filter(v => v.isVisitAttempt !== false).length;
 
             let iconsHTML = '';
             if (house.hasMailbox) iconsHTML += `<span title="Mailbox Available">📭</span>`;
@@ -508,21 +511,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     
             const newHouseId = await addToStore('houses', newHouse);
 
-            // Add the "House Created" note
+            // Add the "House Created" note, marked as not a visit attempt
             await addToStore('visits', {
                 houseId: newHouseId,
                 date: new Date().toISOString(),
                 notes: 'House record created.',
-                isNotAtHome: false
+                isNotAtHome: false,
+                isVisitAttempt: false
             });
 
-            // Add the initial user notes if they exist
+            // Add the initial user notes if they exist, not a visit attempt
             if (initialNotes) {
                 await addToStore('visits', {
                     houseId: newHouseId,
                     date: new Date().toISOString(),
                     notes: initialNotes,
-                    isNotAtHome: false
+                    isNotAtHome: false,
+                    isVisitAttempt: false
                 });
             }
 
@@ -576,14 +581,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 e.stopPropagation();
                 const houseId = Number(target.dataset.id);
                 if (!houseId) return;
+                // Mark as a visit attempt
                 await addToStore('visits', {
                     houseId: houseId, date: new Date().toISOString(),
-                    notes: 'Not at home.', personName: '', isNotAtHome: true
+                    notes: 'Not at home.', personName: '', isNotAtHome: true,
+                    isVisitAttempt: true
                 });
                 const house = await getFromStore('houses', houseId);
                 house.isCurrentlyNH = true;
                 await updateInStore('houses', house);
-                await rerenderHousesAndPreserveScroll(); // MODIFIED
+                await rerenderHousesAndPreserveScroll();
                 return;
             }
 
@@ -606,21 +613,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const house = await getFromStore('houses', houseId);
                         house.isCurrentlyNH = true;
                         await updateInStore('houses', house);
-                        await rerenderHousesAndPreserveScroll(); // MODIFIED
+                        await rerenderHousesAndPreserveScroll();
                     }
                 } else {
+                    // Mark as a visit attempt
                     await addToStore('visits', {
                         houseId: houseId,
                         date: new Date().toISOString(),
                         notes: 'Letter sent.',
                         isNotAtHome: false,
-                        visitType: 'letter'
+                        visitType: 'letter',
+                        isVisitAttempt: true
                     });
 
                     const house = await getFromStore('houses', houseId);
                     house.isCurrentlyNH = false;
                     await updateInStore('houses', house);
-                    await rerenderHousesAndPreserveScroll(); // MODIFIED
+                    await rerenderHousesAndPreserveScroll();
                 }
                 return;
             }
@@ -697,7 +706,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const people = await getByIndex('people', 'houseId', id);
                     for (const person of people) await deleteFromStore('people', person.id);
                     await deleteFromStore('houses', id);
-                    await rerenderHousesAndPreserveScroll(); // MODIFIED
+                    await rerenderHousesAndPreserveScroll();
                     return;
                 } else if (type === 'visit' && confirm('Delete this visit note?')) {
                     await deleteFromStore('visits', id);
@@ -797,7 +806,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             activeHouseFilters[filterType] = !activeHouseFilters[filterType];
             btn.classList.toggle('active');
             
-            await rerenderHousesAndPreserveScroll(); // MODIFIED
+            await rerenderHousesAndPreserveScroll();
         });
 
         document.getElementById('data-menu-toggle-btn').addEventListener('click', () => {
@@ -823,12 +832,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 personIdToSave = await addToStore('people', newPerson);
             }
 
+            // MODIFIED: Mark as a visit attempt
             await addToStore('visits', {
                 houseId: currentHouseId,
                 date: new Date().toISOString(),
                 notes: notes || "Phone call logged.",
                 personId: personIdToSave,
-                isNotAtHome: false 
+                isNotAtHome: false,
+                isVisitAttempt: true
             });
             
             const house = await getFromStore('houses', currentHouseId);
@@ -872,12 +883,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await updateInStore('houses', house);
                 
                 if (checkbox.id === 'not-interested-check' && isChecked && !wasNotInterested) {
+                    // Mark as not a visit attempt
                     await addToStore('visits', {
                         houseId: currentHouseId,
                         date: new Date().toISOString(),
                         notes: "Marked as 'Not Interested'.",
                         personId: null,
-                        isNotAtHome: false
+                        isNotAtHome: false,
+                        isVisitAttempt: false
                     });
                     await renderHouseDetails(currentHouseId);
                 }
