@@ -8,10 +8,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     let territorySort = 'name';
     let selectedPersonId = null;
     let currentEditTerritoryId = null;
-    // --- Variables to store scroll positions ---
     let territoryListScrollPosition = 0;
     let houseListScrollPosition = 0;
-    // State object for the advanced filters
     let activeHouseFilters = {
         visited: false,
         ni: false,
@@ -49,7 +47,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         territoryList.innerHTML = '';
         let territories = await getAllFromStore('territories');
 
-        // --- Filter territories based on the search filter ---
         if (filter) {
             const searchTerm = filter.toLowerCase();
             territories = territories.filter(territory => {
@@ -59,7 +56,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
 
-        // --- Sorting logic ---
         territories.sort((a, b) => {
             if (territorySort === 'name') {
                 return a.name.localeCompare(b.name);
@@ -70,7 +66,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             return new Date(b.createdAt) - new Date(a.createdAt);
         });
 
-        // --- Display logic for empty or filtered list ---
         if (territories.length === 0) {
             if (filter) {
                 territoryList.innerHTML = `<li class="placeholder">No territories match "${filter}".</li>`;
@@ -78,7 +73,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 territoryList.innerHTML = '<li class="placeholder">Click "+ Add New Territory" to begin.</li>';
             }
         } else {
-            // --- Render the list items ---
             for (const territory of territories) {
                 const houses = await getByIndex('houses', 'territoryId', territory.id);
                 const li = document.createElement('li');
@@ -96,16 +90,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        // --- LOGIC: SHOW/HIDE SEARCH BAR ---
         const searchInput = document.getElementById('search-territory-input');
         const totalTerritories = (await getAllFromStore('territories')).length;
         const SEARCH_VISIBILITY_THRESHOLD = 10; 
-
         const shouldShowSearch = totalTerritories > SEARCH_VISIBILITY_THRESHOLD;
         searchInput.classList.toggle('hidden', !shouldShowSearch);
     }
     
-// --- REFACTORED RENDER HOUSES AND DETAILS (with NI badge change) ---
     async function renderHouses(territoryId) {
         houseList.innerHTML = '';
         const territory = await getFromStore('territories', territoryId);
@@ -113,7 +104,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const allHouses = await getByIndex('houses', 'territoryId', territoryId);
         
-        // --- Performance Optimization: Fetch all visits for the territory at once ---
         const houseVisitPromises = allHouses.map(house => getByIndex('visits', 'houseId', house.id));
         const allVisitsArrays = await Promise.all(houseVisitPromises);
         const visitsByHouseId = allHouses.reduce((acc, house, index) => {
@@ -123,7 +113,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         let housesToRender = [];
 
-        // --- Filtering Logic (using pre-fetched data) ---
         for (const house of allHouses) {
             let shouldBeHidden = false;
             const visits = visitsByHouseId[house.id];
@@ -156,7 +145,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
     
-        // --- Rendering Logic (using pre-fetched data) ---
         for (const house of housesToRender) {
             const visits = visitsByHouseId[house.id].sort((a, b) => new Date(b.date) - new Date(a.date));
             const lastVisit = visits[0];
@@ -175,7 +163,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             li.className = 'house-card';
             li.dataset.id = house.id;
 
-            // --- THIS IS THE ONLY LINE THAT CHANGED IN THIS FUNCTION ---
             const niBadge = house.isNotInterested ? '<span class="ni-badge">NI</span>' : '';
             
             if (house.isNotInterested) {
@@ -274,8 +261,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <button class="delete-btn" data-id="${visit.id}" data-type="visit">X</button>
             `;
 
-                        visitList.appendChild(li);
-                    }
+            visitList.appendChild(li);
+        }
     }
 
     async function renderRVList() {
@@ -451,16 +438,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             currentEditTerritoryId = null;
         };
             
-                const showHouseModal = () => {
-                    houseModal.classList.remove('hidden');
-                    modalHouseNumber.focus();
-                };
-                const hideHouseModal = () => {
-                    houseModal.classList.add('hidden');
-                    modalHouseNumber.value = '';
-                    houseModalToggles.querySelectorAll('.toggle-btn').forEach(btn => {
-                        btn.classList.remove('active');
-                    });
+        const showHouseModal = () => {
+            houseModal.classList.remove('hidden');
+            modalHouseNumber.focus();
+        };
+
+        const hideHouseModal = () => {
+            houseModal.classList.add('hidden');
+            modalHouseNumber.value = '';
+            houseModalToggles.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
         };
     
         async function handleSaveTerritory() {
@@ -561,17 +549,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            // --- UPDATED: Letter button click logic with toggle functionality ---
             if (target.classList.contains('sent-letter-btn')) {
                 e.stopPropagation();
                 const houseId = Number(target.dataset.id);
                 const isLetterSent = target.classList.contains('letter-sent');
 
                 if (isLetterSent) {
-                    // This is the "UNDO" action
                     if (confirm("This will remove the 'Letter Sent' visit record and reset the house to 'Not at Home'. Do you want to proceed?")) {
                         const visits = await getByIndex('visits', 'houseId', houseId);
-                        // Find the most recent visit flagged as a letter
                         const letterVisit = visits
                             .filter(v => v.visitType === 'letter')
                             .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
@@ -581,18 +566,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
 
                         const house = await getFromStore('houses', houseId);
-                        house.isCurrentlyNH = true; // Revert status
+                        house.isCurrentlyNH = true;
                         await updateInStore('houses', house);
                         await renderHouses(currentTerritoryId);
                     }
                 } else {
-                    // This is the "DO" action (sending the letter)
                     await addToStore('visits', {
                         houseId: houseId,
                         date: new Date().toISOString(),
                         notes: 'Letter sent.',
                         isNotAtHome: false,
-                        visitType: 'letter' // The special flag
+                        visitType: 'letter'
                     });
 
                     const house = await getFromStore('houses', houseId);
@@ -614,10 +598,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     
             const territoryLi = target.closest('#territory-list li');
             if (territoryLi && !target.classList.contains('delete-btn') && !territoryLi.classList.contains('placeholder')) {
-                // --- MODIFIED: Save scroll position before navigating ---
                 territoryListScrollPosition = window.scrollY;
                 currentTerritoryId = Number(territoryLi.dataset.id);
-                // Reset filters when changing territories
                 activeHouseFilters = { visited: false, ni: false, nt: false, gated: false };
                 document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
                 
@@ -628,7 +610,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     
             const houseLi = target.closest('#house-list li');
             if (houseLi && !target.classList.contains('delete-btn') && !houseLi.classList.contains('placeholder')) {
-                // --- MODIFIED: Save scroll position before navigating ---
                 houseListScrollPosition = window.scrollY;
                 currentHouseId = Number(houseLi.dataset.id);
                 await renderHouseDetails(currentHouseId);
@@ -636,21 +617,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
     
-            // --- MODIFIED: Handle back button clicks to restore scroll position ---
             if (target.classList.contains('back-btn')) {
                 const targetView = target.dataset.target;
 
                 if (targetView === 'house-list-view') {
                     await renderHouses(currentTerritoryId);
                     showView(targetView);
-                    // Restore the scroll position after a brief delay
                     setTimeout(() => window.scrollTo(0, houseListScrollPosition), 0);
                 } else if (targetView === 'territory-list-view') {
                     showView(targetView);
-                     // Restore the scroll position after a brief delay
                     setTimeout(() => window.scrollTo(0, territoryListScrollPosition), 0);
                 } else {
-                    showView(targetView); // For any other back buttons
+                    showView(targetView);
                 }
                 return;
             }
@@ -772,7 +750,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('add-house-btn').addEventListener('click', showHouseModal);
         document.getElementById('add-visit-btn').addEventListener('click', () => showNoteModal('Add New Visit Note'));
     
-        // --- NEW: Event listener for the advanced filter buttons ---
         document.querySelector('.filter-controls').addEventListener('click', async (e) => {
             const btn = e.target.closest('.filter-btn');
             if (!btn) return;
@@ -784,9 +761,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             await renderHouses(currentTerritoryId);
         });
 
+        // --- NEW: Event listeners for the new data menu toggle buttons ---
+        document.getElementById('data-menu-toggle-btn').addEventListener('click', () => {
+            document.getElementById('territory-data-management').classList.toggle('hidden');
+        });
+
+        document.getElementById('export-menu-toggle-btn').addEventListener('click', () => {
+            document.getElementById('house-data-management').classList.toggle('hidden');
+        });
+
+
         document.getElementById('modal-save-note-btn').addEventListener('click', async () => {
             const notes = modalVisitNotes.value.trim();
-            // Note validation removed to allow empty notes.
 
             let personIdToSave = selectedPersonId;
 
@@ -799,7 +785,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await addToStore('visits', {
                 houseId: currentHouseId,
                 date: new Date().toISOString(),
-                notes: notes || "Phone call logged.", // Add default text if empty
+                notes: notes || "Phone call logged.",
                 personId: personIdToSave,
                 isNotAtHome: false 
             });
@@ -814,15 +800,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             hideNoteModal();
             
-            // --- UPDATED: Conditionally re-render the correct view ---
             if (currentView === 'house-list-view') {
                 await renderHouses(currentTerritoryId);
-            } else { // Assumes house-detail-view
+            } else {
                 await renderHouseDetails(currentHouseId);
             }
         });
 
-        // Event listener for house detail checkboxes with NI visit logging
         document.getElementById('house-detail-view').addEventListener('click', (e) => {
             if (e.target.type !== 'checkbox' || !['not-at-home-check', 'not-interested-check', 'mailbox-check', 'notrespass-check', 'gate-check'].includes(e.target.id)) {
                 return;
@@ -844,7 +828,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 await updateInStore('houses', house);
                 
-                // If the NI status was just changed to 'true', log a visit
                 if (checkbox.id === 'not-interested-check' && isChecked && !wasNotInterested) {
                     await addToStore('visits', {
                         houseId: currentHouseId,
@@ -853,7 +836,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         personId: null,
                         isNotAtHome: false
                     });
-                    await renderHouseDetails(currentHouseId); // Re-render to show the new visit
+                    await renderHouseDetails(currentHouseId);
                 }
             }, 0);
         });
@@ -963,23 +946,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         const reader = new FileReader();
         reader.onload = async (e) => {
             let data;
-            // --- STEP 1: Better error handling for file parsing ---
             try {
                 data = JSON.parse(e.target.result);
             } catch (err) {
-                // This catch block will trigger if the file is not valid JSON (e.g., an HTML page)
                 alert("Restore failed. The file is not a valid JSON file. Please ensure it was downloaded correctly from your cloud service using the 'Download' button and not edited in a word processor.");
                 console.error("JSON Parsing Error:", err);
-                event.target.value = ''; // Clear the input
+                event.target.value = '';
                 return;
             }
 
-            // --- STEP 2: More specific checks for file content ---
             try {
                 if (data && data.type === 'full_backup') {
                     if (confirm('This is a FULL backup. Restoring will ERASE all current data. Are you sure?')) {
                         await clearAllStores();
-                        // Added checks to prevent errors if a table is missing in the backup
                         if (data.territories) for (const item of data.territories) await addToStore('territories', item);
                         if (data.houses) for (const item of data.houses) await addToStore('houses', item);
                         if (data.visits) for (const item of data.visits) await addToStore('visits', item);
@@ -1001,7 +980,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                             targetTerritoryId = existingTerritory.id;
                             const oldHouses = await getByIndex('houses', 'territoryId', targetTerritoryId);
                             for (const house of oldHouses) {
-                                // A more robust way to delete related data
                                 const visits = await getByIndex('visits', 'houseId', house.id);
                                 for (const visit of visits) await deleteFromStore('visits', visit.id);
                                 const people = await getByIndex('people', 'houseId', house.id);
@@ -1043,15 +1021,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         showView('territory-list-view');
                     }
                 } else {
-                    // This error means the JSON was valid, but it wasn't a recognized backup file
                     alert('Restore failed. The file is not a recognized Ministry Scribe backup file.');
                 }
             } catch (err) {
-                // This is a final catch-all for any other unexpected errors during the restore process
                 alert('Restore failed due to an unexpected error. See the console for details.');
                 console.error("Restore Process Error:", err);
             } finally {
-                event.target.value = ''; // Clear the input
+                event.target.value = '';
             }
         };
         reader.readAsText(file);

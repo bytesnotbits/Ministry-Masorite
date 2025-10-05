@@ -21,6 +21,10 @@
             <input type="search" id="search-territory-input" placeholder="Search by street or number...">
             
             <button id="add-territory-btn" class="primary-action">+ Add New Territory</button>
+            
+            <!-- MODIFIED: "Show All RVs" button moved here -->
+            <button id="show-rvs-btn" class="secondary-action">Show All RVs</button>
+            
             <div class="controls">
                 <span>Sort by:</span>
                 <button class="sort-btn" data-sort="number">Territory #</button>
@@ -29,9 +33,10 @@
             </div>
             <ul id="territory-list"></ul>
             
-            <div class="data-management-section">
+            <!-- MODIFIED: Added a toggle button and made the section hidden by default -->
+            <button id="data-menu-toggle-btn" class="menu-toggle-btn">Data Menu ⚙️</button>
+            <div id="territory-data-management" class="data-management-section hidden">
                 <h3>Data Management</h3>
-                <button id="show-rvs-btn">Show All RVs</button>
                 <button id="restore-btn">Restore from Backup (.mscribe)</button>
                 <button id="export-full-btn">Export Full Backup (.mscribe)</button>
                 <input type="file" id="restore-file-input" accept=".mscribe" hidden>
@@ -52,8 +57,10 @@
                 <p><strong>Done:</strong> 0.27.02 Implement letter writing and phone call buttons</p>
                 <p><strong>Done:</strong> 0.28.00 'Sent Letter' changed to 'Send Letter' then toggles to 'Sent Letter' with button color change</p>
                 <p><strong>Done:</strong> 0.29.03 Fix icon overcrowding</p>
-                <p><strong>Done:</strong> 0.30.00 Add more robust backup/restore status messages</p>
+                <p><strong>Doingv:</strong> 0.30.00 Add more robust backup/restore status messages</p>
                 <p><Strong>Done:</Strong> 0.31.00 Retain scroll position when returning to previous screen</p>
+                <p><Strong>Done:</Strong> 0.32.00 Hide backup and less-requently used buttons. Move + Add territory button to top of screen.</p>
+                <p><Strong>TODO:</Strong> Maintain persistant screen position when modifers are used</p>
                 <p><strong>TODO:</strong> Implement DNC (maybe)</p>
                 <p><strong>TODO:</strong> Sort RVs by street name/number, last visit date (ascending/descending)</p>
                 <p><strong>TODO:</strong> Filter view, only see NI</p>
@@ -73,7 +80,7 @@
             <button class="back-btn" data-target="territory-list-view">&larr; Back to Territories</button>
             <h2 id="house-list-title"></h2>
 
-            <!-- NEW ADVANCED FILTER CONTROLS -->
+            <!-- ADVANCED FILTER CONTROLS -->
             <div class="filter-controls">
                 <button class="filter-btn" data-filter="visited">Hide Visited</button>
                 <button class="filter-btn" data-filter="ni">Hide NI</button>
@@ -84,7 +91,9 @@
             <button id="add-house-btn" class="primary-action">+ Add New House</button>
             <ul id="house-list"></ul>
             
-            <div class="data-management-section">
+            <!-- Adding a toggle button and made the section hidden by default -->
+            <button id="export-menu-toggle-btn" class="menu-toggle-btn">Export Options 📤</button>
+            <div id="house-data-management" class="data-management-section hidden">
                 <h3>Export This Territory</h3>
                 <button id="export-mscribe-btn">Export this Street (.mscribe)</button>
                 <button id="export-csv-btn">Export as CSV</button>

@@ -29,6 +29,9 @@ header {
 .view { display: none; }
 .view.active { display: block; }
 
+/* NEW: Generic hidden class */
+.hidden { display: none; }
+
 /* List Styling */
 ul {
     list-style-type: none;
@@ -138,6 +141,16 @@ button.primary-action {
 }
 button:hover { opacity: 0.9; }
 
+/* Style for the 'RVs' button and other secondary actions */
+button.secondary-action {
+    background-color: #6c757d;
+    color: var(--white);
+    border: none;
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 20px;
+}
+
 button.back-btn {
     border: none;
     background: none;
@@ -196,9 +209,11 @@ textarea { width: 100%; box-sizing: border-box; }
 
 /* Data Management Section */
 .data-management-section {
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border-color);
+    margin-top: 10px; /* Reduced from 30px */
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: #fafafa;
 }
 .data-management-section button {
     display: block;
@@ -208,9 +223,21 @@ textarea { width: 100%; box-sizing: border-box; }
     border-color: #b0b4ba;
 }
 
+/* Style for the menu toggle buttons */
+.menu-toggle-btn {
+    width: 100%;
+    margin-top: 30px;
+    margin-bottom: 0;
+    padding: 12px;
+    background-color: #e9e9ed;
+    border: 1px solid #ccc;
+    font-weight: bold;
+}
+
+
 .controls { margin-bottom: 15px; }
 
-/* NEW STYLES FOR ENHANCED HOUSE CARD */
+/* STYLES FOR ENHANCED HOUSE CARD */
 .house-card-details {
     font-size: 14px;
     color: var(--light-text);
