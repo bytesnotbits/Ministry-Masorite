@@ -43,6 +43,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // --- RENDERING ---
+
+    // --- NEW HELPER FUNCTION ---
+    // This function wraps the render logic with scroll position preservation.
+    async function rerenderHousesAndPreserveScroll() {
+        const scrollPos = window.scrollY;
+        await renderHouses(currentTerritoryId);
+        // Use setTimeout to ensure the DOM has been painted before scrolling.
+        setTimeout(() => window.scrollTo(0, scrollPos), 0);
+    }
+
     async function renderTerritories(filter = '') {
         territoryList.innerHTML = '';
         let territories = await getAllFromStore('territories');
@@ -488,7 +498,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
     
             await addToStore('houses', newHouse);
-            await renderHouses(currentTerritoryId);
+            await rerenderHousesAndPreserveScroll(); // To avoid scroll jump
             return true;
         }
     
@@ -545,7 +555,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const house = await getFromStore('houses', houseId);
                 house.isCurrentlyNH = true;
                 await updateInStore('houses', house);
-                await renderHouses(currentTerritoryId);
+                await rerenderHousesAndPreserveScroll(); // MODIFIED
                 return;
             }
 
@@ -568,7 +578,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const house = await getFromStore('houses', houseId);
                         house.isCurrentlyNH = true;
                         await updateInStore('houses', house);
-                        await renderHouses(currentTerritoryId);
+                        await rerenderHousesAndPreserveScroll(); // MODIFIED
                     }
                 } else {
                     await addToStore('visits', {
@@ -582,7 +592,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const house = await getFromStore('houses', houseId);
                     house.isCurrentlyNH = false;
                     await updateInStore('houses', house);
-                    await renderHouses(currentTerritoryId);
+                    await rerenderHousesAndPreserveScroll(); // MODIFIED
                 }
                 return;
             }
@@ -592,6 +602,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const houseId = Number(target.dataset.id);
                 if (!houseId) return;
                 currentHouseId = houseId;
+                houseListScrollPosition = window.scrollY; // Save scroll position BEFORE modal opens
                 showNoteModal('Log Phone Call');
                 return;
             }
@@ -658,7 +669,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const people = await getByIndex('people', 'houseId', id);
                     for (const person of people) await deleteFromStore('people', person.id);
                     await deleteFromStore('houses', id);
-                    await renderHouses(currentTerritoryId);
+                    await rerenderHousesAndPreserveScroll(); // MODIFIED
                     return;
                 } else if (type === 'visit' && confirm('Delete this visit note?')) {
                     await deleteFromStore('visits', id);
@@ -758,7 +769,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             activeHouseFilters[filterType] = !activeHouseFilters[filterType];
             btn.classList.toggle('active');
             
-            await renderHouses(currentTerritoryId);
+            await rerenderHousesAndPreserveScroll(); // MODIFIED
         });
 
         document.getElementById('data-menu-toggle-btn').addEventListener('click', () => {
@@ -769,7 +780,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('house-data-management').classList.toggle('hidden');
         });
 
-        // --- Event listener for the About/TODO toggle button ---
         document.getElementById('about-menu-toggle-btn').addEventListener('click', () => {
             document.getElementById('about-section').classList.toggle('hidden');
         });
@@ -805,6 +815,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             if (currentView === 'house-list-view') {
                 await renderHouses(currentTerritoryId);
+                // Restore scroll position after modal save
+                setTimeout(() => window.scrollTo(0, houseListScrollPosition), 0);
             } else {
                 await renderHouseDetails(currentHouseId);
             }
