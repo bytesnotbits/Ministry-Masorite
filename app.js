@@ -8,7 +8,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     let territorySort = 'name';
     let selectedPersonId = null;
     let currentEditTerritoryId = null;
-    // New state object for the advanced filters
+    // --- Variables to store scroll positions ---
+    let territoryListScrollPosition = 0;
+    let houseListScrollPosition = 0;
+    // State object for the advanced filters
     let activeHouseFilters = {
         visited: false,
         ni: false,
@@ -611,6 +614,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     
             const territoryLi = target.closest('#territory-list li');
             if (territoryLi && !target.classList.contains('delete-btn') && !territoryLi.classList.contains('placeholder')) {
+                // --- MODIFIED: Save scroll position before navigating ---
+                territoryListScrollPosition = window.scrollY;
                 currentTerritoryId = Number(territoryLi.dataset.id);
                 // Reset filters when changing territories
                 activeHouseFilters = { visited: false, ni: false, nt: false, gated: false };
@@ -623,16 +628,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     
             const houseLi = target.closest('#house-list li');
             if (houseLi && !target.classList.contains('delete-btn') && !houseLi.classList.contains('placeholder')) {
+                // --- MODIFIED: Save scroll position before navigating ---
+                houseListScrollPosition = window.scrollY;
                 currentHouseId = Number(houseLi.dataset.id);
                 await renderHouseDetails(currentHouseId);
                 showView('house-detail-view');
                 return;
             }
     
+            // --- MODIFIED: Handle back button clicks to restore scroll position ---
             if (target.classList.contains('back-btn')) {
                 const targetView = target.dataset.target;
-                if (targetView === 'house-list-view') await renderHouses(currentTerritoryId);
-                showView(targetView);
+
+                if (targetView === 'house-list-view') {
+                    await renderHouses(currentTerritoryId);
+                    showView(targetView);
+                    // Restore the scroll position after a brief delay
+                    setTimeout(() => window.scrollTo(0, houseListScrollPosition), 0);
+                } else if (targetView === 'territory-list-view') {
+                    showView(targetView);
+                     // Restore the scroll position after a brief delay
+                    setTimeout(() => window.scrollTo(0, territoryListScrollPosition), 0);
+                } else {
+                    showView(targetView); // For any other back buttons
+                }
+                return;
             }
     
             if (target.classList.contains('sort-btn')) {
