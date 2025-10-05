@@ -21,8 +21,6 @@
             <input type="search" id="search-territory-input" placeholder="Search by street or number...">
             
             <button id="add-territory-btn" class="primary-action">+ Add New Territory</button>
-            
-            <!-- MODIFIED: "Show All RVs" button moved here -->
             <button id="show-rvs-btn" class="secondary-action">Show All RVs</button>
             
             <div class="controls">
@@ -33,7 +31,6 @@
             </div>
             <ul id="territory-list"></ul>
             
-            <!-- MODIFIED: Added a toggle button and made the section hidden by default -->
             <button id="data-menu-toggle-btn" class="menu-toggle-btn">Data Menu ⚙️</button>
             <div id="territory-data-management" class="data-management-section hidden">
                 <h3>Data Management</h3>
@@ -42,7 +39,9 @@
                 <input type="file" id="restore-file-input" accept=".mscribe" hidden>
             </div>
 
-            <div class="version-footer">
+            <!-- Add a toggle button and made the version footer section hidden by default -->
+            <button id="about-menu-toggle-btn" class="menu-toggle-btn">About / TODOs ℹ️</button>
+            <div id="about-section" class="version-footer hidden">
                 <h3>Version & TODO</h3>
                 <p><Strong>Done</Strong> 0.21.03 improve UI/UX for householder name edit/delete buttons</p>
                 <p><Strong>Done</Strong> 0.21.04 Move "+ Add New Visit Note" button to top of Note List</p>
@@ -58,9 +57,6 @@
                 <p><strong>Done:</strong> 0.28.00 'Sent Letter' changed to 'Send Letter' then toggles to 'Sent Letter' with button color change</p>
                 <p><strong>Done:</strong> 0.29.03 Fix icon overcrowding</p>
                 <p><strong>Doingv:</strong> 0.30.00 Add more robust backup/restore status messages</p>
-                <p><Strong>Done:</Strong> 0.31.00 Retain scroll position when returning to previous screen</p>
-                <p><Strong>Done:</Strong> 0.32.00 Hide backup and less-requently used buttons. Move + Add territory button to top of screen.</p>
-                <p><Strong>TODO:</Strong> Maintain persistant screen position when modifers are used</p>
                 <p><strong>TODO:</strong> Implement DNC (maybe)</p>
                 <p><strong>TODO:</strong> Sort RVs by street name/number, last visit date (ascending/descending)</p>
                 <p><strong>TODO:</strong> Filter view, only see NI</p>
@@ -71,6 +67,7 @@
                 <p><strong>TODO:</strong> Sort house number ascending/descending/last visit date</p>
                 <p><Strong>TODO:</Strong> Report bug from within app</p>
                 <p><Strong>TODO:</Strong> List meta data in street card. x/x visited, x/x letters, x NT etc....</p>
+                <p><Strong>TODO:</Strong> Maintain persistant screen position when modifers are used</p>
             </div>
 
         </div>
@@ -91,7 +88,6 @@
             <button id="add-house-btn" class="primary-action">+ Add New House</button>
             <ul id="house-list"></ul>
             
-            <!-- Adding a toggle button and made the section hidden by default -->
             <button id="export-menu-toggle-btn" class="menu-toggle-btn">Export Options 📤</button>
             <div id="house-data-management" class="data-management-section hidden">
                 <h3>Export This Territory</h3>

@@ -761,7 +761,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             await renderHouses(currentTerritoryId);
         });
 
-        // --- NEW: Event listeners for the new data menu toggle buttons ---
         document.getElementById('data-menu-toggle-btn').addEventListener('click', () => {
             document.getElementById('territory-data-management').classList.toggle('hidden');
         });
@@ -770,6 +769,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('house-data-management').classList.toggle('hidden');
         });
 
+        // --- Event listener for the About/TODO toggle button ---
+        document.getElementById('about-menu-toggle-btn').addEventListener('click', () => {
+            document.getElementById('about-section').classList.toggle('hidden');
+        });
 
         document.getElementById('modal-save-note-btn').addEventListener('click', async () => {
             const notes = modalVisitNotes.value.trim();

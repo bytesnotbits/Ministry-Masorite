@@ -29,7 +29,7 @@ header {
 .view { display: none; }
 .view.active { display: block; }
 
-/* NEW: Generic hidden class */
+/* Generic hidden class */
 .hidden { display: none; }
 
 /* List Styling */
@@ -141,7 +141,7 @@ button.primary-action {
 }
 button:hover { opacity: 0.9; }
 
-/* Style for the 'RVs' button and other secondary actions */
+/* Style for the moved RVs button and other secondary actions */
 button.secondary-action {
     background-color: #6c757d;
     color: var(--white);
@@ -209,7 +209,7 @@ textarea { width: 100%; box-sizing: border-box; }
 
 /* Data Management Section */
 .data-management-section {
-    margin-top: 10px; /* Reduced from 30px */
+    margin-top: 10px;
     padding: 20px;
     border: 1px solid var(--border-color);
     border-radius: 8px;
@@ -232,6 +232,11 @@ textarea { width: 100%; box-sizing: border-box; }
     background-color: #e9e9ed;
     border: 1px solid #ccc;
     font-weight: bold;
+}
+
+/* The About/TODO button should not have a top margin */
+#about-menu-toggle-btn {
+    margin-top: 10px;
 }
 
 
@@ -473,11 +478,13 @@ textarea { width: 100%; box-sizing: border-box; }
     display: none; /* Hidden by default, JS will show it */
 }
 
-/* STYLES FOR VERSION FOOTER */
+/* MODIFIED: STYLES FOR VERSION FOOTER to match other collapsible sections */
 .version-footer {
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border-color);
+    margin-top: 10px;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: #fafafa;
 }
 
 .version-footer h3 {
@@ -488,8 +495,7 @@ textarea { width: 100%; box-sizing: border-box; }
 .version-footer p {
     font-size: 14px;
     color: var(--light-text);
-    margin: 4px 0; /* Adds a small amount of space between each line */
-    /* These next lines explicitly override list styles to be safe */
+    margin: 4px 0;
     background-color: transparent;
     padding: 0;
     box-shadow: none;
