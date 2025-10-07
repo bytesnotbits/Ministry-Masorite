@@ -114,6 +114,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const allHouses = await getByIndex('houses', 'territoryId', territoryId);
         
+        // Sort houses numerically by address.
+        allHouses.sort((a, b) => a.address.localeCompare(b.address, undefined, { numeric: true, sensitivity: 'base' }));
+
         const houseVisitPromises = allHouses.map(house => getByIndex('visits', 'houseId', house.id));
         const allVisitsArrays = await Promise.all(houseVisitPromises);
         const visitsByHouseId = allHouses.reduce((acc, house, index) => {
