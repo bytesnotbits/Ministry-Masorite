@@ -405,15 +405,19 @@ const visitList = document.getElementById('visit-notes-list');
     const noteModal = document.getElementById('note-modal');
     const modalVisitNotes = document.getElementById('modal-visit-notes');
     const personInput = document.getElementById('modal-person-input');
-    // ... Note modal variables are unchanged, so they are omitted for brevity ...
+    
+    // --- ADD THESE MISSING LINES BACK ---
+    const suggestionsList = document.getElementById('modal-suggestions-list');
+    const rvToggle = document.getElementById('modal-rv-toggle');
+    const isRvCheck = document.getElementById('modal-is-rv-check');
+    // --- END OF MISSING LINES ---
+
     const modalRemoveNHCheck = document.getElementById('modal-remove-nh-check');
 
     const territoryModal = document.getElementById('territory-modal');
     const modalTerritoryNumber = document.getElementById('modal-territory-number');
-    // <-- CHANGE: More descriptive variable name
     const modalTerritoryDescription = document.getElementById('modal-territory-description');
 
-    // <-- ADD: References for the new street modal
     const streetModal = document.getElementById('street-modal');
     const modalStreetName = document.getElementById('modal-street-name');
 
