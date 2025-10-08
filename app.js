@@ -798,6 +798,11 @@ const visitList = document.getElementById('visit-notes-list');
             if (target.id === 'data-menu-toggle-btn') {
                 document.getElementById('territory-data-management').classList.toggle('hidden');
             }
+
+            if (target.id === 'export-territory-menu-toggle-btn') {
+                document.getElementById('territory-export-management').classList.toggle('hidden');
+            }
+            
             if (target.id === 'export-street-menu-toggle-btn') {
                 document.getElementById('street-data-management').classList.toggle('hidden');
             }
