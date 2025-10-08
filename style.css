@@ -619,7 +619,7 @@ ul li {
     padding-bottom: 50px; 
 }
 
-/* --- NEW STYLES FOR TERRITORY LIST LAYOUT --- */
+/* --- STYLES FOR TERRITORY LIST LAYOUT --- */
 #territory-list li {
     display: flex;
     justify-content: space-between;
@@ -628,6 +628,21 @@ ul li {
 }
 
 .territory-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* Controls the space between the pencil and the X */
+    flex-shrink: 0; /* Prevents the buttons from shrinking */
+}
+
+/* --- NEW: STYLES FOR STREET LIST LAYOUT --- */
+#street-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px; /* Resetting padding for flex alignment */
+}
+
+.street-actions {
     display: flex;
     align-items: center;
     gap: 20px; /* Controls the space between the pencil and the X */
