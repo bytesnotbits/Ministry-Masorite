@@ -794,6 +794,16 @@ const visitList = document.getElementById('visit-notes-list');
                     await renderHouseDetails(currentHouseId);
                 }
             }
+
+            if (target.id === 'data-menu-toggle-btn') {
+                document.getElementById('territory-data-management').classList.toggle('hidden');
+            }
+            if (target.id === 'export-street-menu-toggle-btn') {
+                document.getElementById('street-data-management').classList.toggle('hidden');
+            }
+            if (target.id === 'about-menu-toggle-btn') {
+                document.getElementById('about-section').classList.toggle('hidden');
+            }
     
             if (target.classList.contains('edit-date-btn')) {
                 const visitId = Number(target.dataset.id);
@@ -930,18 +940,6 @@ const visitList = document.getElementById('visit-notes-list');
             btn.classList.toggle('active');
             
             await rerenderHousesAndPreserveScroll();
-        });
-
-        document.getElementById('data-menu-toggle-btn').addEventListener('click', () => {
-            document.getElementById('territory-data-management').classList.toggle('hidden');
-        });
-
-        document.getElementById('export-street-menu-toggle-btn').addEventListener('click', () => { // <-- FIXED ID
-            document.getElementById('street-data-management').classList.toggle('hidden'); // <-- FIXED ID
-        });
-
-        document.getElementById('about-menu-toggle-btn').addEventListener('click', () => {
-            document.getElementById('about-section').classList.toggle('hidden');
         });
 
         document.getElementById('modal-save-note-btn').addEventListener('click', async () => {
