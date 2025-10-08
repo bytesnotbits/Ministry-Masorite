@@ -1,6 +1,6 @@
 // --- DATABASE INITIALIZATION ---
 const DB_NAME = 'MinistryScribeDB';
-const DB_VERSION = 3; // <-- Increment DB version to trigger schema upgrade
+const DB_VERSION = 3; // Version is correct
 let db;
 
 function initDB() {
@@ -11,10 +11,36 @@ function initDB() {
             db = event.target.result;
             const transaction = event.target.transaction;
 
-            // Unchanged Stores
+            // Create Territories store if it doesn't exist
             if (!db.objectStoreNames.contains('territories')) {
                 db.createObjectStore('territories', { keyPath: 'id', autoIncrement: true });
             }
+
+            // Create Streets store if it doesn't exist
+            if (!db.objectStoreNames.contains('streets')) {
+                const streetsStore = db.createObjectStore('streets', { keyPath: 'id', autoIncrement: true });
+                streetsStore.createIndex('territoryId', 'territoryId', { unique: false });
+            }
+            
+            // Create or modify the Houses store
+            let housesStore;
+            if (db.objectStoreNames.contains('houses')) {
+                // If it exists, get a reference to it from the upgrade transaction
+                housesStore = transaction.objectStore('houses');
+            } else {
+                // If it doesn't exist, create it
+                housesStore = db.createObjectStore('houses', { keyPath: 'id', autoIncrement: true });
+            }
+
+            // Safely remove the old index and add the new one
+            if (housesStore.indexNames.contains('territoryId')) {
+                housesStore.deleteIndex('territoryId');
+            }
+            if (!housesStore.indexNames.contains('streetId')) {
+                housesStore.createIndex('streetId', 'streetId', { unique: false });
+            }
+
+            // Create other stores if they don't exist
             if (!db.objectStoreNames.contains('visits')) {
                 const visitsStore = db.createObjectStore('visits', { keyPath: 'id', autoIncrement: true });
                 visitsStore.createIndex('houseId', 'houseId', { unique: false });
@@ -22,28 +48,6 @@ function initDB() {
             if (!db.objectStoreNames.contains('people')) {
                 const peopleStore = db.createObjectStore('people', { keyPath: 'id', autoIncrement: true });
                 peopleStore.createIndex('houseId', 'houseId', { unique: false });
-            }
-
-            // --- NEW: Add 'streets' object store ---
-            if (!db.objectStoreNames.contains('streets')) {
-                const streetsStore = db.createObjectStore('streets', { keyPath: 'id', autoIncrement: true });
-                streetsStore.createIndex('territoryId', 'territoryId', { unique: false });
-            }
-
-            // --- MODIFIED: Update 'houses' store to link to streets instead of territories ---
-            if (db.objectStoreNames.contains('houses')) {
-                // If the store already exists, we need to update its indexes
-                const housesStore = transaction.objectStore('houses');
-                if (housesStore.indexNames.contains('territoryId')) {
-                    housesStore.deleteIndex('territoryId');
-                }
-                if (!housesStore.indexNames.contains('streetId')) {
-                    housesStore.createIndex('streetId', 'streetId', { unique: false });
-                }
-            } else {
-                // If the store doesn't exist (i.e., a fresh install), create it with the correct index
-                const housesStore = db.createObjectStore('houses', { keyPath: 'id', autoIncrement: true });
-                housesStore.createIndex('streetId', 'streetId', { unique: false });
             }
         };
 
@@ -59,7 +63,7 @@ function initDB() {
     });
 }
 
-// --- GENERIC CRUD FUNCTIONS ---
+// --- GENERIC CRUD FUNCTIONS (Unchanged) ---
 function addToStore(storeName, item) {
     return new Promise((resolve, reject) => {
         const transaction = db.transaction(storeName, 'readwrite');
@@ -122,7 +126,6 @@ function getByIndex(storeName, indexName, value) {
 }
 
 async function clearAllStores() {
-    // --- MODIFIED: Added 'streets' to the list of stores to clear ---
     const storeNames = ['territories', 'streets', 'houses', 'visits', 'people'];
     const transaction = db.transaction(storeNames, 'readwrite');
     for (const storeName of storeNames) {
