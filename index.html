@@ -75,11 +75,18 @@
                 <p>Using the "natural sort" method.</p>
                 <p>It will correctly sort house numbers like "2 Main St", "10 Main St", and "100 Main St" in the right numerical order, instead of treating them like simple text.</p>
                 <p>--------------------------------------------------</p>
-                <p><Strong>Current: 0.37.05</Strong></p>
+                <p>0.37.05</p>
                 <p>New level added:
                 <p>Before: Territory/Street --> House</p>
                 <p>After: Territory --> Street --> House</p>
                 <p>Resolves scalability problem by grouping together individual streets under a main territory ubmrella</p>
+                <p>--------------------------------------------------</p>
+                <p><Strong>Current: 0.38.00</Strong></p>
+                <p>Database version increased from version 2 to version 3</p>
+                <p>This would break existing users data when loading this version.</p>
+                <p>Code upgraded to account for this.</p>
+                <p>Gave the onupgradeneeded function instructions on how to "move the furniture."</p>
+                <p>For every territory that exists in the old database, we will automatically create a corresponding "default" street. Then, we will go through every single old house, find its new default street, and assign the correct streetId to it.</p>
                 <p>--------------------------------------------------</p>
                 <p>Maintain persistant screen position when modifers are used</p>
                 <p>Implement DNC (maybe)</p>
