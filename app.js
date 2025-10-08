@@ -802,7 +802,7 @@ const visitList = document.getElementById('visit-notes-list');
             if (target.id === 'export-territory-menu-toggle-btn') {
                 document.getElementById('territory-export-management').classList.toggle('hidden');
             }
-            
+
             if (target.id === 'export-street-menu-toggle-btn') {
                 document.getElementById('street-data-management').classList.toggle('hidden');
             }
@@ -1028,6 +1028,7 @@ const visitList = document.getElementById('visit-notes-list');
             showView('rv-list-view');
         });
         document.getElementById('export-full-btn').addEventListener('click', handleFullBackup);
+        document.getElementById('export-territory-mscribe-btn').addEventListener('click', handleTerritoryBackup);
         document.getElementById('export-street-mscribe-btn').addEventListener('click', handleStreetBackup); // <-- FIXED ID and function name
         document.getElementById('export-csv-btn').addEventListener('click', handleExportCSV);
         document.getElementById('export-pdf-btn').addEventListener('click', handleExportPDF);
@@ -1096,6 +1097,56 @@ const visitList = document.getElementById('visit-notes-list');
             alert("Could not perform the full backup.");
         }
     }
+
+    async function handleTerritoryBackup() {
+        const territory = await getFromStore('territories', currentTerritoryId);
+        if (!territory) {
+            alert("Could not find the current territory to export.");
+            return;
+        }
+
+        // 1. Get all streets for this territory
+        const streets = await getByIndex('streets', 'territoryId', currentTerritoryId);
+        
+        // 2. Initialize arrays to hold all the data
+        let houses = [];
+        let visits = [];
+        let people = [];
+
+        // 3. Loop through streets to get their houses
+        for (const street of streets) {
+            const streetHouses = await getByIndex('houses', 'streetId', street.id);
+            houses.push(...streetHouses); // Add the houses to our main list
+
+            // 4. For each house, get its visits and people
+            for (const house of streetHouses) {
+                const houseVisits = await getByIndex('visits', 'houseId', house.id);
+                visits.push(...houseVisits);
+                const housePeople = await getByIndex('people', 'houseId', house.id);
+                people.push(...housePeople);
+            }
+        }
+
+        const backupData = {
+            type: 'territory_backup', // A new type for this specific export
+            territories: [territory], // Wrap in array for consistency
+            streets,
+            houses,
+            visits,
+            people
+        };
+
+        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+        const filename = `territory_${territory.number}_${territory.description.replace(/\s/g, '_')}.mscribe`;
+
+        // Standard download logic
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+
 
     async function handleRestore(event) {
         const file = event.target.files[0];
