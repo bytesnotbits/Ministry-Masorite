@@ -936,8 +936,8 @@ const visitList = document.getElementById('visit-notes-list');
             document.getElementById('territory-data-management').classList.toggle('hidden');
         });
 
-        document.getElementById('export-menu-toggle-btn').addEventListener('click', () => {
-            document.getElementById('house-data-management').classList.toggle('hidden');
+        document.getElementById('export-street-menu-toggle-btn').addEventListener('click', () => { // <-- FIXED ID
+            document.getElementById('street-data-management').classList.toggle('hidden'); // <-- FIXED ID
         });
 
         document.getElementById('about-menu-toggle-btn').addEventListener('click', () => {
@@ -1025,7 +1025,7 @@ const visitList = document.getElementById('visit-notes-list');
             showView('rv-list-view');
         });
         document.getElementById('export-full-btn').addEventListener('click', handleFullBackup);
-        document.getElementById('export-street-mscribe-btn').addEventListener('click', handleStreetBackup);
+        document.getElementById('export-street-mscribe-btn').addEventListener('click', handleStreetBackup); // <-- FIXED ID and function name
         document.getElementById('export-csv-btn').addEventListener('click', handleExportCSV);
         document.getElementById('export-pdf-btn').addEventListener('click', handleExportPDF);
         document.getElementById('restore-btn').addEventListener('click', () => document.getElementById('restore-file-input').click());
