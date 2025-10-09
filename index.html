@@ -15,36 +15,36 @@
     </header>
 
     <main>
-        <!-- LEVEL 1: This is the main screen showing the list of territories -->
-        <div id="territory-list-view" class="view active">
-            <h2>My Territories</h2>
-            <input type="search" id="search-territory-input" placeholder="Search by number or description...">
-            
-            <button id="add-territory-btn" class="primary-action">+ Add New Territory</button>
-            <button id="show-rvs-btn" class="secondary-action">Show All RVs</button>
-            
-            <div class="controls">
-                <span>Sort by:</span>
-                <button class="sort-btn" data-sort="number">Territory #</button>
-                <button class="sort-btn" data-sort="description">Description</button>
-                <button class="sort-btn" data-sort="date">Date Added</button>
-            </div>
-            <ul id="territory-list"></ul>
-            
-            <button id="data-menu-toggle-btn" class="menu-toggle-btn">Data Menu ⚙️</button>
-            <div id="territory-data-management" class="data-management-section hidden">
-                <h3>Data Management</h3>
-                <button id="import-csv-btn">Import Territory from CSV</button>
-                <button id="restore-btn">Restore from Backup (.mscribe)</button>
-                <input type="file" id="restore-file-input" accept=".mscribe,.txt" hidden>
-                <input type="file" id="restore-file-input" accept=".mscribe" hidden>
-                <input type="file" id="import-csv-input" accept=".csv" hidden>
-            </div>
+    <!-- LEVEL 1: This is the main screen showing the list of territories -->
+    <div id="territory-list-view" class="view active">
+        <h2>My Territories</h2>
+        <input type="search" id="search-territory-input" placeholder="Search by number or description...">
+        
+        <button id="add-territory-btn" class="primary-action">+ Add New Territory</button>
+        <button id="show-rvs-btn" class="secondary-action">Show All RVs</button>
+        
+        <div class="controls">
+            <span>Sort by:</span>
+            <button class="sort-btn" data-sort="number">Territory #</button>
+            <button class="sort-btn" data-sort="description">Description</button>
+            <button class="sort-btn" data-sort="date">Date Added</button>
+        </div>
+        <ul id="territory-list"></ul>
+        
+        <button id="data-menu-toggle-btn" class="menu-toggle-btn">Data Menu ⚙️</button>
+        <div id="territory-data-management" class="data-management-section hidden">
+            <h3>Data Management</h3>
+            <button id="import-csv-btn">Import Territory from CSV</button>
+            <!-- FIXED: Updated button text and removed duplicate input -->
+            <button id="restore-btn">Restore from Backup (.txt)</button>
+            <button id="export-full-btn">Export Full Backup (.txt)</button>
+            <input type="file" id="restore-file-input" accept=".mscribe,.txt" hidden>
+            <input type="file" id="import-csv-input" accept=".csv" hidden>
         </div>
 
             <!-- Add a toggle button and made the version footer section hidden by default -->
-            <button id="about-menu-toggle-btn" class="menu-toggle-btn">About / TODOs ℹ️</button>
-            <div id="about-section" class="version-footer hidden">
+        <button id="about-menu-toggle-btn" class="menu-toggle-btn">About / TODOs ℹ️</button>
+        <div id="about-section" class="version-footer hidden">
                 <h3>Version & TODO</h3>
                 <p><strong>Thank you Sarah, Norman, Nathaniel, Loly for the GREAT FEEDBACK so far!</strong></p>
                 <p>0.xx.xx Filter view, only see NH</p>
@@ -103,47 +103,48 @@
                 <p>Filter/Export only NH</p>
                 <p>Report bug from within app</p>
                 <p>Implement DNC (maybe)</p>
-            </div>
+        </div>
+    </div>
 
         <!-- LEVEL 2: This new screen shows the list of streets for a single territory -->
-        <div id="street-list-view" class="view">
-            <button class="back-btn" data-target="territory-list-view">&larr; Back to Territories</button>
-            <h2 id="street-list-title"></h2>
-            <button id="add-street-btn" class="primary-action">+ Add New Street</button>
-            <ul id="street-list"></ul>
-            
-            <button id="export-territory-menu-toggle-btn" class="menu-toggle-btn">Export Options 📤</button>
-            <div id="territory-export-management" class="data-management-section hidden">
-                <h3>Export This Entire Territory</h3>
-                <button id="export-territory-mscribe-btn">Export Territory (.mscribe)</button>
-                <!-- We can add territory-wide CSV/PDF later if needed -->
-            </div>
+    <div id="street-list-view" class="view">
+        <button class="back-btn" data-target="territory-list-view">&larr; Back to Territories</button>
+        <h2 id="street-list-title"></h2>
+        <button id="add-street-btn" class="primary-action">+ Add New Street</button>
+        <ul id="street-list"></ul>
+        
+        <button id="export-territory-menu-toggle-btn" class="menu-toggle-btn">Export Options 📤</button>
+        <div id="territory-export-management" class="data-management-section hidden">
+            <h3>Export This Entire Territory</h3>
+            <!-- FIXED: Updated button text for consistency -->
+            <button id="export-territory-mscribe-btn">Export Territory (.txt)</button>
         </div>
+    </div>
 
-        <!-- LEVEL 3: This screen shows the list of houses for a single street -->
-        <div id="house-list-view" class="view">
-            <button class="back-btn" data-target="street-list-view">&larr; Back to Street List</button>
-            <h2 id="house-list-title"></h2>
+    <!-- LEVEL 3: This screen shows the list of houses for a single street -->
+    <div id="house-list-view" class="view">
+        <button class="back-btn" data-target="street-list-view">&larr; Back to Street List</button>
+        <h2 id="house-list-title"></h2>
 
-            <!-- ADVANCED FILTER CONTROLS -->
-            <div class="filter-controls">
-                <button class="filter-btn" data-filter="visited">Hide Visited</button>
-                <button class="filter-btn" data-filter="ni">Hide NI</button>
-                <button class="filter-btn" data-filter="nt">Hide NT</button>
-                <button class="filter-btn" data-filter="gated">Hide Gated</button>
-            </div>
-            
-            <button id="add-house-btn" class="primary-action">+ Add New House</button>
-            <ul id="house-list"></ul>
-            
-            <button id="export-street-menu-toggle-btn" class="menu-toggle-btn">Export Options 📤</button>
-            <div id="street-data-management" class="data-management-section hidden">
-                <h3>Export This Street</h3>
-                <button id="export-street-mscribe-btn">Export this Street (.txt)</button>
-                <button id="export-csv-btn">Export as CSV</button>
-                <button id="export-pdf-btn">Export as Printable PDF</button>
-            </div>`
+        <!-- ADVANCED FILTER CONTROLS -->
+        <div class="filter-controls">
+            <button class="filter-btn" data-filter="visited">Hide Visited</button>
+            <button class="filter-btn" data-filter="ni">Hide NI</button>
+            <button class="filter-btn" data-filter="nt">Hide NT</button>
+            <button class="filter-btn" data-filter="gated">Hide Gated</button>
         </div>
+        
+        <button id="add-house-btn" class="primary-action">+ Add New House</button>
+        <ul id="house-list"></ul>
+        
+        <button id="export-street-menu-toggle-btn" class="menu-toggle-btn">Export Options 📤</button>
+        <div id="street-data-management" class="data-management-section hidden">
+            <h3>Export This Street</h3>
+            <button id="export-street-mscribe-btn">Export this Street (.txt)</button>
+            <button id="export-csv-btn">Export as CSV</button>
+            <button id="export-pdf-btn">Export as Printable PDF</button>
+        </div>
+    </div>
 
         <!-- This screen shows the details for a single house -->
         <div id="house-detail-view" class="view">
