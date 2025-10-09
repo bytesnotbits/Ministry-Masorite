@@ -36,7 +36,7 @@
                 <h3>Data Management</h3>
                 <button id="import-csv-btn">Import Territory from CSV</button>
                 <button id="restore-btn">Restore from Backup (.mscribe)</button>
-                <button id="export-full-btn">Export Full Backup (.mscribe)</button>
+                <input type="file" id="restore-file-input" accept=".mscribe,.txt" hidden>
                 <input type="file" id="restore-file-input" accept=".mscribe" hidden>
                 <input type="file" id="import-csv-input" accept=".csv" hidden>
             </div>
@@ -95,7 +95,8 @@
                 <p>For every territory that exists in the old database, we will automatically create a corresponding "default" street. Then, we will go through every single old house, find its new default street, and assign the correct streetId to it.</p>
                 <p>--------------------------------------------------</p>
                 <p>0.39.00 Import streets & houses via CSV</p>
-                <p><strong>Current 0.40.01</strong>Fix eventListener on Export Territory button</p>
+                <p>0.40.01 Fix eventListener on Export Territory button</p>
+                <p><strong>Current 0.41.00</strong>Change DB backup file extension to .txt for compatibility</p>
                 <p>List meta data in street card. x/x visited, x/x letters, x NT etc....</p>
                 <p>Implement "Territory Complete" flag [active=false]</p>
                 <p>Hide [active=false] territories</p>

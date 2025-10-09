@@ -1061,7 +1061,7 @@ const visitList = document.getElementById('visit-notes-list');
         };
 
         const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-        const filename = `${street.name.replace(/[^\w\s]/gi, '').replace(/\s/g, '_')}.mscribe`;
+        const filename = `${street.name.replace(/[^\w\s]/gi, '').replace(/\s/g, '_')}.txt`;
 
         // Share/download logic remains the same
         const a = document.createElement('a');
@@ -1083,7 +1083,7 @@ const visitList = document.getElementById('visit-notes-list');
             };
 
             const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-            const filename = `ministry_scribe_full_backup_${new Date().toISOString().split('T')[0]}.mscribe`;
+            const filename = `ministry_scribe_full_backup_${new Date().toISOString().split('T')[0]}.txt`;
             
             // Share/download logic remains the same
             const a = document.createElement('a');
@@ -1137,7 +1137,7 @@ const visitList = document.getElementById('visit-notes-list');
         };
 
         const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-        const filename = `territory_${territory.number}_${territory.description.replace(/\s/g, '_')}.mscribe`;
+        const filename = `territory_${territory.number}_${territory.description.replace(/\s/g, '_')}.txt`;
 
         // Standard download logic
         const a = document.createElement('a');
