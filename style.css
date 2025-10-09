@@ -29,6 +29,9 @@ header {
 .view { display: none; }
 .view.active { display: block; }
 
+/* Generic hidden class */
+.hidden { display: none; }
+
 /* List Styling */
 ul {
     list-style-type: none;
@@ -48,6 +51,65 @@ ul li {
 }
 ul li:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
 ul li.placeholder { text-align: center; color: var(--light-text); cursor: default; }
+
+/* This is the new flexbox container for the top row of the card */
+.card-header {
+    display: flex;
+    justify-content: space-between; /* Pushes children to opposite ends */
+    align-items: flex-start;     /* Aligns items to the top */
+    gap: 8px;                    /* Adds a small space between columns if they touch */
+    margin-bottom: 8px;          /* Adds space below the header */
+}
+
+.card-title {
+    flex-grow: 1; /* Allows the title to take up all available space */
+}
+
+.card-title strong {
+    font-size: 18px; /* Make the address a bit more prominent */
+    line-height: 1.2;
+}
+
+.card-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;      /* Space between the icon group and the delete 'X' */
+    flex-shrink: 0; /* Prevents this container from shrinking */
+}
+
+/* This replaces the old .icons style */
+.icons {
+    /* This is no longer absolutely positioned */
+    display: flex;
+    gap: 4px; /* Space between each icon */
+    font-size: 20px;
+    color: var(--light-text);
+}
+
+.icons span {
+    margin-right: 0; /* Remove old margin */
+}
+
+/* This replaces the old .delete-btn style */
+.delete-btn {
+    /* This is no longer absolutely positioned */
+    position: static; 
+    background: none;
+    color: #a00;
+    border: none;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1; /* Ensures tight alignment */
+    transition: color 0.2s;
+}
+
+.delete-btn:hover {
+    color: #e00;
+}
+
+/* --- END OF NEW CARD HEADER & ICON STYLES --- */
 
 .house-card .icons {
     font-size: 18px;
@@ -79,6 +141,16 @@ button.primary-action {
 }
 button:hover { opacity: 0.9; }
 
+/* Style for the moved RVs button and other secondary actions */
+button.secondary-action {
+    background-color: #6c757d;
+    color: var(--white);
+    border: none;
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 20px;
+}
+
 button.back-btn {
     border: none;
     background: none;
@@ -86,20 +158,6 @@ button.back-btn {
     color: var(--primary-color);
     padding: 0;
     margin-bottom: 15px;
-}
-
-.delete-btn {
-    position: absolute;
-    top: 8px; /* Slightly adjusted for better visual alignment */
-    right: 12px;/* Slightly adjusted for better visual alignment */
-    background: none;
-    color: #a00;
-    border: none;
-    font-size: 24px; /* Larger font size for a clear 'X' */
-    font-weight: bold;
-    cursor: pointer;
-    padding: 0; /* Remove any default button padding */
-    transition: color 0.2s; /* Add a smooth transition for hover */
 }
 
 .delete-btn:hover {
@@ -151,9 +209,11 @@ textarea { width: 100%; box-sizing: border-box; }
 
 /* Data Management Section */
 .data-management-section {
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border-color);
+    margin-top: 10px;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: #fafafa;
 }
 .data-management-section button {
     display: block;
@@ -163,9 +223,26 @@ textarea { width: 100%; box-sizing: border-box; }
     border-color: #b0b4ba;
 }
 
+/* Style for the menu toggle buttons */
+.menu-toggle-btn {
+    width: 100%;
+    margin-top: 30px;
+    margin-bottom: 0;
+    padding: 12px;
+    background-color: #e9e9ed;
+    border: 1px solid #ccc;
+    font-weight: bold;
+}
+
+/* The About/TODO button should not have a top margin */
+#about-menu-toggle-btn {
+    margin-top: 10px;
+}
+
+
 .controls { margin-bottom: 15px; }
 
-/* NEW STYLES FOR ENHANCED HOUSE CARD */
+/* STYLES FOR ENHANCED HOUSE CARD */
 .house-card-details {
     font-size: 14px;
     color: var(--light-text);
@@ -174,14 +251,6 @@ textarea { width: 100%; box-sizing: border-box; }
 
 .house-card-details strong {
     color: var(--dark-text);
-}
-
-.house-card .icons {
-    /* This is an adjustment to existing style */
-    position: absolute;
-    top: 15px;
-    right: 45px;
-    font-size: 20px;
 }
 
 /* 'Log NH' BUTTON ON HOUSE CARDS */
@@ -319,4 +388,263 @@ textarea { width: 100%; box-sizing: border-box; }
     margin-top: 10px;
     padding-top: 10px;
     border-top: 1px solid var(--border-color);
+}
+
+/* STYLES FOR PEOPLE LIST IN HOUSE DETAILS */
+#people-list li {
+    display: flex; /* Use flexbox for easy alignment */
+    justify-content: space-between; /* Pushes name and actions to opposite ends */
+    align-items: center; /* Vertically aligns items in the middle */
+    padding-bottom: 15px; /* Override the default large padding */
+    padding-top: 15px;
+}
+
+.person-name {
+    font-size: 18px; /* Make the name a bit larger */
+}
+
+.person-actions {
+    display: flex;
+    gap: 10px; /* Adds space between the two icons */
+}
+
+/* STYLES FOR THE NEW ICON BUTTONS */
+.icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    font-size: 22px; /* Makes the icons larger */
+    line-height: 1; /* Ensures tight vertical alignment */
+    color: var(--light-text);
+    transition: color 0.2s;
+}
+
+.icon-btn:hover {
+    color: var(--dark-text);
+}
+
+/* Make the delete icon red, consistent with other delete buttons */
+.icon-btn.delete-person-btn {
+    color: #a00;
+    font-weight: bold;
+}
+
+.icon-btn.delete-person-btn:hover {
+    color: #e00;
+}
+
+/* STYLES FOR COMBOBOX */
+.combobox-container {
+    position: relative; /* Establishes a positioning context for the suggestions list */
+    margin-bottom: 15px; /* Adds space below the input */
+}
+
+.suggestions-list {
+    position: absolute; /* Lifts the list out of the normal flow */
+    top: 100%; /* Positions it right below the input field */
+    left: 0;
+    right: 0;
+    background-color: var(--white);
+    border: 1px solid #ccc;
+    border-top: none; /* Avoids a double border with the input */
+    border-radius: 0 0 8px 8px; /* Rounds the bottom corners */
+    z-index: 1001; /* Ensures it appears above other modal content */
+    max-height: 150px; /* Limits the height for long lists */
+    overflow-y: auto; /* Adds a scrollbar if the list is too long */
+}
+
+.suggestions-list.hidden {
+    display: none;
+}
+
+.suggestion-item {
+    padding: 12px 15px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.suggestion-item:hover, .suggestion-item.active {
+    background-color: var(--primary-color);
+    color: var(--white);
+}
+
+.suggestion-item.is-new {
+    font-style: italic;
+    color: #555;
+}
+
+#modal-rv-toggle {
+    display: none; /* Hidden by default, JS will show it */
+}
+
+/* MODIFIED: STYLES FOR VERSION FOOTER to match other collapsible sections */
+.version-footer {
+    margin-top: 10px;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: #fafafa;
+}
+
+.version-footer h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.version-footer p {
+    font-size: 14px;
+    color: var(--light-text);
+    margin: 4px 0;
+    background-color: transparent;
+    padding: 0;
+    box-shadow: none;
+    cursor: default;
+}
+
+/* STYLES FOR RV LIST VIEW */
+#rv-list li {
+    padding-bottom: 15px; /* Reduce the large default bottom padding */
+}
+
+.rv-details {
+    font-size: 14px;
+    color: var(--light-text);
+    margin-top: 8px;
+    line-height: 1.5;
+}
+
+.rv-details strong {
+    color: var(--dark-text);
+}
+
+/* STYLES FOR NOT INTERESTED (NI) BADGE */
+.ni-badge {
+    background-color: #a00; /* A strong red */
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-left: 10px;
+    vertical-align: middle; /* Aligns the badge nicely with the address text */
+}
+
+/* Optional: Add a subtle style to the entire list item for NI houses */
+.house-card.is-ni {
+    border-left: 4px solid #a00;
+}
+
+/* STYLES FOR ADVANCED FILTER CONTROLS */
+.filter-controls {
+    margin-bottom: 15px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    flex-grow: 1; /* Allows buttons to share space */
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    color: #555;
+    font-weight: bold;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.filter-btn.active {
+    background-color: var(--primary-color);
+    color: var(--white);
+    border-color: var(--primary-color);
+}
+
+/* --- STYLES FOR CARD ACTION BUTTONS --- */
+
+/* Container for the buttons at the bottom of the card */
+.card-actions {
+    position: absolute;
+    bottom: 8px;
+    left: 10px;
+    right: 10px;
+    display: flex;
+    gap: 8px; /* Space between buttons */
+    justify-content: flex-start;
+}
+
+/* Base style for all small action buttons on the card */
+.card-actions button {
+    flex-grow: 1; /* Allow buttons to share the space */
+    padding: 6px 8px;
+    font-size: 13px;
+    font-weight: bold;
+    border-radius: 6px;
+    border: none;
+    color: white;
+    cursor: pointer;
+    text-align: center;
+    transition: opacity 0.2s;
+}
+
+.card-actions button:hover {
+    opacity: 0.85;
+}
+
+/* Overwrite specific button styles */
+.log-nh-btn {
+    position: static; /* Remove absolute positioning */
+    background-color: #f0ad4e; /* Keep the orange color for NH */
+}
+
+.sent-letter-btn {
+    background-color: #337ab7; /* A nice blue for letters */
+}
+
+/* This new class will be added by JS to show the action is complete */
+.sent-letter-btn.letter-sent {
+    background-color: #777; /* A neutral gray to indicate "done" */
+    color: #eee;
+}
+
+.sent-letter-btn.letter-sent:hover {
+    opacity: 0.9; /* Slightly lighten on hover to show it's still clickable */
+}
+
+.phone-call-btn {
+    background-color: #5cb85c; /* A friendly green for calls */
+}
+
+/* Adjust the main card padding to make space for the buttons */
+ul li {
+    /* This rule should already exist, just confirm the padding */
+    padding-bottom: 50px; 
+}
+
+/* --- STYLES FOR TERRITORY LIST LAYOUT --- */
+#territory-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px; /* Resetting padding for flex alignment */
+}
+
+.territory-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* Controls the space between the pencil and the X */
+    flex-shrink: 0; /* Prevents the buttons from shrinking */
+}
+
+/* --- NEW: STYLES FOR STREET LIST LAYOUT --- */
+#street-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px; /* Resetting padding for flex alignment */
+}
+
+.street-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* Controls the space between the pencil and the X */
+    flex-shrink: 0; /* Prevents the buttons from shrinking */
 }
