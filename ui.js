@@ -1,4 +1,4 @@
-// Version 1.06.02
+// Version 1.07.01
 // --- FILE: ui.js ---
 // This file contains all functions related to UI rendering and DOM manipulation.
 
@@ -89,23 +89,31 @@ async function renderHouses(street, activeHouseFilters) {
     houseList.innerHTML = '';
     document.getElementById('house-list-title').textContent = street.name;
     const allHouses = (await getByIndex('houses', 'streetId', street.id)).sort((a, b) => a.address.localeCompare(b.address, undefined, { numeric: true, sensitivity: 'base' }));
-    const houseVisitPromises = allHouses.map(house => getByIndex('visits', 'houseId', house.id));
-    const allVisitsArrays = await Promise.all(houseVisitPromises);
-    const visitsByHouseId = allHouses.reduce((acc, house, index) => {
-        acc[house.id] = allVisitsArrays[index] || [];
-        return acc;
-    }, {});
+    
+    // We only need to fetch all visits once if the visited filter is active.
+    let visitsByHouseId = {};
+    if (Object.values(activeHouseFilters).some(v => v) || allHouses.length > 0) {
+        const houseVisitPromises = allHouses.map(house => getByIndex('visits', 'houseId', house.id));
+        const allVisitsArrays = await Promise.all(houseVisitPromises);
+        visitsByHouseId = allHouses.reduce((acc, house, index) => {
+            acc[house.id] = allVisitsArrays[index] || [];
+            return acc;
+        }, {});
+    }
+
     const housesToRender = allHouses.filter(house => {
         if (activeHouseFilters.ni && house.isNotInterested) return false;
         if (activeHouseFilters.nt && house.noTrespassing) return false;
         if (activeHouseFilters.gated && house.hasGate) return false;
-        if (activeHouseFilters.visited) {
-            const visits = visitsByHouseId[house.id];
-            const hasActualVisit = visits.some(visit => visit.isVisitAttempt !== false && !visit.isNotAtHome);
-            if (hasActualVisit && !house.isCurrentlyNH) return false;
+        // --- BUG FIX ---
+        // The old logic was too complex. A house is considered "visited"
+        // for filtering purposes if it is not currently marked as "Not at Home".
+        if (activeHouseFilters.visited && !house.isCurrentlyNH) {
+            return false;
         }
         return true;
     });
+
     if (housesToRender.length === 0) {
         const hasActiveFilters = Object.values(activeHouseFilters).some(v => v);
         if (hasActiveFilters) houseList.innerHTML = '<li class="placeholder">No houses match the current filters.</li>';
@@ -122,7 +130,7 @@ async function renderHouses(street, activeHouseFilters) {
             if (house.hasGate) iconsHTML += `<span title="Gated Property">🚧</span>`;
             if (house.isCurrentlyNH) iconsHTML += `<span title="Status: Not at Home">⏰</span>`;
             const lastActivityDate = lastVisit ? `Last Visit: <strong>${new Date(lastVisit.date).toLocaleDateString()}</strong>` : 'No activity yet';
-            const personMet = lastVisit && !lastVisit.isNotAtHome && (lastVisit.personName || lastVisit.personId) ? `Met: <strong>${lastVisit.personName || 'Resident'}</strong>` : '';
+            const personMet = lastVisit && !lastVisit.isNotAtHome && lastVisit.personName ? `Met: <strong>${lastVisit.personName}</strong>` : '';
             const li = document.createElement('li');
             li.className = `house-card ${house.isNotInterested ? 'is-ni' : ''}`;
             li.dataset.id = house.id;
@@ -177,7 +185,7 @@ async function renderHouseDetails(houseId) {
     visits.forEach(visit => {
         const li = document.createElement('li');
         let personInfo = visit.personName ? `Spoke with: <strong>${visit.personName}</strong><br>` : '';
-        if (visit.personId) {
+        if (visit.personId && !visit.personName) { // Fallback for older data
             const person = people.find(p => p.id === visit.personId);
             if (person) personInfo = `Spoke with: <strong>${person.name}</strong><br>`;
         }
@@ -298,4 +306,4 @@ function showHouseModal() {
 
 function hideHouseModal() {
     houseModal.classList.add('hidden');
-}
+} 

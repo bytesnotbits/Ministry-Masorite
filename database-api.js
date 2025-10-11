@@ -1,4 +1,4 @@
-// Version 1.06.02
+// Version 1.07.01
 // --- FILE: database-api.js ---
 // This file acts as a data layer, handling complex data operations like import, export, and backup.
 
@@ -139,13 +139,39 @@ function handleCSVImport(event, callback) {
 function parseCSV(csvText) {
     const lines = csvText.trim().split(/\r?\n/);
     if (lines.length < 2) return [];
-    const header = lines[0].split(',').map(h => h.trim());
+
+    const header = lines.shift().split(',').map(h => h.trim());
     const data = [];
-    for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',');
+
+    for (const line of lines) {
+        if (!line.trim()) continue;
+
+        const row = [];
+        let field = '';
+        let inQuotes = false;
+
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+
+            if (char === '"') {
+                if (inQuotes && line[i + 1] === '"') {
+                    field += '"';
+                    i++; 
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === ',' && !inQuotes) {
+                row.push(field);
+                field = '';
+            } else {
+                field += char;
+            }
+        }
+        row.push(field); 
+
         const rowObject = {};
         for (let j = 0; j < header.length; j++) {
-            rowObject[header[j]] = values[j] ? values[j].trim() : '';
+            rowObject[header[j]] = row[j] || '';
         }
         data.push(rowObject);
     }

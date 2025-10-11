@@ -1,4 +1,4 @@
-// Version 1.06.02
+// Version 1.07.01
 // --- FILE: events.js ---
 // This file contains all event listeners for the application. It uses actions to modify state.
 
@@ -265,10 +265,29 @@ function initializeEventListeners(state, actions) {
     });
     document.getElementById('modal-save-note-btn').addEventListener('click', async () => {
         let personIdToSave = state.selectedPersonId;
-        if (!personIdToSave && personInput.value.trim()) {
-            personIdToSave = await addToStore('people', { houseId: state.currentHouseId, name: personInput.value.trim(), isRV: isRvCheck.checked });
+        let personNameToSave = personInput.value.trim();
+
+        if (!personNameToSave) {
+            personIdToSave = null;
+        } else if (!personIdToSave) {
+            personIdToSave = await addToStore('people', { 
+                houseId: state.currentHouseId, 
+                name: personNameToSave, 
+                isRV: isRvCheck.checked 
+            });
         }
-        await addToStore('visits', { houseId: state.currentHouseId, date: new Date().toISOString(), notes: modalVisitNotes.value.trim() || "Visit logged.", personId: personIdToSave, isNotAtHome: false, isVisitAttempt: true });
+        
+        const newVisit = {
+            houseId: state.currentHouseId,
+            date: new Date().toISOString(),
+            notes: modalVisitNotes.value.trim() || "Visit logged.",
+            personId: personIdToSave,
+            personName: personNameToSave || null,
+            isNotAtHome: false,
+            isVisitAttempt: true
+        };
+        await addToStore('visits', newVisit);
+
         if (modalRemoveNHCheck.checked) {
             const house = await getFromStore('houses', state.currentHouseId);
             house.isCurrentlyNH = false;
@@ -305,8 +324,9 @@ function initializeEventListeners(state, actions) {
             await updateInStore('houses', house);
             if (propToUpdate === 'isNotInterested' && !wasNotInterested && e.target.checked) {
                 await addToStore('visits', { houseId: state.currentHouseId, date: new Date().toISOString(), notes: "Marked as 'Not Interested'.", isVisitAttempt: false });
-                await actions.refreshHouseDetails();
             }
+            // Always refresh details view to ensure consistency
+            await actions.refreshHouseDetails();
         }
     });
 }
