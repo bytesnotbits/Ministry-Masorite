@@ -1,4 +1,4 @@
-// 1.02.00
+// 1.02.02
 // --- REFACTORED FILE: app.js ---
 // This file manages the application's state, data logic, and event listeners.
 
@@ -27,7 +27,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- INITIALIZE ---
     try {
         await initDB();
-        // Initial render logic
         const initialTerritories = await getAllFromStore('territories');
         await renderTerritories(initialTerritories, territorySort);
         setupEventListeners();
@@ -38,25 +37,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function setupEventListeners() {
-        // NOTE: DOM Element getters are inside this function because they are only needed here.
+        // DOM Element getters
         const personInput = document.getElementById('modal-person-input');
         const suggestionsList = document.getElementById('modal-suggestions-list');
         const rvToggle = document.getElementById('modal-rv-toggle');
         const isRvCheck = document.getElementById('modal-is-rv-check');
         const modalRemoveNHCheck = document.getElementById('modal-remove-nh-check');
         const modalVisitNotes = document.getElementById('modal-visit-notes');
-        
         const territoryModal = document.getElementById('territory-modal');
         const modalTerritoryNumber = document.getElementById('modal-territory-number');
         const modalTerritoryDescription = document.getElementById('modal-territory-description');
-        
         const streetModal = document.getElementById('street-modal');
         const modalStreetName = document.getElementById('modal-street-name');
-        
         const houseModal = document.getElementById('house-modal');
         const modalHouseNumber = document.getElementById('modal-house-number');
         const modalHouseNotes = document.getElementById('modal-house-notes');
         const houseModalToggles = document.querySelector('#house-modal .modal-toggles');
+
         
         // --- Suggestion Box Logic (inside event listener setup) ---
         async function populateAndShowSuggestions() {
@@ -553,111 +550,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         // --- IMPORT/EXPORT LISTENERS ---
+        // --- IMPORT/EXPORT LISTENERS (NOW CALLING THE API) ---
         document.getElementById('export-full-btn').addEventListener('click', handleFullBackup);
-        document.getElementById('export-territory-mscribe-btn').addEventListener('click', handleTerritoryBackup);
-        document.getElementById('export-street-mscribe-btn').addEventListener('click', handleStreetBackup);
-        document.getElementById('export-pdf-btn').addEventListener('click', handleExportPDF);
-        document.getElementById('restore-btn').addEventListener('click', () => document.getElementById('restore-file-input').click());
-        document.getElementById('restore-file-input').addEventListener('change', handleCSVImport);
-        document.getElementById('import-csv-btn').addEventListener('click', () => document.getElementById('import-csv-input').click());
-        document.getElementById('import-csv-input').addEventListener('change', handleCSVImport);
-    }
+        document.getElementById('export-territory-mscribe-btn').addEventListener('click', () => handleTerritoryBackup(currentTerritoryId));
+        document.getElementById('export-street-mscribe-btn').addEventListener('click', () => handleStreetBackup(currentStreetId));
+        document.getElementById('export-pdf-btn').addEventListener('click', () => handleExportPDF(currentStreetId));
+        
+        const restoreFileInput = document.getElementById('restore-file-input');
+        const importCsvInput = document.getElementById('import-csv-input');
 
-    // --- IMPORT/EXPORT & DATA HANDLING FUNCTIONS ---
-    // --- CSV GENERATION HELPER ---
-    async function generateCSV(houseList) {
-        if (!houseList || houseList.length === 0) {
-            alert("No houses to export.");
-            return null;
-        }
-
-        const csvEscape = (field) => {
-            const stringField = String(field ?? '');
-            if (/[",\n]/.test(stringField)) {
-                return `"${stringField.replace(/"/g, '""')}"`;
-            }
-            return stringField;
+        const csvImportCallback = async () => {
+            const allTerritories = await getAllFromStore('territories');
+            await renderTerritories(allTerritories, territorySort);
         };
 
-        const allStreets = await getAllFromStore('streets');
-        const allTerritories = await getAllFromStore('territories');
-        const streetsMap = new Map(allStreets.map(s => [s.id, s]));
-        const territoriesMap = new Map(allTerritories.map(t => [t.id, t]));
-
-        const headers = [
-            'TerritoryNumber', 'TerritoryDescription', 'StreetName', 'HouseNumber', 'InitialNotes',
-            'HasMailbox', 'NoTrespassing', 'HasGate'
-        ];
-        let csvRows = [headers.join(',')];
-
-        for (const house of houseList) {
-            const street = streetsMap.get(house.streetId);
-            if (!street) continue;
-            const territory = territoriesMap.get(street.territoryId);
-            if (!territory) continue;
-
-            const visits = await getByIndex('visits', 'houseId', house.id);
-            const initialNotes = visits
-                .filter(v => v.isVisitAttempt === false && v.notes !== 'House record created.' && v.notes !== 'House record created via CSV import.')
-                .map(v => v.notes)
-                .join('; ');
-
-            const houseNumber = house.address.replace(street.name, '').trim();
-
-            const row = [
-                territory.number,
-                territory.description,
-                street.name,
-                houseNumber,
-                initialNotes,
-                house.hasMailbox,
-                house.noTrespassing,
-                house.hasGate
-            ].map(csvEscape).join(',');
-            csvRows.push(row);
-        }
-        return csvRows.join('\n');
-    }
-
-
-    // --- BACKUP & RESTORE FUNCTIONS ---
-    async function handleStreetBackup() {
-        const street = await getFromStore('streets', currentStreetId);
-        if (!street) return alert("Could not find current street.");
+        document.getElementById('restore-btn').addEventListener('click', () => restoreFileInput.click());
+        restoreFileInput.addEventListener('change', (e) => handleCSVImport(e, csvImportCallback));
         
-        const houses = await getByIndex('houses', 'streetId', currentStreetId);
-        const csvContent = await generateCSV(houses);
-
-        if (csvContent) {
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const filename = `${street.name.replace(/[^\w\s]/gi, '').replace(/\s/g, '_')}.csv`;
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = filename;
-            a.click();
-            URL.revokeObjectURL(a.href);
-        }
-    }
-
-
-    async function handleFullBackup() {
-        try {
-            const allHouses = await getAllFromStore('houses');
-            const csvContent = await generateCSV(allHouses);
-
-            if (csvContent) {
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const filename = `ministry_scribe_full_backup_${new Date().toISOString().split('T')[0]}.csv`;
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = filename;
-                a.click();
-                URL.revokeObjectURL(a.href);
-            }
-        } catch (error) {
-            console.error("Full CSV export failed:", error);
-            alert("Could not perform the full CSV export.");
-        }
+        document.getElementById('import-csv-btn').addEventListener('click', () => importCsvInput.click());
+        importCsvInput.addEventListener('change', (e) => handleCSVImport(e, csvImportCallback));
     }
 
 
@@ -717,148 +628,4 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
         reader.readAsText(file);
     }
-
-
-    /**
-     * Parses a CSV string into an array of objects.
-     * @param {string} csvText The raw CSV string content.
-     * @returns {Array<Object>} An array of objects, where each object represents a row.
-     */
-    function parseCSV(csvText) {
-        const lines = csvText.trim().split(/\r?\n/);
-        if (lines.length < 2) return [];
-
-        const header = lines[0].split(',').map(h => h.trim());
-        const data = [];
-
-        for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].split(',');
-            const rowObject = {};
-            for (let j = 0; j < header.length; j++) {
-                rowObject[header[j]] = values[j] ? values[j].trim() : '';
-            }
-            data.push(rowObject);
-        }
-        return data;
-    }
-
-
-    /**
-     * Processes the parsed CSV data and saves it to the database.
-     * @param {Array<Object>} data The array of row objects from the CSV.
-     */
-    async function processCSVData(data) {
-        // Use maps to cache created territories and streets to avoid redundant DB lookups
-        const territoryCache = new Map();
-        const streetCache = new Map();
-
-        for (const row of data) {
-            const {
-                TerritoryNumber,
-                TerritoryDescription,
-                StreetName,
-                HouseNumber,
-                HasMailbox,
-                NoTrespassing,
-                HasGate,
-                InitialNotes
-            } = row;
-
-            // --- Step 1: Find or Create Territory ---
-            let territoryId;
-            if (territoryCache.has(TerritoryNumber)) {
-                territoryId = territoryCache.get(TerritoryNumber);
-            } else {
-                // Check if territory already exists in the database
-                const territories = await getAllFromStore('territories');
-                let existingTerritory = territories.find(t => t.number === TerritoryNumber);
-                
-                if (existingTerritory) {
-                    territoryId = existingTerritory.id;
-                } else {
-                    territoryId = await addToStore('territories', {
-                        number: TerritoryNumber,
-                        description: TerritoryDescription,
-                        createdAt: new Date().toISOString()
-                    });
-                }
-                territoryCache.set(TerritoryNumber, territoryId);
-            }
-
-            // --- Step 2: Find or Create Street ---
-            let streetId;
-            const streetCacheKey = `${territoryId}-${StreetName}`;
-            if (streetCache.has(streetCacheKey)) {
-                streetId = streetCache.get(streetCacheKey);
-            } else {
-                const streets = await getByIndex('streets', 'territoryId', territoryId);
-                let existingStreet = streets.find(s => s.name.toLowerCase() === StreetName.toLowerCase());
-
-                if (existingStreet) {
-                    streetId = existingStreet.id;
-                } else {
-                    streetId = await addToStore('streets', {
-                        territoryId: territoryId,
-                        name: StreetName
-                    });
-                }
-                streetCache.set(streetCacheKey, streetId);
-            }
-            
-            // --- Step 3: Create the House ---
-            const newHouse = {
-                streetId: streetId,
-                address: `${HouseNumber} ${StreetName}`,
-                isCurrentlyNH: true, // Default to Not at Home
-                hasMailbox: HasMailbox ? HasMailbox.toLowerCase() === 'true' : false,
-                noTrespassing: NoTrespassing ? NoTrespassing.toLowerCase() === 'true' : false,
-                hasGate: HasGate ? HasGate.toLowerCase() === 'true' : false,
-                isNotInterested: false // Default NI to false
-            };
-
-            const newHouseId = await addToStore('houses', newHouse);
-            
-            // --- Step 4: Add "Created" and Initial Notes ---
-            await addToStore('visits', {
-                houseId: newHouseId,
-                date: new Date().toISOString(),
-                notes: 'House record created via CSV import.',
-                isVisitAttempt: false // This is not a real visit attempt
-            });
-
-            if (InitialNotes) {
-                await addToStore('visits', {
-                    houseId: newHouseId,
-                    date: new Date().toISOString(),
-                    notes: InitialNotes,
-                    isVisitAttempt: false
-                });
-            }
-        }
-    }
-
-    async function handleExportPDF() {
-        const doc = new jsPDF();
-        // This function now exports a STREET, not a territory
-        const street = await getFromStore('streets', currentStreetId);
-        const houses = await getByIndex('houses', 'streetId', currentStreetId);
-        
-        doc.setFontSize(18);
-        doc.text(`Street Report: ${street.name}`, 14, 22);
-        
-        let y = 30;
-        // Internal logic for generating the PDF content for houses is unchanged
-        for (const house of houses) {
-            if (y > 270) { doc.addPage(); y = 20; }
-            doc.setLineWidth(0.5);
-            doc.line(14, y, 196, y);
-            y += 7;
-            doc.setFontSize(12);
-            doc.text(`Address: ${house.address}`, 14, y);
-            y += 7;
-        }
-
-        doc.save(`${street.name.replace(/[^\w\s]/gi, '').replace(/\s/g, '_')}.pdf`);
-    }
-
 });
