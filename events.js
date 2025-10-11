@@ -107,6 +107,56 @@ function initializeEventListeners(state, actions) {
             }
             return;
         }
+
+        // --- NEW (VERSION 1.04.01): HOUSE CARD ACTION BUTTONS ---
+        const cardActions = target.closest('.card-actions');
+        if (cardActions) {
+            const houseId = Number(target.dataset.id);
+            if (!houseId) return;
+
+            // Handle 'Log NH' Button
+            if (target.classList.contains('log-nh-btn')) {
+                const house = await getFromStore('houses', houseId);
+                if (house) {
+                    house.isCurrentlyNH = true;
+                    await updateInStore('houses', house);
+                    await addToStore('visits', {
+                        houseId: houseId,
+                        date: new Date().toISOString(),
+                        notes: 'Not at home.',
+                        isNotAtHome: true,
+                        isVisitAttempt: true
+                    });
+                    await actions.refreshHouses();
+                }
+            }
+
+            // Handle 'Send Letter' Button
+            if (target.classList.contains('sent-letter-btn')) {
+                await addToStore('visits', {
+                    houseId: houseId,
+                    date: new Date().toISOString(),
+                    notes: 'Letter sent.',
+                    isVisitAttempt: false, // A letter is not a physical attempt
+                    visitType: 'letter' // Special type for filtering later
+                });
+                await actions.refreshHouses();
+            }
+
+            // Handle 'Phone Call' Button
+            if (target.classList.contains('phone-call-btn')) {
+                // For now, this simply logs a visit. We can make it more complex later.
+                await addToStore('visits', {
+                    houseId: houseId,
+                    date: new Date().toISOString(),
+                    notes: 'Phone call attempt.',
+                    isVisitAttempt: true,
+                    visitType: 'phone'
+                });
+                await actions.refreshHouses();
+            }
+            return; // Stop further execution after handling a card action
+        }
         
         // --- BUTTONS ---
         if (target.classList.contains('back-btn')) {
