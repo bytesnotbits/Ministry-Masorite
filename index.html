@@ -35,20 +35,18 @@
         <div id="territory-data-management" class="data-management-section hidden">
             <h3>Data Management</h3>
             <button id="import-csv-btn">Import Territory from CSV</button>
-            <!-- FIXED: Updated button text and input type -->
             <button id="restore-btn">Import from CSV</button>
             <button id="export-full-btn">Export Full Backup (CSV)</button>
             <input type="file" id="restore-file-input" accept=".csv" hidden>
             <input type="file" id="import-csv-input" accept=".csv" hidden>
         </div>
 
-            <!-- Add a toggle button and made the version footer section hidden by default -->
         <button id="about-menu-toggle-btn" class="menu-toggle-btn">About / TODOs ℹ️</button>
         <div id="about-section" class="version-footer hidden">
                 <h3>Version & TODO</h3>
                 <p><strong>Thank you Sarah, Norman, Nathaniel, Loly for the GREAT FEEDBACK so far!</strong></p>
-                <h3>We've reached version 1.0 ya'll! 1.00.00 We're officially out of Beta!</h3>
-                <p><strong>1.01.00</strong> Switched to CSV file format for import/export.</p>
+                <h3>We've reached version 1.0 ya'll! 1.01.00 We're officially out of Beta!</h3>
+                <p><strong>1.01.01</strong> Switched to CSV file format for import/export.</p>
                 <p>List meta data in street card. x/x visited, x/x letters, x NT etc....</p>
                 <p>Implement "Territory Complete" flag [active=false]</p>
                 <p>Hide [active=false] territories</p>
@@ -109,7 +107,7 @@
         </div>
     </div>
 
-        <!-- LEVEL 2: This new screen shows the list of streets for a single territory -->
+    <!-- LEVEL 2: This new screen shows the list of streets for a single territory -->
     <div id="street-list-view" class="view">
         <button class="back-btn" data-target="territory-list-view">&larr; Back to Territories</button>
         <h2 id="street-list-title"></h2>
@@ -119,7 +117,6 @@
         <button id="export-territory-menu-toggle-btn" class="menu-toggle-btn">Export Options 📤</button>
         <div id="territory-export-management" class="data-management-section hidden">
             <h3>Export This Entire Territory</h3>
-            <!-- FIXED: Updated button text for consistency -->
             <button id="export-territory-mscribe-btn">Export Territory (CSV)</button>
         </div>
     </div>
@@ -148,104 +145,148 @@
         </div>
     </div>
 
-        <!-- This screen shows the details for a single house -->
-        <div id="house-detail-view" class="view">
-             <button class="back-btn" data-target="house-list-view">&larr; Back to House List</button>
-             <h2 id="house-detail-address"></h2>
+    <!-- This screen shows the details for a single house -->
+    <div id="house-detail-view" class="view">
+        <button class="back-btn" data-target="house-list-view">&larr; Back to House List</button>
+        <h2 id="house-detail-address"></h2>
 
-             <div class="detail-section">
-                <h3>Details</h3>
-                <label><input type="checkbox" id="not-at-home-check"> Not at Home</label><br>
-                <label><input type="checkbox" id="not-interested-check"> Not Interested</label><br>
-                 <label><input type="checkbox" id="mailbox-check"> Mailbox Available</label><br>
-                <label><input type="checkbox" id="notrespass-check"> No Trespassing</label><br>
-                 <label><input type="checkbox" id="gate-check"> Gated Property</label>
-             </div>
-
-             <div class="detail-section">
-                <h3>Individuals Met</h3>
-                <ul id="people-list">
-                    <!-- Names will be dynamically inserted here -->
-                </ul>
-             </div>
-
-             <div class="detail-section">
-                 <h3>Visit History</h3>
-                 <button id="add-visit-btn" class="primary-action">+ Add New Visit Note</button>
-                 <ul id="visit-notes-list">
-                    <!-- Visit notes will be dynamically inserted here -->
-                 </ul>
-             </div>
+        <div class="detail-section">
+           <h3>Details</h3>
+           <label><input type="checkbox" id="not-at-home-check"> Not at Home</label><br>
+           <label><input type="checkbox" id="not-interested-check"> Not Interested</label><br>
+            <label><input type="checkbox" id="mailbox-check"> Mailbox Available</label><br>
+           <label><input type="checkbox" id="notrespass-check"> No Trespassing</label><br>
+            <label><input type="checkbox" id="gate-check"> Gated Property</label>
         </div>
 
-        <!-- RV LIST VIEW -->
-        <div id="rv-list-view" class="view">
-            <button class="back-btn" data-target="territory-list-view">&larr; Back to Territories</button>
-            <h2>Return Visits (RVs)</h2>
-            <ul id="rv-list">
-                <!-- RVs will be dynamically inserted here -->
+        <div class="detail-section">
+           <h3>Individuals Met</h3>
+           <ul id="people-list">
+               <!-- Names will be dynamically inserted here -->
+           </ul>
+        </div>
+
+        <div class="detail-section">
+            <h3>Visit History</h3>
+            <button id="add-visit-btn" class="primary-action">+ Add New Visit Note</button>
+            <ul id="visit-notes-list">
+               <!-- Visit notes will be dynamically inserted here -->
             </ul>
         </div>
+    </div>
 
-        <!-- NOTE-TAKING MODAL -->
-        <div id="note-modal" class="modal-backdrop hidden">
-            <div class="modal-content">
-                <button class="close-modal-btn">&times;</button>
-                <h3>Add Visit Note</h3>
+    <!-- RV LIST VIEW -->
+    <div id="rv-list-view" class="view">
+        <button class="back-btn" data-target="territory-list-view">&larr; Back to Territories</button>
+        <h2>Return Visits (RVs)</h2>
+        <ul id="rv-list">
+            <!-- RVs will be dynamically inserted here -->
+        </ul>
+    </div>
 
-        <label for="modal-person-input">Person Met</label>
-                <div class="combobox-container">
-                    <input type="text" id="modal-person-input" placeholder="Type or select a name..." autocomplete="off">
-                    <div id="modal-suggestions-list" class="suggestions-list hidden">
-                        <!-- Suggestions will be populated by JavaScript -->
-                    </div>
-                </div>
+    <!-- NOTE-TAKING MODAL -->
+    <div id="note-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <button class="close-modal-btn">&times;</button>
+            <h3>Add Visit Note</h3>
 
-                <label class="modal-toggle" id="modal-rv-toggle">
-                    <input type="checkbox" id="modal-is-rv-check">
-                    Mark as Return Visit (RV)
-                </label>
-
-                <label for="modal-visit-notes">Visit Notes</label>
-                <textarea id="modal-visit-notes" rows="4"></textarea>
-
-                <label class="modal-toggle">
-                    <input type="checkbox" id="modal-remove-nh-check">
-                    Remove 'NH' Status?
-                </label>
-
-                <div class="modal-actions">
-                    <button id="modal-cancel-btn">Cancel</button>
-                    <button id="modal-save-note-btn" class="primary-action">Save Note</button>
+            <label for="modal-person-input">Person Met</label>
+            <div class="combobox-container">
+                <input type="text" id="modal-person-input" placeholder="Type or select a name..." autocomplete="off">
+                <div id="modal-suggestions-list" class="suggestions-list hidden">
+                    <!-- Suggestions will be populated by JavaScript -->
                 </div>
             </div>
-        </div>
-        
-       <!-- ADD NEW TERRITORY MODAL -->
-        <div id="territory-modal" class="modal-backdrop hidden">
-            <div class="modal-content">
-                <button class="close-modal-btn">&times;</button>
-                <h3>Add New Territory</h3>
-                
-                <label for="modal-territory-number">Territory Number</label>
-                <input type="text" id="modal-territory-number" placeholder="e.g., 5, 1-7, 4-13 LTR">
-        
-                <label for="modal-territory-description">Territory Description</label>
-                <input type="text" id="modal-territory-description" placeholder="e.g., Walking, Letter Writing, Business">
-        
-                <div class="modal-actions">
-                    <button id="modal-territory-cancel-btn">Cancel</button>
-                    <button id="modal-territory-save-new-btn">Save & New</button>
-                    <button id="modal-territory-save-btn" class="primary-action">Save</button>
-                </div>
+
+            <label class="modal-toggle" id="modal-rv-toggle">
+                <input type="checkbox" id="modal-is-rv-check">
+                Mark as Return Visit (RV)
+            </label>
+
+            <label for="modal-visit-notes">Visit Notes</label>
+            <textarea id="modal-visit-notes" rows="4"></textarea>
+
+            <label class="modal-toggle">
+                <input type="checkbox" id="modal-remove-nh-check">
+                Remove 'NH' Status?
+            </label>
+
+            <div class="modal-actions">
+                <button id="modal-cancel-btn">Cancel</button>
+                <button id="modal-save-note-btn" class="primary-action">Save Note</button>
             </div>
         </div>
+    </div>
+    
+   <!-- ADD NEW TERRITORY MODAL -->
+    <div id="territory-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <button class="close-modal-btn">&times;</button>
+            <h3>Add New Territory</h3>
+            
+            <label for="modal-territory-number">Territory Number</label>
+            <input type="text" id="modal-territory-number" placeholder="e.g., 5, 1-7, 4-13 LTR">
+    
+            <label for="modal-territory-description">Territory Description</label>
+            <input type="text" id="modal-territory-description" placeholder="e.g., Walking, Letter Writing, Business">
+    
+            <div class="modal-actions">
+                <button id="modal-territory-cancel-btn">Cancel</button>
+                <button id="modal-territory-save-new-btn">Save & New</button>
+                <button id="modal-territory-save-btn" class="primary-action">Save</button>
+            </div>
+        </div>
+    </div>
 
-        <!-- ADD NEW STREET MODAL (ENTIRELY NEW) -->
-        <div id="street-modal" class="modal-backdrop hidden">
-            <div class="modal-content">
-                <button class="close-modal-btn">&times;</button>
-                <h3>Add New Street</h3>
-                
-                <label for="modal-street-name">Street Name</label>
-                <inp
+    <!-- ADD NEW STREET MODAL (ENTIRELY NEW) -->
+    <div id="street-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <button class="close-modal-btn">&times;</button>
+            <h3>Add New Street</h3>
+            
+            <label for="modal-street-name">Street Name</label>
+            <input type="text" id="modal-street-name" placeholder="e.g., Maple Street">
+    
+            <div class="modal-actions">
+                <button id="modal-street-cancel-btn">Cancel</button>
+                <button id="modal-street-save-new-btn">Save & New</button>
+                <button id="modal-street-save-btn" class="primary-action">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD NEW HOUSE MODAL -->
+    <div id="house-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <button class="close-modal-btn">&times;</button>
+            <h3>Add New House</h3>
+            
+            <label for="modal-house-number">House Number</label>
+            <input type="text" id="modal-house-number" placeholder="e.g., 123">
+
+            <label>Quick Details</label>
+            <div class="modal-toggles">
+                <button class="toggle-btn" data-prop="isCurrentlyNH">NH</button>
+                <button class="toggle-btn" data-prop="hasMailbox">Mailbox</button>
+                <button class="toggle-btn" data-prop="noTrespassing">NT</button>
+                <button class="toggle-btn" data-prop="hasGate">Gated</button>
+            </div>
+    
+            <label for="modal-house-notes">Initial Notes</label>
+            <textarea id="modal-house-notes" rows="3" placeholder="e.g., Corner lot, blue door..."></textarea>
+
+            <div class="modal-actions">
+                <button id="modal-house-cancel-btn">Cancel</button>
+                <button id="modal-house-save-new-btn">Save & New</button>
+                <button id="modal-house-save-btn" class="primary-action">Save</button>
+            </div>
+        </div>
+    </div>
+        
+    </main>
+
+    <!-- App Logic -->
+    <script src="database.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
