@@ -112,6 +112,65 @@ async function renderStreets(territoryId) {
     }
 }
 
+/**
+ * Creates and returns a DOM element for a single house list item.
+ * @param {object} house - The house object from the database.
+ * @param {Array<object>} visits - An array of visit objects for this house.
+ * @returns {HTMLElement} The fully constructed <li> element.
+ */
+function createHouseListItem(house, visits) {
+    const li = document.createElement('li');
+    li.className = 'house-card';
+    li.dataset.id = house.id;
+
+    if (house.isNotInterested) {
+        li.classList.add('is-ni');
+    }
+
+    const lastVisit = visits[0]; // Assumes visits are pre-sorted by date descending
+    const visitCount = visits.filter(v => v.isVisitAttempt !== false).length;
+
+    // --- Create Icons ---
+    let iconsHTML = '';
+    if (house.hasMailbox) iconsHTML += `<span title="Mailbox Available">📭</span>`;
+    if (house.noTrespassing) iconsHTML += `<span title="No Trespassing Sign">🚫</span>`;
+    if (house.hasGate) iconsHTML += `<span title="Gated Property">🚧</span>`;
+    if (house.isCurrentlyNH) iconsHTML += `<span title="Status: Not at Home">⏰</span>`;
+
+    // --- Other Details ---
+    const lastActivityDate = lastVisit ? `Last Visit: <strong>${new Date(lastVisit.date).toLocaleDateString()}</strong>` : 'No activity yet';
+    const personMet = lastVisit && !lastVisit.isNotAtHome && lastVisit.personName ? `Met: <strong>${lastVisit.personName}</strong>` : '';
+    const niBadge = house.isNotInterested ? '<span class="ni-badge">NI</span>' : '';
+
+    const hasSentLetter = visits.some(v => v.visitType === 'letter');
+    const letterButtonClass = hasSentLetter ? 'sent-letter-btn letter-sent' : 'sent-letter-btn';
+    const letterButtonText = hasSentLetter ? 'Letter Sent' : 'Send Letter';
+
+    // --- Build the Card using innerHTML for simplicity within the component ---
+    li.innerHTML = `
+        <div class="card-header">
+            <div class="card-title">
+                <strong>${house.address}</strong> ${niBadge}
+            </div>
+            <div class="card-controls">
+                <div class="icons">${iconsHTML}</div>
+                <button class="delete-btn" data-id="${house.id}" data-type="house">X</button>
+            </div>
+        </div>
+        <div class="house-card-details">
+            ${lastActivityDate}<br>
+            Attempts: <strong>${visitCount}</strong> | ${personMet}
+        </div>
+        <div class="card-actions">
+            <button class="log-nh-btn" data-id="${house.id}">Log 'NH'</button>
+            <button class="${letterButtonClass}" data-id="${house.id}">${letterButtonText}</button>
+            <button class="phone-call-btn" data-id="${house.id}">Phone Call</button>
+        </div>
+    `;
+
+    return li;
+}
+
 async function renderHouses(streetId, activeHouseFilters) {
     const houseList = document.getElementById('house-list');
     houseList.innerHTML = '';
@@ -120,97 +179,53 @@ async function renderHouses(streetId, activeHouseFilters) {
 
     const allHouses = (await getByIndex('houses', 'streetId', streetId)).sort((a, b) => a.address.localeCompare(b.address, undefined, { numeric: true, sensitivity: 'base' }));
     
+    // Efficiently fetch all visits for all houses on the street at once
     const houseVisitPromises = allHouses.map(house => getByIndex('visits', 'houseId', house.id));
     const allVisitsArrays = await Promise.all(houseVisitPromises);
     const visitsByHouseId = allHouses.reduce((acc, house, index) => {
-        acc[house.id] = allVisitsArrays[index] || [];
+        acc[house.id] = (allVisitsArrays[index] || []).sort((a, b) => new Date(b.date) - new Date(a.date));
         return acc;
     }, {});
 
-    let housesToRender = [];
+    // --- Filtering Logic (unchanged) ---
+    const housesToRender = allHouses.filter(house => {
+        const visits = visitsByHouseId[house.id] || [];
+        if (activeHouseFilters.ni && house.isNotInterested) return false;
+        if (activeHouseFilters.nt && house.noTrespassing) return false;
+        if (activeHouseFilters.gated && house.hasGate) return false;
 
-    for (const house of allHouses) {
-        let shouldBeHidden = false;
-        const visits = visitsByHouseId[house.id];
-
-        if (activeHouseFilters.ni && house.isNotInterested) shouldBeHidden = true;
-        if (!shouldBeHidden && activeHouseFilters.nt && house.noTrespassing) shouldBeHidden = true;
-        if (!shouldBeHidden && activeHouseFilters.gated && house.hasGate) shouldBeHidden = true;
-
-        if (!shouldBeHidden && activeHouseFilters.visited) {
+        if (activeHouseFilters.visited) {
             const hasActualVisit = visits.some(visit => (visit.isVisitAttempt !== false) && !visit.isNotAtHome);
             if (hasActualVisit && !house.isCurrentlyNH) {
-                shouldBeHidden = true;
+                return false;
             }
         }
+        return true;
+    });
 
-        if (!shouldBeHidden) {
-            housesToRender.push(house);
-        }
-    }
-
+    // --- Rendering Logic ---
     if (housesToRender.length === 0) {
         const hasActiveFilters = Object.values(activeHouseFilters).some(v => v);
         if (hasActiveFilters) {
             houseList.innerHTML = '<li class="placeholder">No houses match the current filters.</li>';
         } else if (allHouses.length === 0) {
-            houseList.innerHTML = '<li class="placeholder">No houses added to this territory yet.</li>';
+            houseList.innerHTML = '<li class="placeholder">No houses added to this street yet.</li>';
         } else {
             houseList.innerHTML = '<li class="placeholder">All houses are currently hidden by filters.</li>';
         }
         return;
     }
 
+    // Use a document fragment for performance. This builds the list in memory
+    // before adding it to the DOM in a single operation.
+    const fragment = document.createDocumentFragment();
     for (const house of housesToRender) {
-        const visits = visitsByHouseId[house.id].sort((a, b) => new Date(b.date) - new Date(a.date));
-        const lastVisit = visits[0];
-        const visitCount = visits.filter(v => v.isVisitAttempt !== false).length;
-
-        let iconsHTML = '';
-        if (house.hasMailbox) iconsHTML += `<span title="Mailbox Available">📭</span>`;
-        if (house.noTrespassing) iconsHTML += `<span title="No Trespassing Sign">🚫</span>`;
-        if (house.hasGate) iconsHTML += `<span title="Gated Property">🚧</span>`;
-        if (house.isCurrentlyNH) iconsHTML += `<span title="Status: Not at Home">⏰</span>`;
-
-        const lastActivityDate = lastVisit ? `Last Visit: <strong>${new Date(lastVisit.date).toLocaleDateString()}</strong>` : 'No activity yet';
-        const personMet = lastVisit && !lastVisit.isNotAtHome && lastVisit.personName ? `Met: <strong>${lastVisit.personName}</strong>` : '';
-
-        const li = document.createElement('li');
-        li.className = 'house-card';
-        li.dataset.id = house.id;
-
-        const niBadge = house.isNotInterested ? '<span class="ni-badge">NI</span>' : '';
-        
-        if (house.isNotInterested) {
-            li.classList.add('is-ni');
-        }
-
-        const hasSentLetter = visits.some(v => v.visitType === 'letter');
-        const letterButtonClass = hasSentLetter ? 'sent-letter-btn letter-sent' : 'sent-letter-btn';
-        const letterButtonText = hasSentLetter ? 'Letter Sent' : 'Send Letter';
-
-        li.innerHTML = `
-            <div class="card-header">
-                <div class="card-title">
-                    <strong>${house.address}</strong> ${niBadge}
-                </div>
-                <div class="card-controls">
-                    <div class="icons">${iconsHTML}</div>
-                    <button class="delete-btn" data-id="${house.id}" data-type="house">X</button>
-                </div>
-            </div>
-            <div class="house-card-details">
-                ${lastActivityDate}<br>
-                Attempts: <strong>${visitCount}</strong> | ${personMet}
-            </div>
-            <div class="card-actions">
-                <button class="log-nh-btn" data-id="${house.id}">Log 'NH'</button>
-                <button class="${letterButtonClass}" data-id="${house.id}">${letterButtonText}</button>
-                <button class="phone-call-btn" data-id="${house.id}">Phone Call</button>
-            </div>
-        `;
-        houseList.appendChild(li);
+        const visits = visitsByHouseId[house.id] || [];
+        const houseElement = createHouseListItem(house, visits); // <-- USE THE NEW HELPER
+        fragment.appendChild(houseElement);
     }
+
+    houseList.appendChild(fragment); // Append the completed list to the DOM
 }
 
 async function renderHouseDetails(houseId) {
