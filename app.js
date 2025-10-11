@@ -1,8 +1,8 @@
 // --- REFACTORED FILE: app.js ---
-// This file initializes the application and manages its central state.
+// This file initializes the application and manages its central state and actions.
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // --- CENTRAL APPLICATION STATE ---
+    // --- 1. CENTRAL APPLICATION STATE ---
     const AppState = {
         currentView: 'territory-list-view',
         currentTerritoryId: null,
@@ -23,17 +23,97 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // --- INITIALIZE ---
+    // --- 2. STATE MODIFICATION ACTIONS ---
+    // These are the only functions that should modify AppState. They also trigger UI updates.
+    const AppActions = {
+        // --- Navigation Actions ---
+        async navigateToStreets(territoryId) {
+            AppState.territoryListScrollPosition = window.scrollY;
+            AppState.currentTerritoryId = territoryId;
+            AppState.currentView = 'street-list-view';
+            await renderStreets(AppState.currentTerritoryId);
+            showView(AppState.currentView);
+        },
+
+        async navigateToHouses(streetId) {
+            AppState.streetListScrollPosition = window.scrollY;
+            AppState.currentStreetId = streetId;
+            AppState.activeHouseFilters = { visited: false, ni: false, nt: false, gated: false };
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            AppState.currentView = 'house-list-view';
+            await renderHouses(AppState.currentStreetId, AppState.activeHouseFilters);
+            showView(AppState.currentView);
+        },
+
+        async navigateToHouseDetails(houseId) {
+            AppState.houseListScrollPosition = window.scrollY;
+            AppState.currentHouseId = houseId;
+            AppState.currentView = 'house-detail-view';
+            await renderHouseDetails(AppState.currentHouseId);
+            showView(AppState.currentView);
+        },
+        
+        async navigateToRVs() {
+            AppState.currentView = 'rv-list-view';
+            await renderRVList();
+            showView(AppState.currentView);
+        },
+        
+        async navigateBack(targetView) {
+            AppState.currentView = targetView;
+            if (targetView === 'house-list-view') {
+                // No data fetching needed, just show the view and restore scroll
+                showView(targetView);
+                setTimeout(() => window.scrollTo(0, AppState.houseListScrollPosition), 0);
+            } else if (targetView === 'street-list-view') {
+                showView(targetView);
+                setTimeout(() => window.scrollTo(0, AppState.streetListScrollPosition), 0);
+            } else if (targetView === 'territory-list-view') {
+                showView(targetView);
+                setTimeout(() => window.scrollTo(0, AppState.territoryListScrollPosition), 0);
+            } else {
+                showView(targetView);
+            }
+        },
+        
+        // --- Data & UI Update Actions ---
+        async refreshTerritories() {
+            const allTerritories = await getAllFromStore('territories');
+            await renderTerritories(allTerritories, AppState.territorySort);
+        },
+        
+        async refreshStreets() {
+            await renderStreets(AppState.currentTerritoryId);
+        },
+        
+        async refreshHouses() {
+            await rerenderHousesAndPreserveScroll(AppState.currentStreetId, AppState.activeHouseFilters);
+        },
+        
+        async refreshHouseDetails() {
+            await renderHouseDetails(AppState.currentHouseId);
+        },
+
+        async updateTerritorySort(sortType) {
+            AppState.territorySort = sortType;
+            await this.refreshTerritories();
+        },
+        
+        async toggleHouseFilter(filterType) {
+            AppState.activeHouseFilters[filterType] = !AppState.activeHouseFilters[filterType];
+            await this.refreshHouses();
+        }
+    };
+
+    // --- 3. INITIALIZATION ---
     try {
-        // 1. Initialize the database
         await initDB();
         
-        // 2. Perform the initial render
-        const initialTerritories = await getAllFromStore('territories');
-        await renderTerritories(initialTerritories, AppState.territorySort);
+        // Pass both the state and the actions to the event listeners module
+        initializeEventListeners(AppState, AppActions);
         
-        // 3. Set up all event listeners, passing them the state object
-        initializeEventListeners(AppState);
+        // Perform the initial render
+        await AppActions.refreshTerritories();
         
         console.log("Ministry Scribe Initialized Successfully.");
 
