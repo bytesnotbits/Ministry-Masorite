@@ -309,3 +309,4 @@ function initializeEventListeners(state, actions) {
             }
         }
     });
+}
