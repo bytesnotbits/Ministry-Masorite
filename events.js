@@ -108,7 +108,7 @@ function initializeEventListeners(state, actions) {
             return;
         }
 
-        // --- NEW (VERSION 1.04.01): HOUSE CARD ACTION BUTTONS ---
+        // --- HOUSE CARD ACTION BUTTONS ---
         const cardActions = target.closest('.card-actions');
         if (cardActions) {
             const houseId = Number(target.dataset.id);
@@ -131,21 +131,47 @@ function initializeEventListeners(state, actions) {
                 }
             }
 
-            // Handle 'Send Letter' Button
+            // --- NEW (Version 1.05.01): ADVANCED 'Send Letter' LOGIC ---
             if (target.classList.contains('sent-letter-btn')) {
-                await addToStore('visits', {
-                    houseId: houseId,
-                    date: new Date().toISOString(),
-                    notes: 'Letter sent.',
-                    isVisitAttempt: false, // A letter is not a physical attempt
-                    visitType: 'letter' // Special type for filtering later
-                });
+                // CASE 1: The button is in the "Send Letter" state (does NOT have .letter-sent)
+                if (!target.classList.contains('letter-sent')) {
+                    // Update the house status to NOT be "Not at Home" anymore
+                    const house = await getFromStore('houses', houseId);
+                    if (house) {
+                        house.isCurrentlyNH = false;
+                        await updateInStore('houses', house);
+                    }
+                    // Add the visit record for the letter
+                    await addToStore('visits', {
+                        houseId: houseId,
+                        date: new Date().toISOString(),
+                        notes: 'Letter sent.',
+                        isVisitAttempt: false,
+                        visitType: 'letter'
+                    });
+                } 
+                // CASE 2: The button is in the "Letter Sent" state (has .letter-sent), so we UNDO.
+                else {
+                    if (confirm('Undo "Letter Sent" note? This will delete the record.')) {
+                        // Find the specific visit to delete
+                        const allVisits = await getByIndex('visits', 'houseId', houseId);
+                        const lastLetterVisit = allVisits
+                            .filter(v => v.visitType === 'letter')
+                            .sort((a, b) => new Date(b.date) - new Date(a.date))[0]; // Get the most recent one
+
+                        if (lastLetterVisit) {
+                            await deleteFromStore('visits', lastLetterVisit.id);
+                        } else {
+                            alert('Could not find the original letter note to delete.');
+                        }
+                    }
+                }
+                // Finally, always refresh the house list to show the changes
                 await actions.refreshHouses();
             }
 
             // Handle 'Phone Call' Button
             if (target.classList.contains('phone-call-btn')) {
-                // For now, this simply logs a visit. We can make it more complex later.
                 await addToStore('visits', {
                     houseId: houseId,
                     date: new Date().toISOString(),
@@ -155,15 +181,16 @@ function initializeEventListeners(state, actions) {
                 });
                 await actions.refreshHouses();
             }
-            return; // Stop further execution after handling a card action
+            return; 
         }
         
-        // --- BUTTONS ---
+        // --- BACK BUTTONS ---
         if (target.classList.contains('back-btn')) {
             actions.navigateBack(target.dataset.target);
             return;
         }
 
+        // --- EDIT BUTTONS ---
         const editTerritoryBtn = target.closest('.edit-territory-btn');
         if (editTerritoryBtn) {
             state.currentEditTerritoryId = Number(editTerritoryBtn.dataset.id);
@@ -180,11 +207,12 @@ function initializeEventListeners(state, actions) {
             return;
         }
         
+        // --- SORT BUTTON ---
         if (target.classList.contains('sort-btn')) {
             actions.updateTerritorySort(target.dataset.sort);
         }
     
-        // --- CORRECTED: DELETE BUTTONS LOGIC ---
+        // --- DELETE BUTTONS (Complex logic stays here for now) ---
         if (target.classList.contains('delete-btn')) {
             const id = Number(target.dataset.id);
             const type = target.dataset.type;
@@ -230,18 +258,31 @@ function initializeEventListeners(state, actions) {
             }
         }
 
-        // --- MENU TOGGLES ---
-        if (target.id === 'data-menu-toggle-btn') document.getElementById('territory-data-management').classList.toggle('hidden');
-        if (target.id === 'export-territory-menu-toggle-btn') document.getElementById('territory-export-management').classList.toggle('hidden');
-        if (target.id === 'export-street-menu-toggle-btn') document.getElementById('street-data-management').classList.toggle('hidden');
-        if (target.id === 'about-menu-toggle-btn') document.getElementById('about-section').classList.toggle('hidden');
+        // --- MENU TOGGLES (Simple UI interaction, no state change) ---
+        if (target.id === 'data-menu-toggle-btn') {
+            document.getElementById('territory-data-management').classList.toggle('hidden');
+        }
+        if (target.id === 'export-territory-menu-toggle-btn') {
+            document.getElementById('territory-export-management').classList.toggle('hidden');
+        }
+        if (target.id === 'export-street-menu-toggle-btn') {
+            document.getElementById('street-data-management').classList.toggle('hidden');
+        }
+        if (target.id === 'about-menu-toggle-btn') {
+            document.getElementById('about-section').classList.toggle('hidden');
+        }
 
         // --- EDIT VISIT DATE ---
         if (target.classList.contains('edit-date-btn')) {
             const visitId = Number(target.dataset.id);
             const visit = await getFromStore('visits', visitId);
             const d = new Date(visit.date);
-            const currentDateTime = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const hours = String(d.getHours()).padStart(2, '0');
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            const currentDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
             const newDateTimeStr = prompt('Enter new date and time (YYYY-MM-DDTHH:MM):', currentDateTime);
 
             if (newDateTimeStr) {
@@ -251,7 +292,7 @@ function initializeEventListeners(state, actions) {
                     await updateInStore('visits', visit);
                     await actions.refreshHouseDetails();
                 } else {
-                    alert('Invalid date/time format.');
+                    alert('Invalid date/time format. Please use YYYY-MM-DDTHH:MM.');
                 }
             }
         }
