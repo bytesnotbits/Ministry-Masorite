@@ -1,5 +1,6 @@
 // 1.02.02
 
+// --- NEW FILE: database-api.js ---
 // This file acts as a data layer, handling complex data operations like import, export, and backup.
 
 const { jsPDF } = window.jspdf;
@@ -160,7 +161,7 @@ function handleCSVImport(event, callback) {
             if (confirm(`This will import ${data.length} new house records. This cannot be undone. Continue?`)) {
                 await processCSVData(data);
                 alert("CSV import successful!");
-                if (callback) callback(); // This will be used to trigger a re-render
+                if (callback) callback();
             }
         } catch (error) {
             alert(`An error occurred during CSV import: ${error.message}`);
@@ -172,11 +173,6 @@ function handleCSVImport(event, callback) {
     reader.readAsText(file);
 }
 
-/**
- * Parses a CSV string into an array of objects.
- * @param {string} csvText The raw CSV string content.
- * @returns {Array<Object>} An array of objects, where each object represents a row.
- */
 function parseCSV(csvText) {
     const lines = csvText.trim().split(/\r?\n/);
     if (lines.length < 2) return [];
@@ -195,10 +191,6 @@ function parseCSV(csvText) {
     return data;
 }
 
-/**
- * Processes the parsed CSV data and saves it to the database.
- * @param {Array<Object>} data The array of row objects from the CSV.
- */
 async function processCSVData(data) {
     const territoryCache = new Map();
     const streetCache = new Map();

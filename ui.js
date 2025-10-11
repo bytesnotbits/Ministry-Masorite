@@ -1,3 +1,5 @@
+// 1.02.02
+
 /*
 Purpose of this file:
 Create a ui.js module to separate all the rendering and DOM manipulation logic from the main application logic.

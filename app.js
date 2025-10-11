@@ -1,8 +1,8 @@
 // 1.02.02
-// --- REFACTORED FILE: app.js ---
-// This file manages the application's state, data logic, and event listeners.
 
-const { jsPDF } = window.jspdf;
+// 1.02.03
+// --- REFACTORED FILE: app.js ---
+// This file manages the application's state and event listeners.
 
 document.addEventListener('DOMContentLoaded', async () => {
     // --- STATE MANAGEMENT ---
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const houseModalToggles = document.querySelector('#house-modal .modal-toggles');
 
         
-        // --- Suggestion Box Logic (inside event listener setup) ---
+        // --- Suggestion Box Logic ---
         async function populateAndShowSuggestions() {
             suggestionsList.innerHTML = '';
             const allPeople = await getByIndex('people', 'houseId', currentHouseId);
@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('note-modal').querySelector('.close-modal-btn').addEventListener('click', hideNoteModal);
         document.getElementById('modal-cancel-btn').addEventListener('click', hideNoteModal);
         
-        // --- DATA SAVING LOGIC ---
+        // --- DATA SAVING LOGIC (To be moved later) ---
         async function handleSaveTerritory() {
             const number = modalTerritoryNumber.value.trim();
             const description = modalTerritoryDescription.value.trim();
@@ -174,7 +174,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return true;
         }
 
-        // --- GLOBAL CLICK LISTENER FOR NAVIGATION AND ACTIONS ---
+        // --- GLOBAL CLICK LISTENER ---
         document.addEventListener('click', async (e) => {
             const target = e.target;
 
@@ -341,14 +341,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const day = String(d.getDate()).padStart(2, '0');
                 const hours = String(d.getHours()).padStart(2, '0');
                 const minutes = String(d.getMinutes()).padStart(2, '0');
-                const currentDateTime = `${year}-${month}-${day} ${hours}:${minutes}`;
-                const newDateTimeStr = prompt('Enter new date and time (YYYY-MM-DD HH:MM):', currentDateTime);
-                if (newDateTimeStr && !isNaN(new Date(newDateTimeStr))) {
-                    visit.date = new Date(newDateTimeStr).toISOString();
-                    await updateInStore('visits', visit);
-                    await renderHouseDetails(currentHouseId);
-                } else if (newDateTimeStr) {
-                    alert('Invalid date/time format. Please use YYYY-MM-DD HH:MM.');
+                const currentDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+                const newDateTimeStr = prompt('Enter new date and time (YYYY-MM-DDTHH:MM):', currentDateTime);
+
+                if (newDateTimeStr) {
+                    const newDate = new Date(newDateTimeStr);
+                    if (!isNaN(newDate)) {
+                        visit.date = newDate.toISOString();
+                        await updateInStore('visits', visit);
+                        await renderHouseDetails(currentHouseId);
+                    } else {
+                        alert('Invalid date/time format. Please use YYYY-MM-DDTHH:MM.');
+                    }
                 }
             }
         });
@@ -364,7 +368,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('search-territory-input').addEventListener('input', async (e) => {
             const filter = e.target.value.trim();
             const allTerritories = await getAllFromStore('territories');
-            renderTerritories(allTerritories, territorySort, filter);
+            await renderTerritories(allTerritories, territorySort, filter);
         });
     
         // --- MODAL & BUTTON LISTENERS ---
@@ -505,8 +509,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             selectedPersonId = null;
             
             if (currentView === 'house-list-view') {
-                await renderHouses(currentStreetId, activeHouseFilters);
-                setTimeout(() => window.scrollTo(0, houseListScrollPosition), 0);
+                await rerenderHousesAndPreserveScroll(currentStreetId, activeHouseFilters);
             } else {
                 await renderHouseDetails(currentHouseId);
             }
@@ -549,7 +552,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             currentView = 'rv-list-view';
         });
 
-        // --- IMPORT/EXPORT LISTENERS ---
         // --- IMPORT/EXPORT LISTENERS (NOW CALLING THE API) ---
         document.getElementById('export-full-btn').addEventListener('click', handleFullBackup);
         document.getElementById('export-territory-mscribe-btn').addEventListener('click', () => handleTerritoryBackup(currentTerritoryId));
@@ -569,63 +571,5 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         document.getElementById('import-csv-btn').addEventListener('click', () => importCsvInput.click());
         importCsvInput.addEventListener('change', (e) => handleCSVImport(e, csvImportCallback));
-    }
-
-
-    async function handleTerritoryBackup() {
-        const territory = await getFromStore('territories', currentTerritoryId);
-        if (!territory) return alert("Could not find the current territory.");
-
-        const streets = await getByIndex('streets', 'territoryId', currentTerritoryId);
-        const streetIds = streets.map(s => s.id);
-        const allHouses = await getAllFromStore('houses');
-        const territoryHouses = allHouses.filter(h => streetIds.includes(h.streetId));
-        const csvContent = await generateCSV(territoryHouses);
-
-        if (csvContent) {
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const filename = `territory_${territory.number}_${territory.description.replace(/\s/g, '_')}.csv`;
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = filename;
-            a.click();
-            URL.revokeObjectURL(a.href);
-        }
-    }
-
-
-    /**
-     * Handles the CSV file selection, reads the file, and initiates the import process.
-     * @param {Event} event The file input change event.
-     */
-
-    function handleCSVImport(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const csvContent = e.target.result;
-            try {
-                const data = parseCSV(csvContent);
-                if (data.length === 0) {
-                    alert("CSV file is empty or invalid.");
-                    return;
-                }
-                // Confirm with the user before proceeding
-                if (confirm(`This will import ${data.length} new house records. This cannot be undone. Continue?`)) {
-                    await processCSVData(data);
-                    alert("CSV import successful!");
-                    await renderTerritories(); // Refresh the main view
-                }
-            } catch (error) {
-                alert(`An error occurred during CSV import: ${error.message}`);
-                console.error("CSV Import Error:", error);
-            } finally {
-                // Clear the file input to allow re-importing the same file
-                event.target.value = '';
-            }
-        };
-        reader.readAsText(file);
     }
 });
