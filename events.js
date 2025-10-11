@@ -72,7 +72,6 @@ function initializeEventListeners(state, actions) {
     document.getElementById('search-territory-input').addEventListener('input', async (e) => {
         const filter = e.target.value.trim();
         const allTerritories = await getAllFromStore('territories');
-        // This is a direct render call because it's a transient UI filter, not a state change
         await renderTerritories(allTerritories, state.territorySort, filter);
     });
 
@@ -101,7 +100,7 @@ function initializeEventListeners(state, actions) {
 
         const rvLi = target.closest('#rv-list li');
         if (rvLi && !rvLi.classList.contains('placeholder')) {
-            state.currentHouseId = Number(rvLi.dataset.houseId); // Set state needed for details
+            state.currentHouseId = Number(rvLi.dataset.houseId);
             const house = await getFromStore('houses', state.currentHouseId);
             if (house) {
                 const street = await getFromStore('streets', house.streetId);
@@ -140,18 +139,22 @@ function initializeEventListeners(state, actions) {
             actions.updateTerritorySort(target.dataset.sort);
         }
     
-        // --- DELETE BUTTONS (Complex logic stays here for now) ---
+        // --- CORRECTED: DELETE BUTTONS LOGIC ---
         if (target.classList.contains('delete-btn')) {
             const id = Number(target.dataset.id);
             const type = target.dataset.type;
+
             if (type === 'territory' && confirm('DELETE this territory and ALL its streets and houses? This cannot be undone.')) {
-                // This is complex cascading delete logic, keep it here for now
                 const streets = await getByIndex('streets', 'territoryId', id);
                 for (const street of streets) {
                     const houses = await getByIndex('houses', 'streetId', street.id);
                     for (const house of houses) {
-                        await deleteFromStore('visits', await getByIndex('visits', 'houseId', house.id).then(arr => arr.map(v => v.id)));
-                        await deleteFromStore('people', await getByIndex('people', 'houseId', house.id).then(arr => arr.map(p => p.id)));
+                        const visitIds = (await getByIndex('visits', 'houseId', house.id)).map(v => v.id);
+                        for (const visitId of visitIds) { await deleteFromStore('visits', visitId); }
+
+                        const peopleIds = (await getByIndex('people', 'houseId', house.id)).map(p => p.id);
+                        for (const personId of peopleIds) { await deleteFromStore('people', personId); }
+                        
                         await deleteFromStore('houses', house.id);
                     }
                     await deleteFromStore('streets', street.id);
@@ -162,16 +165,24 @@ function initializeEventListeners(state, actions) {
             } else if (type === 'street' && confirm('DELETE this street and ALL its houses?')) {
                 const houses = await getByIndex('houses', 'streetId', id);
                 for (const house of houses) {
-                     await deleteFromStore('visits', await getByIndex('visits', 'houseId', house.id).then(arr => arr.map(v => v.id)));
-                     await deleteFromStore('people', await getByIndex('people', 'houseId', house.id).then(arr => arr.map(p => p.id)));
-                     await deleteFromStore('houses', house.id);
+                    const visitIds = (await getByIndex('visits', 'houseId', house.id)).map(v => v.id);
+                    for (const visitId of visitIds) { await deleteFromStore('visits', visitId); }
+
+                    const peopleIds = (await getByIndex('people', 'houseId', house.id)).map(p => p.id);
+                    for (const personId of peopleIds) { await deleteFromStore('people', personId); }
+
+                    await deleteFromStore('houses', house.id);
                 }
                 await deleteFromStore('streets', id);
                 await actions.refreshStreets();
 
             } else if (type === 'house' && confirm('Delete this house and its history?')) {
-                 await deleteFromStore('visits', await getByIndex('visits', 'houseId', id).then(arr => arr.map(v => v.id)));
-                 await deleteFromStore('people', await getByIndex('people', 'houseId', id).then(arr => arr.map(p => p.id)));
+                 const visitIds = (await getByIndex('visits', 'houseId', id)).map(v => v.id);
+                 for (const visitId of visitIds) { await deleteFromStore('visits', visitId); }
+
+                 const peopleIds = (await getByIndex('people', 'houseId', id)).map(p => p.id);
+                 for (const personId of peopleIds) { await deleteFromStore('people', personId); }
+
                  await deleteFromStore('houses', id);
                  await actions.refreshHouses();
 
@@ -181,7 +192,7 @@ function initializeEventListeners(state, actions) {
             }
         }
 
-        // --- MENU TOGGLES (Simple UI interaction, no state change) ---
+        // --- MENU TOGGLES ---
         if (target.id === 'data-menu-toggle-btn') {
             document.getElementById('territory-data-management').classList.toggle('hidden');
         }
@@ -221,7 +232,7 @@ function initializeEventListeners(state, actions) {
         }
     });
 
-    // --- OTHER BUTTON LISTENERS (Refactored to use Actions) ---
+    // --- OTHER BUTTON LISTENERS ---
     document.getElementById('add-territory-btn').addEventListener('click', () => showTerritoryModal());
     document.getElementById('add-street-btn').addEventListener('click', () => showStreetModal());
     document.getElementById('add-house-btn').addEventListener('click', showHouseModal);
@@ -235,12 +246,11 @@ function initializeEventListeners(state, actions) {
     document.querySelector('.filter-controls').addEventListener('click', (e) => {
         const btn = e.target.closest('.filter-btn');
         if (!btn) return;
-        btn.classList.toggle('active'); // Immediate UI feedback
+        btn.classList.toggle('active');
         actions.toggleHouseFilter(btn.dataset.filter);
     });
 
     // --- MODAL SAVE LOGIC ---
-    // This logic performs direct data writes and then calls an action to refresh the UI.
     document.getElementById('modal-territory-save-btn').addEventListener('click', async () => {
         const number = modalTerritoryNumber.value.trim();
         const description = modalTerritoryDescription.value.trim();
@@ -326,10 +336,73 @@ function initializeEventListeners(state, actions) {
         }
     });
 
-    // All other simple modal listeners (cancel, save & new, close) can remain as they are for now.
-    // They are primarily UI interactions that don't directly change the global state.
+    // --- NEW: SAVE & NEW BUTTONS ---
+    document.getElementById('modal-territory-save-new-btn').addEventListener('click', async () => {
+        const number = modalTerritoryNumber.value.trim();
+        const description = modalTerritoryDescription.value.trim();
+        if (!number || !description) return alert('Please fill out both fields.');
+
+        await addToStore('territories', { description, number, createdAt: new Date().toISOString() });
+        
+        modalTerritoryNumber.value = '';
+        modalTerritoryDescription.value = '';
+        modalTerritoryNumber.focus(); 
+        
+        await actions.refreshTerritories();
+    });
+
+    document.getElementById('modal-street-save-new-btn').addEventListener('click', async () => {
+        const name = modalStreetName.value.trim();
+        if (!name) return alert('Street name is required.');
+        
+        await addToStore('streets', { territoryId: state.currentTerritoryId, name });
+
+        modalStreetName.value = '';
+        modalStreetName.focus();
+
+        await actions.refreshStreets();
+    });
+
+    document.getElementById('modal-house-save-new-btn').addEventListener('click', async () => {
+        const houseNumber = modalHouseNumber.value.trim();
+        if (!houseNumber) return alert('Please enter a house number.');
+
+        const street = await getFromStore('streets', state.currentStreetId);
+        const newHouse = {
+            streetId: state.currentStreetId,
+            address: `${houseNumber} ${street.name}`,
+            hasMailbox: houseModalToggles.querySelector('[data-prop="hasMailbox"]').classList.contains('active'),
+            noTrespassing: houseModalToggles.querySelector('[data-prop="noTrespassing"]').classList.contains('active'),
+            isCurrentlyNH: houseModalToggles.querySelector('[data-prop="isCurrentlyNH"]').classList.contains('active'),
+            hasGate: houseModalToggles.querySelector('[data-prop="hasGate"]').classList.contains('active'),
+        };
+        const newHouseId = await addToStore('houses', newHouse);
+
+        await addToStore('visits', { houseId: newHouseId, date: new Date().toISOString(), notes: 'House record created.', isVisitAttempt: false });
+        if (modalHouseNotes.value.trim()) {
+            await addToStore('visits', { houseId: newHouseId, date: new Date().toISOString(), notes: modalHouseNotes.value.trim(), isVisitAttempt: false });
+        }
+
+        modalHouseNumber.value = '';
+        modalHouseNotes.value = '';
+        houseModalToggles.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+        houseModalToggles.querySelector('[data-prop="isCurrentlyNH"]').classList.add('active');
+        modalHouseNumber.focus();
+        
+        await actions.refreshHouses();
+    });
+
+    // --- NEW: UNIVERSAL MODAL CLOSE/CANCEL LISTENERS ---
+    document.body.addEventListener('click', (e) => {
+        if (e.target.matches('.close-modal-btn') || e.target.matches('#modal-cancel-btn') || e.target.matches('#modal-territory-cancel-btn') || e.target.matches('#modal-street-cancel-btn') || e.target.matches('#modal-house-cancel-btn')) {
+            hideNoteModal();
+            hideTerritoryModal();
+            hideStreetModal();
+            hideHouseModal();
+        }
+    });
     
-    // --- IMPORT/EXPORT LISTENERS (Use API and then call refresh actions) ---
+    // --- IMPORT/EXPORT LISTENERS ---
     const csvImportCallback = async () => await actions.refreshTerritories();
     document.getElementById('export-full-btn').addEventListener('click', handleFullBackup);
     document.getElementById('export-territory-mscribe-btn').addEventListener('click', () => handleTerritoryBackup(state.currentTerritoryId));
@@ -339,4 +412,22 @@ function initializeEventListeners(state, actions) {
     document.getElementById('restore-file-input').addEventListener('change', (e) => handleCSVImport(e, csvImportCallback));
     document.getElementById('import-csv-btn').addEventListener('click', () => document.getElementById('import-csv-input').click());
     document.getElementById('import-csv-input').addEventListener('change', (e) => handleCSVImport(e, csvImportCallback));
+    
+    // --- HOUSE DETAIL CHECKBOX LISTENER ---
+    document.getElementById('house-detail-view').addEventListener('change', async (e) => {
+        if (e.target.type === 'checkbox') {
+            const house = await getFromStore('houses', state.currentHouseId);
+            if (!house) return;
+
+            switch (e.target.id) {
+                case 'not-at-home-check': house.isCurrentlyNH = e.target.checked; break;
+                case 'not-interested-check': house.isNotInterested = e.target.checked; break;
+                case 'mailbox-check': house.hasMailbox = e.target.checked; break;
+                case 'notrespass-check': house.noTrespassing = e.target.checked; break;
+                case 'gate-check': house.hasGate = e.target.checked; break;
+            }
+            
+            await updateInStore('houses', house);
+        }
+    });
 }

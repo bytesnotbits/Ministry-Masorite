@@ -154,9 +154,9 @@ function showView(viewId) {
     });
 }
 
-async function rerenderHousesAndPreserveScroll(streetId, activeHouseFilters) {
+async function rerenderHousesAndPreserveScroll(streetId, activeHouseFilters) { // Add filters here
     const scrollPos = window.scrollY;
-    await renderHouses(streetId, activeHouseFilters);
+    await renderHouses(streetId, activeHouseFilters); // Pass filters through
     setTimeout(() => window.scrollTo(0, scrollPos), 0);
 }
 
