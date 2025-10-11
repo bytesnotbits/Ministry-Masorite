@@ -1033,163 +1033,125 @@ const visitList = document.getElementById('visit-notes-list');
         document.getElementById('export-csv-btn').addEventListener('click', handleExportCSV);
         document.getElementById('export-pdf-btn').addEventListener('click', handleExportPDF);
         document.getElementById('restore-btn').addEventListener('click', () => document.getElementById('restore-file-input').click());
-        document.getElementById('restore-file-input').addEventListener('change', handleRestore);
+        document.getElementById('restore-file-input').addEventListener('change', handleCSVImport);
         document.getElementById('import-csv-btn').addEventListener('click', () => document.getElementById('import-csv-input').click());
         document.getElementById('import-csv-input').addEventListener('change', handleCSVImport);
 
     }
 
-    // --- BACKUP & RESTORE FUNCTIONS ---
-    async function handleStreetBackup() {
-        const street = await getFromStore('streets', currentStreetId);
-        const houses = await getByIndex('houses', 'streetId', currentStreetId);
-        let visits = [];
-        let people = [];
-        for (const house of houses) {
-            const houseVisits = await getByIndex('visits', 'houseId', house.id);
-            visits.push(...houseVisits);
-            const housePeople = await getByIndex('people', 'houseId', house.id);
-            people.push(...housePeople);
+    // --- NEW: CSV GENERATION HELPER ---
+    async function generateCSV(houseList) {
+        if (!houseList || houseList.length === 0) {
+            alert("No houses to export.");
+            return null;
         }
 
-        const backupData = {
-            type: 'street_backup', // <-- Changed type
-            streets: [street], // Now backs up the street
-            houses,
-            visits,
-            people
+        const csvEscape = (field) => {
+            const stringField = String(field ?? '');
+            if (/[",\n]/.test(stringField)) {
+                return `"${stringField.replace(/"/g, '""')}"`;
+            }
+            return stringField;
         };
 
-        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-        const filename = `${street.name.replace(/[^\w\s]/gi, '').replace(/\s/g, '_')}.txt`;
+        const allStreets = await getAllFromStore('streets');
+        const allTerritories = await getAllFromStore('territories');
+        const streetsMap = new Map(allStreets.map(s => [s.id, s]));
+        const territoriesMap = new Map(allTerritories.map(t => [t.id, t]));
 
-        // Share/download logic remains the same
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(a.href);
+        const headers = [
+            'TerritoryNumber', 'TerritoryDescription', 'StreetName', 'HouseNumber', 'InitialNotes',
+            'HasMailbox', 'NoTrespassing', 'HasGate'
+        ];
+        let csvRows = [headers.join(',')];
+
+        for (const house of houseList) {
+            const street = streetsMap.get(house.streetId);
+            if (!street) continue;
+            const territory = territoriesMap.get(street.territoryId);
+            if (!territory) continue;
+
+            const visits = await getByIndex('visits', 'houseId', house.id);
+            const initialNotes = visits
+                .filter(v => v.isVisitAttempt === false && v.notes !== 'House record created.' && v.notes !== 'House record created via CSV import.')
+                .map(v => v.notes)
+                .join('; ');
+
+            const houseNumber = house.address.replace(street.name, '').trim();
+
+            const row = [
+                territory.number,
+                territory.description,
+                street.name,
+                houseNumber,
+                initialNotes,
+                house.hasMailbox,
+                house.noTrespassing,
+                house.hasGate
+            ].map(csvEscape).join(',');
+            csvRows.push(row);
+        }
+        return csvRows.join('\n');
     }
 
-    async function handleFullBackup() {
-        try {
-            const backupData = {
-                type: 'full_backup',
-                territories: await getAllFromStore('territories'),
-                streets: await getAllFromStore('streets'), // <-- ADD streets
-                houses: await getAllFromStore('houses'),
-                visits: await getAllFromStore('visits'),
-                people: await getAllFromStore('people')
-            };
+    // --- BACKUP & RESTORE FUNCTIONS (MODIFIED FOR CSV) ---
+    async function handleStreetBackup() {
+        const street = await getFromStore('streets', currentStreetId);
+        if (!street) return alert("Could not find current street.");
+        
+        const houses = await getByIndex('houses', 'streetId', currentStreetId);
+        const csvContent = await generateCSV(houses);
 
-            const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-            const filename = `ministry_scribe_full_backup_${new Date().toISOString().split('T')[0]}.txt`;
-            
-            // Share/download logic remains the same
+        if (csvContent) {
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const filename = `${street.name.replace(/[^\w\s]/gi, '').replace(/\s/g, '_')}.csv`;
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
             a.download = filename;
             a.click();
             URL.revokeObjectURL(a.href);
+        }
+    }
 
+    async function handleFullBackup() {
+        try {
+            const allHouses = await getAllFromStore('houses');
+            const csvContent = await generateCSV(allHouses);
+
+            if (csvContent) {
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const filename = `ministry_scribe_full_backup_${new Date().toISOString().split('T')[0]}.csv`;
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(a.href);
+            }
         } catch (error) {
-            console.error("Full backup failed:", error);
-            alert("Could not perform the full backup.");
+            console.error("Full CSV export failed:", error);
+            alert("Could not perform the full CSV export.");
         }
     }
 
     async function handleTerritoryBackup() {
         const territory = await getFromStore('territories', currentTerritoryId);
-        if (!territory) {
-            alert("Could not find the current territory to export.");
-            return;
-        }
+        if (!territory) return alert("Could not find the current territory.");
 
-        // 1. Get all streets for this territory
         const streets = await getByIndex('streets', 'territoryId', currentTerritoryId);
-        
-        // 2. Initialize arrays to hold all the data
-        let houses = [];
-        let visits = [];
-        let people = [];
+        const streetIds = streets.map(s => s.id);
+        const allHouses = await getAllFromStore('houses');
+        const territoryHouses = allHouses.filter(h => streetIds.includes(h.streetId));
+        const csvContent = await generateCSV(territoryHouses);
 
-        // 3. Loop through streets to get their houses
-        for (const street of streets) {
-            const streetHouses = await getByIndex('houses', 'streetId', street.id);
-            houses.push(...streetHouses); // Add the houses to our main list
-
-            // 4. For each house, get its visits and people
-            for (const house of streetHouses) {
-                const houseVisits = await getByIndex('visits', 'houseId', house.id);
-                visits.push(...houseVisits);
-                const housePeople = await getByIndex('people', 'houseId', house.id);
-                people.push(...housePeople);
-            }
+        if (csvContent) {
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const filename = `territory_${territory.number}_${territory.description.replace(/\s/g, '_')}.csv`;
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(a.href);
         }
-
-        const backupData = {
-            type: 'territory_backup', // A new type for this specific export
-            territories: [territory], // Wrap in array for consistency
-            streets,
-            houses,
-            visits,
-            people
-        };
-
-        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-        const filename = `territory_${territory.number}_${territory.description.replace(/\s/g, '_')}.txt`;
-
-        // Standard download logic
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(a.href);
-    }
-
-
-    async function handleRestore(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-    
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            let data;
-            try {
-                data = JSON.parse(e.target.result);
-            } catch (err) {
-                alert("Restore failed. Invalid file.");
-                return;
-            }
-
-            try {
-                if (data && data.type === 'full_backup') {
-                    if (confirm('This will ERASE all current data. Are you sure?')) {
-                        await clearAllStores();
-                        // Import in order of dependency
-                        if (data.territories) for (const item of data.territories) await addToStore('territories', item);
-                        if (data.streets) for (const item of data.streets) await addToStore('streets', item); // <-- ADD streets
-                        if (data.houses) for (const item of data.houses) await addToStore('houses', item);
-                        if (data.visits) for (const item of data.visits) await addToStore('visits', item);
-                        if (data.people) for (const item of data.people) await addToStore('people', item);
-                        alert('Full restore successful!');
-                        await renderTerritories();
-                        showView('territory-list-view');
-                    }
-                } else if (data && data.type === 'street_backup') {
-                    // Merging single streets is complex. For now, we alert the user.
-                    alert('Restoring a single street is not yet supported. Please use the Full Backup and Restore feature.');
-                } else {
-                    alert('Restore failed. Unrecognized backup file.');
-                }
-            } catch (err) {
-                alert('Restore failed due to an error. See console for details.');
-                console.error("Restore Error:", err);
-            } finally {
-                event.target.value = '';
-            }
-        };
-        reader.readAsText(file);
     }
 
     /**
@@ -1343,6 +1305,7 @@ function parseCSV(csvText) {
         }
     }
     
+    /*
     async function handleExportCSV() {
         // This function now exports a STREET, not a territory
         const street = await getFromStore('streets', currentStreetId);
@@ -1366,6 +1329,7 @@ function parseCSV(csvText) {
         a.click();
         URL.revokeObjectURL(a.href);
     }
+    */
 
     async function handleExportPDF() {
         const doc = new jsPDF();

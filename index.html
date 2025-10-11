@@ -35,10 +35,10 @@
         <div id="territory-data-management" class="data-management-section hidden">
             <h3>Data Management</h3>
             <button id="import-csv-btn">Import Territory from CSV</button>
-            <!-- FIXED: Updated button text and removed duplicate input -->
-            <button id="restore-btn">Restore from Backup (.txt)</button>
-            <button id="export-full-btn">Export Full Backup (.txt)</button>
-            <input type="file" id="restore-file-input" accept=".mscribe,.txt" hidden>
+            <!-- FIXED: Updated button text and input type -->
+            <button id="restore-btn">Import from CSV</button>
+            <button id="export-full-btn">Export Full Backup (CSV)</button>
+            <input type="file" id="restore-file-input" accept=".csv" hidden>
             <input type="file" id="import-csv-input" accept=".csv" hidden>
         </div>
 
@@ -119,7 +119,7 @@
         <div id="territory-export-management" class="data-management-section hidden">
             <h3>Export This Entire Territory</h3>
             <!-- FIXED: Updated button text for consistency -->
-            <button id="export-territory-mscribe-btn">Export Territory (.txt)</button>
+            <button id="export-territory-mscribe-btn">Export Territory (CSV)</button>
         </div>
     </div>
 
@@ -142,8 +142,7 @@
         <button id="export-street-menu-toggle-btn" class="menu-toggle-btn">Export Options 📤</button>
         <div id="street-data-management" class="data-management-section hidden">
             <h3>Export This Street</h3>
-            <button id="export-street-mscribe-btn">Export this Street (.txt)</button>
-            <button id="export-csv-btn">Export as CSV</button>
+            <button id="export-street-mscribe-btn">Export this Street (CSV)</button>
             <button id="export-pdf-btn">Export as Printable PDF</button>
         </div>
     </div>
@@ -248,48 +247,4 @@
                 <h3>Add New Street</h3>
                 
                 <label for="modal-street-name">Street Name</label>
-                <input type="text" id="modal-street-name" placeholder="e.g., Maple Street">
-        
-                <div class="modal-actions">
-                    <button id="modal-street-cancel-btn">Cancel</button>
-                    <button id="modal-street-save-new-btn">Save & New</button>
-                    <button id="modal-street-save-btn" class="primary-action">Save</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- ADD NEW HOUSE MODAL -->
-        <div id="house-modal" class="modal-backdrop hidden">
-            <div class="modal-content">
-                <button class="close-modal-btn">&times;</button>
-                <h3>Add New House</h3>
-                
-                <label for="modal-house-number">House Number</label>
-                <input type="text" id="modal-house-number" placeholder="e.g., 123">
-
-                <label>Quick Details</label>
-                <div class="modal-toggles">
-                    <button class="toggle-btn" data-prop="isCurrentlyNH">NH</button>
-                    <button class="toggle-btn" data-prop="hasMailbox">Mailbox</button>
-                    <button class="toggle-btn" data-prop="noTrespassing">NT</button>
-                    <button class="toggle-btn" data-prop="hasGate">Gated</button>
-                </div>
-        
-                <label for="modal-house-notes">Initial Notes</label>
-                <textarea id="modal-house-notes" rows="3" placeholder="e.g., Corner lot, blue door..."></textarea>
-
-                <div class="modal-actions">
-                    <button id="modal-house-cancel-btn">Cancel</button>
-                    <button id="modal-house-save-new-btn">Save & New</button>
-                    <button id="modal-house-save-btn" class="primary-action">Save</button>
-                </div>
-            </div>
-        </div>
-        
-    </main>
-
-    <!-- App Logic -->
-    <script src="database.js"></script>
-    <script src="app.js"></script>
-</body>
-</html>
+                <inp
