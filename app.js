@@ -1,3 +1,4 @@
+// Version 1.06.01
 // --- REFACTORED FILE: app.js ---
 // This file initializes the application and manages its central state and actions.
 
@@ -31,7 +32,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             AppState.territoryListScrollPosition = window.scrollY;
             AppState.currentTerritoryId = territoryId;
             AppState.currentView = 'street-list-view';
-            await renderStreets(AppState.currentTerritoryId);
+            const territory = await getFromStore('territories', territoryId);
+            renderStreets(territory);
             showView(AppState.currentView);
         },
 
@@ -41,7 +43,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             AppState.activeHouseFilters = { visited: false, ni: false, nt: false, gated: false };
             document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
             AppState.currentView = 'house-list-view';
-            await renderHouses(AppState.currentStreetId, AppState.activeHouseFilters);
+            const street = await getFromStore('streets', streetId);
+            await renderHouses(street, AppState.activeHouseFilters);
             showView(AppState.currentView);
         },
 
@@ -62,13 +65,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         async navigateBack(targetView) {
             AppState.currentView = targetView;
             if (targetView === 'house-list-view') {
-                // Data might have changed on the details screen, so we must re-render the list
-                // to show the latest changes (like new icons for 'Gated', 'NT', etc.).
-                await renderHouses(AppState.currentStreetId, AppState.activeHouseFilters);
+                const street = await getFromStore('streets', AppState.currentStreetId);
+                await renderHouses(street, AppState.activeHouseFilters);
                 showView(targetView);
-                // Now, restore the saved scroll position for this view.
                 setTimeout(() => window.scrollTo(0, AppState.houseListScrollPosition), 0);
             } else if (targetView === 'street-list-view') {
+                const territory = await getFromStore('territories', AppState.currentTerritoryId);
+                renderStreets(territory);
                 showView(targetView);
                 setTimeout(() => window.scrollTo(0, AppState.streetListScrollPosition), 0);
             } else if (targetView === 'territory-list-view') {
@@ -82,15 +85,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         // --- Data & UI Update Actions ---
         async refreshTerritories() {
             const allTerritories = await getAllFromStore('territories');
-            await renderTerritories(allTerritories, AppState.territorySort);
+            const filter = document.getElementById('search-territory-input').value;
+            await renderTerritories(allTerritories, AppState.territorySort, filter);
         },
         
         async refreshStreets() {
-            await renderStreets(AppState.currentTerritoryId);
+            const territory = await getFromStore('territories', AppState.currentTerritoryId);
+            await renderStreets(territory);
         },
         
         async refreshHouses() {
-            await rerenderHousesAndPreserveScroll(AppState.currentStreetId, AppState.activeHouseFilters);
+            const street = await getFromStore('streets', AppState.currentStreetId);
+            await rerenderHousesAndPreserveScroll(street, AppState.activeHouseFilters);
         },
         
         async refreshHouseDetails() {

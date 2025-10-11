@@ -1,8 +1,8 @@
+// Version 1.06.01
 // --- REFACTORED FILE: events.js ---
 // This file contains all event listeners for the application. It uses actions to modify state.
 
 function initializeEventListeners(state, actions) {
-    // DOM Element getters
     const personInput = document.getElementById('modal-person-input');
     const suggestionsList = document.getElementById('modal-suggestions-list');
     const rvToggle = document.getElementById('modal-rv-toggle');
@@ -16,24 +16,20 @@ function initializeEventListeners(state, actions) {
     const modalHouseNotes = document.getElementById('modal-house-notes');
     const houseModalToggles = document.querySelector('#house-modal .modal-toggles');
 
-    // --- Suggestion Box Logic ---
     async function populateAndShowSuggestions() {
         suggestionsList.innerHTML = '';
         const allPeople = await getByIndex('people', 'houseId', state.currentHouseId);
-        
         const filter = personInput.value.toLowerCase();
         const filteredPeople = allPeople.filter(p => p.name.toLowerCase().includes(filter));
-
-        for (const person of filteredPeople) {
+        filteredPeople.forEach(person => {
             const item = document.createElement('div');
             item.className = 'suggestion-item';
-            item.textContent = person.name + (person.isRV ? ' (RV)' : '');
+            item.textContent = `${person.name}${person.isRV ? ' (RV)' : ''}`;
             item.dataset.id = person.id;
             item.dataset.name = person.name;
             suggestionsList.appendChild(item);
-        }
-
-        if (personInput.value.trim() !== '' && !filteredPeople.some(p => p.name.toLowerCase() === filter)) {
+        });
+        if (personInput.value.trim() && !filteredPeople.some(p => p.name.toLowerCase() === filter)) {
             const newItem = document.createElement('div');
             newItem.className = 'suggestion-item is-new';
             newItem.textContent = `+ Create "${personInput.value}"`;
@@ -43,7 +39,6 @@ function initializeEventListeners(state, actions) {
         suggestionsList.classList.remove('hidden');
     }
 
-    // --- Input-specific Listeners ---
     personInput.addEventListener('focus', populateAndShowSuggestions);
     personInput.addEventListener('input', () => {
         state.selectedPersonId = null; 
@@ -54,261 +49,169 @@ function initializeEventListeners(state, actions) {
     suggestionsList.addEventListener('click', (e) => {
         const item = e.target.closest('.suggestion-item');
         if (!item) return;
-        const personId = item.dataset.id;
-        
-        if (personId === 'new') {
-            state.selectedPersonId = null; 
-        } else {
-            state.selectedPersonId = Number(personId);
+        state.selectedPersonId = item.dataset.id === 'new' ? null : Number(item.dataset.id);
+        if (state.selectedPersonId) {
             personInput.value = item.dataset.name;
             rvToggle.style.display = 'none';
         }
         suggestionsList.classList.add('hidden');
     });
 
-    document.getElementById('search-territory-input').addEventListener('input', async (e) => {
-        const filter = e.target.value.trim();
-        const allTerritories = await getAllFromStore('territories');
-        await renderTerritories(allTerritories, state.territorySort, filter);
+    document.getElementById('search-territory-input').addEventListener('input', () => actions.refreshTerritories());
+
+    houseModalToggles.addEventListener('click', (e) => {
+        const btn = e.target.closest('.toggle-btn');
+        if (btn) btn.classList.toggle('active');
     });
 
-    // --- GLOBAL CLICK LISTENER ---
     document.addEventListener('click', async (e) => {
         const target = e.target;
-
-        // --- NAVIGATION ---
         const territoryLi = target.closest('#territory-list li:not(.placeholder)');
-        if (territoryLi && !target.closest('.delete-btn, .edit-territory-btn')) {
-            actions.navigateToStreets(Number(territoryLi.dataset.id));
-            return;
-        }
-
+        if (territoryLi && !target.closest('.delete-btn, .edit-territory-btn')) return actions.navigateToStreets(Number(territoryLi.dataset.id));
         const streetLi = target.closest('#street-list li:not(.placeholder)');
-        if (streetLi && !target.closest('.delete-btn, .edit-street-btn')) {
-            actions.navigateToHouses(Number(streetLi.dataset.id));
-            return;
-        }
-
+        if (streetLi && !target.closest('.delete-btn, .edit-street-btn')) return actions.navigateToHouses(Number(streetLi.dataset.id));
         const houseLi = target.closest('#house-list li:not(.placeholder)');
-        if (houseLi && !target.closest('.delete-btn') && !target.closest('.card-actions')) {
-            actions.navigateToHouseDetails(Number(houseLi.dataset.id));
-            return;
+        if (houseLi && !target.closest('.delete-btn, .card-actions')) return actions.navigateToHouseDetails(Number(houseLi.dataset.id));
+        const rvLi = target.closest('#rv-list li:not(.placeholder)');
+        if (rvLi) {
+            const houseId = Number(rvLi.dataset.houseId);
+            const house = await getFromStore('houses', houseId);
+            const street = await getFromStore('streets', house.streetId);
+            state.currentTerritoryId = street.territoryId;
+            state.currentStreetId = street.id;
+            return actions.navigateToHouseDetails(houseId);
         }
 
-        const rvLi = target.closest('#rv-list li');
-        if (rvLi && !rvLi.classList.contains('placeholder')) {
-            state.currentHouseId = Number(rvLi.dataset.houseId);
-            const house = await getFromStore('houses', state.currentHouseId);
-            if (house) {
-                const street = await getFromStore('streets', house.streetId);
-                state.currentStreetId = street.id;
-                state.currentTerritoryId = street.territoryId;
-                actions.navigateToHouseDetails(state.currentHouseId);
-            }
-            return;
-        }
-
-        // --- HOUSE CARD ACTION BUTTONS ---
         const cardActions = target.closest('.card-actions');
         if (cardActions) {
             const houseId = Number(target.dataset.id);
             if (!houseId) return;
-
-            // Handle 'Log NH' Button
             if (target.classList.contains('log-nh-btn')) {
                 const house = await getFromStore('houses', houseId);
-                if (house) {
-                    house.isCurrentlyNH = true;
-                    await updateInStore('houses', house);
-                    await addToStore('visits', {
-                        houseId: houseId,
-                        date: new Date().toISOString(),
-                        notes: 'Not at home.',
-                        isNotAtHome: true,
-                        isVisitAttempt: true
-                    });
-                    await actions.refreshHouses();
-                }
-            }
-
-            // --- NEW (Version 1.05.01): ADVANCED 'Send Letter' LOGIC ---
-            if (target.classList.contains('sent-letter-btn')) {
-                // CASE 1: The button is in the "Send Letter" state (does NOT have .letter-sent)
+                house.isCurrentlyNH = true;
+                await updateInStore('houses', house);
+                await addToStore('visits', { houseId, date: new Date().toISOString(), notes: 'Not at home.', isNotAtHome: true, isVisitAttempt: true });
+            } else if (target.classList.contains('sent-letter-btn')) {
                 if (!target.classList.contains('letter-sent')) {
-                    // Update the house status to NOT be "Not at Home" anymore
                     const house = await getFromStore('houses', houseId);
-                    if (house) {
-                        house.isCurrentlyNH = false;
-                        await updateInStore('houses', house);
-                    }
-                    // Add the visit record for the letter
-                    await addToStore('visits', {
-                        houseId: houseId,
-                        date: new Date().toISOString(),
-                        notes: 'Letter sent.',
-                        isVisitAttempt: false,
-                        visitType: 'letter'
-                    });
-                } 
-                // CASE 2: The button is in the "Letter Sent" state (has .letter-sent), so we UNDO.
-                else {
-                    if (confirm('Undo "Letter Sent" note? This will delete the record.')) {
-                        // Find the specific visit to delete
-                        const allVisits = await getByIndex('visits', 'houseId', houseId);
-                        const lastLetterVisit = allVisits
-                            .filter(v => v.visitType === 'letter')
-                            .sort((a, b) => new Date(b.date) - new Date(a.date))[0]; // Get the most recent one
-
-                        if (lastLetterVisit) {
-                            await deleteFromStore('visits', lastLetterVisit.id);
-                        } else {
-                            alert('Could not find the original letter note to delete.');
-                        }
-                    }
+                    house.isCurrentlyNH = false;
+                    await updateInStore('houses', house);
+                    await addToStore('visits', { houseId, date: new Date().toISOString(), notes: 'Letter sent.', isVisitAttempt: false, visitType: 'letter' });
+                } else if (confirm('Undo "Letter Sent" note? This will delete the record.')) {
+                    const allVisits = await getByIndex('visits', 'houseId', houseId);
+                    const lastLetterVisit = allVisits.filter(v => v.visitType === 'letter').sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+                    if (lastLetterVisit) await deleteFromStore('visits', lastLetterVisit.id);
                 }
-                // Finally, always refresh the house list to show the changes
-                await actions.refreshHouses();
+            } else if (target.classList.contains('phone-call-btn')) {
+                await addToStore('visits', { houseId, date: new Date().toISOString(), notes: 'Phone call attempt.', isVisitAttempt: true, visitType: 'phone' });
             }
-
-            // Handle 'Phone Call' Button
-            if (target.classList.contains('phone-call-btn')) {
-                await addToStore('visits', {
-                    houseId: houseId,
-                    date: new Date().toISOString(),
-                    notes: 'Phone call attempt.',
-                    isVisitAttempt: true,
-                    visitType: 'phone'
-                });
-                await actions.refreshHouses();
-            }
-            return; 
+            return actions.refreshHouses();
         }
         
-        // --- BACK BUTTONS ---
-        if (target.classList.contains('back-btn')) {
-            actions.navigateBack(target.dataset.target);
-            return;
-        }
-
-        // --- EDIT BUTTONS ---
+        if (target.classList.contains('back-btn')) return actions.navigateBack(target.dataset.target);
+        
         const editTerritoryBtn = target.closest('.edit-territory-btn');
         if (editTerritoryBtn) {
-            state.currentEditTerritoryId = Number(editTerritoryBtn.dataset.id);
+            state.currentEditTerritoryId = Number(target.closest('li').dataset.id);
             const territory = await getFromStore('territories', state.currentEditTerritoryId);
-            showTerritoryModal(territory);
-            return; 
+            return showTerritoryModal(territory);
         }
-
         const editStreetBtn = target.closest('.edit-street-btn');
         if (editStreetBtn) {
-            state.currentEditStreetId = Number(editStreetBtn.dataset.id);
+            state.currentEditStreetId = Number(target.closest('li').dataset.id);
             const street = await getFromStore('streets', state.currentEditStreetId);
-            showStreetModal(street);
-            return;
+            return showStreetModal(street);
         }
+        if (target.classList.contains('sort-btn')) return actions.updateTerritorySort(target.dataset.sort);
         
-        // --- SORT BUTTON ---
-        if (target.classList.contains('sort-btn')) {
-            actions.updateTerritorySort(target.dataset.sort);
-        }
-    
-        // --- DELETE BUTTONS (Complex logic stays here for now) ---
-        if (target.classList.contains('delete-btn')) {
-            const id = Number(target.dataset.id);
-            const type = target.dataset.type;
-
-            const deleteChildren = async (houseId) => {
-                const visitIds = (await getByIndex('visits', 'houseId', houseId)).map(v => v.id);
-                for (const visitId of visitIds) { await deleteFromStore('visits', visitId); }
-
-                const peopleIds = (await getByIndex('people', 'houseId', houseId)).map(p => p.id);
-                for (const personId of peopleIds) { await deleteFromStore('people', personId); }
+        const deleteBtn = target.closest('.delete-btn');
+        if (deleteBtn) {
+            const id = Number(deleteBtn.dataset.id);
+            const type = deleteBtn.dataset.type;
+            const deleteHouseChildren = async (houseId) => {
+                const visits = await getByIndex('visits', 'houseId', houseId);
+                for (const visit of visits) await deleteFromStore('visits', visit.id);
+                const people = await getByIndex('people', 'houseId', houseId);
+                for (const person of people) await deleteFromStore('people', person.id);
             };
-
-            if (type === 'territory' && confirm('DELETE this territory and ALL its streets and houses? This cannot be undone.')) {
+            if (type === 'territory' && confirm('DELETE this territory and ALL its streets and houses?')) {
                 const streets = await getByIndex('streets', 'territoryId', id);
                 for (const street of streets) {
                     const houses = await getByIndex('houses', 'streetId', street.id);
                     for (const house of houses) {
-                        await deleteChildren(house.id);
+                        await deleteHouseChildren(house.id);
                         await deleteFromStore('houses', house.id);
                     }
                     await deleteFromStore('streets', street.id);
                 }
                 await deleteFromStore('territories', id);
-                await actions.refreshTerritories();
-
+                return actions.refreshTerritories();
             } else if (type === 'street' && confirm('DELETE this street and ALL its houses?')) {
                 const houses = await getByIndex('houses', 'streetId', id);
                 for (const house of houses) {
-                    await deleteChildren(house.id);
+                    await deleteHouseChildren(house.id);
                     await deleteFromStore('houses', house.id);
                 }
                 await deleteFromStore('streets', id);
-                await actions.refreshStreets();
-
+                return actions.refreshStreets();
             } else if (type === 'house' && confirm('Delete this house and its history?')) {
-                 await deleteChildren(id);
-                 await deleteFromStore('houses', id);
-                 await actions.refreshHouses();
-
+                await deleteHouseChildren(id);
+                await deleteFromStore('houses', id);
+                return actions.refreshHouses();
             } else if (type === 'visit' && confirm('Delete this visit note?')) {
                 await deleteFromStore('visits', id);
-                await actions.refreshHouseDetails();
+                return actions.refreshHouseDetails();
             }
         }
 
-        // --- MENU TOGGLES (Simple UI interaction, no state change) ---
-        if (target.id === 'data-menu-toggle-btn') {
-            document.getElementById('territory-data-management').classList.toggle('hidden');
+        const editPersonBtn = target.closest('.edit-person-btn');
+        if (editPersonBtn) {
+            const personId = Number(editPersonBtn.dataset.id);
+            const person = await getFromStore('people', personId);
+            const newName = prompt('Enter new name:', person.name);
+            if (newName && newName.trim()) {
+                person.name = newName.trim();
+                await updateInStore('people', person);
+                await actions.refreshHouseDetails();
+            }
+            return;
         }
-        if (target.id === 'export-territory-menu-toggle-btn') {
-            document.getElementById('territory-export-management').classList.toggle('hidden');
-        }
-        if (target.id === 'export-street-menu-toggle-btn') {
-            document.getElementById('street-data-management').classList.toggle('hidden');
-        }
-        if (target.id === 'about-menu-toggle-btn') {
-            document.getElementById('about-section').classList.toggle('hidden');
+        const deletePersonBtn = target.closest('.delete-person-btn');
+        if (deletePersonBtn) {
+            const personId = Number(deletePersonBtn.dataset.id);
+            if (confirm('Are you sure you want to delete this person?')) {
+                await deleteFromStore('people', personId);
+                await actions.refreshHouseDetails();
+            }
+            return;
         }
 
-        // --- EDIT VISIT DATE ---
+        if (target.id === 'data-menu-toggle-btn') document.getElementById('territory-data-management').classList.toggle('hidden');
+        if (target.id === 'export-territory-menu-toggle-btn') document.getElementById('territory-export-management').classList.toggle('hidden');
+        if (target.id === 'export-street-menu-toggle-btn') document.getElementById('street-data-management').classList.toggle('hidden');
+        if (target.id === 'about-menu-toggle-btn') document.getElementById('about-section').classList.toggle('hidden');
+
         if (target.classList.contains('edit-date-btn')) {
             const visitId = Number(target.dataset.id);
             const visit = await getFromStore('visits', visitId);
             const d = new Date(visit.date);
-            const year = d.getFullYear();
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            const hours = String(d.getHours()).padStart(2, '0');
-            const minutes = String(d.getMinutes()).padStart(2, '0');
-            const currentDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+            const currentDateTime = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
             const newDateTimeStr = prompt('Enter new date and time (YYYY-MM-DDTHH:MM):', currentDateTime);
-
-            if (newDateTimeStr) {
-                const newDate = new Date(newDateTimeStr);
-                if (!isNaN(newDate)) {
-                    visit.date = newDate.toISOString();
-                    await updateInStore('visits', visit);
-                    await actions.refreshHouseDetails();
-                } else {
-                    alert('Invalid date/time format. Please use YYYY-MM-DDTHH:MM.');
-                }
+            if (newDateTimeStr && !isNaN(new Date(newDateTimeStr))) {
+                visit.date = new Date(newDateTimeStr).toISOString();
+                await updateInStore('visits', visit);
+                await actions.refreshHouseDetails();
+            } else if (newDateTimeStr) {
+                alert('Invalid date/time format.');
             }
         }
     });
 
-    // --- BUTTON LISTENERS ---
     document.getElementById('add-territory-btn').addEventListener('click', () => showTerritoryModal());
     document.getElementById('add-street-btn').addEventListener('click', () => showStreetModal());
     document.getElementById('add-house-btn').addEventListener('click', showHouseModal);
-    document.getElementById('add-visit-btn').addEventListener('click', () => {
-        showNoteModal('Add New Visit Note');
-        state.selectedPersonId = null;
-    });
-    
+    document.getElementById('add-visit-btn').addEventListener('click', () => showNoteModal('Add New Visit Note'));
     document.getElementById('show-rvs-btn').addEventListener('click', actions.navigateToRVs);
-
     document.querySelector('.filter-controls').addEventListener('click', (e) => {
         const btn = e.target.closest('.filter-btn');
         if (!btn) return;
@@ -316,45 +219,48 @@ function initializeEventListeners(state, actions) {
         actions.toggleHouseFilter(btn.dataset.filter);
     });
 
-    // --- MODAL SAVE LOGIC ---
-    document.getElementById('modal-territory-save-btn').addEventListener('click', async () => {
+    const saveTerritory = async () => {
         const number = modalTerritoryNumber.value.trim();
         const description = modalTerritoryDescription.value.trim();
         if (!number || !description) return alert('Please fill out both fields.');
-
         if (state.currentEditTerritoryId) {
-            const territory = await getFromStore('territories', state.currentEditTerritoryId);
-            territory.number = number;
-            territory.description = description;
-            await updateInStore('territories', territory);
+            const t = await getFromStore('territories', state.currentEditTerritoryId);
+            t.number = number; t.description = description;
+            await updateInStore('territories', t);
         } else {
             await addToStore('territories', { description, number, createdAt: new Date().toISOString() });
         }
-        hideTerritoryModal();
-        state.currentEditTerritoryId = null;
         await actions.refreshTerritories();
+        return true;
+    };
+    document.getElementById('modal-territory-save-btn').addEventListener('click', async () => { if (await saveTerritory()) hideTerritoryModal(); });
+    document.getElementById('modal-territory-save-new-btn').addEventListener('click', async () => {
+        if (await saveTerritory()) {
+            modalTerritoryNumber.value = ''; modalTerritoryDescription.value = '';
+            modalTerritoryNumber.focus();
+        }
     });
-    
-    document.getElementById('modal-street-save-btn').addEventListener('click', async () => {
+
+    const saveStreet = async () => {
         const name = modalStreetName.value.trim();
         if (!name) return alert('Street name is required.');
-
         if (state.currentEditStreetId) {
-            const street = await getFromStore('streets', state.currentEditStreetId);
-            street.name = name;
-            await updateInStore('streets', street);
+            const s = await getFromStore('streets', state.currentEditStreetId);
+            s.name = name; await updateInStore('streets', s);
         } else {
             await addToStore('streets', { territoryId: state.currentTerritoryId, name });
         }
-        hideStreetModal();
-        state.currentEditStreetId = null;
         await actions.refreshStreets();
+        return true;
+    };
+    document.getElementById('modal-street-save-btn').addEventListener('click', async () => { if (await saveStreet()) hideStreetModal(); });
+    document.getElementById('modal-street-save-new-btn').addEventListener('click', async () => {
+        if (await saveStreet()) { modalStreetName.value = ''; modalStreetName.focus(); }
     });
 
-    document.getElementById('modal-house-save-btn').addEventListener('click', async () => {
+    const saveHouse = async () => {
         const houseNumber = modalHouseNumber.value.trim();
         if (!houseNumber) return alert('Please enter a house number.');
-
         const street = await getFromStore('streets', state.currentStreetId);
         const newHouse = {
             streetId: state.currentStreetId,
@@ -365,108 +271,47 @@ function initializeEventListeners(state, actions) {
             hasGate: houseModalToggles.querySelector('[data-prop="hasGate"]').classList.contains('active'),
         };
         const newHouseId = await addToStore('houses', newHouse);
-
         await addToStore('visits', { houseId: newHouseId, date: new Date().toISOString(), notes: 'House record created.', isVisitAttempt: false });
         if (modalHouseNotes.value.trim()) {
             await addToStore('visits', { houseId: newHouseId, date: new Date().toISOString(), notes: modalHouseNotes.value.trim(), isVisitAttempt: false });
         }
-        
-        hideHouseModal();
         await actions.refreshHouses();
+        return true;
+    };
+    document.getElementById('modal-house-save-btn').addEventListener('click', async () => { if (await saveHouse()) hideHouseModal(); });
+    document.getElementById('modal-house-save-new-btn').addEventListener('click', async () => {
+        if (await saveHouse()) {
+            modalHouseNumber.value = ''; modalHouseNotes.value = '';
+            houseModalToggles.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+            houseModalToggles.querySelector('[data-prop="isCurrentlyNH"]').classList.add('active');
+            modalHouseNumber.focus();
+        }
     });
 
     document.getElementById('modal-save-note-btn').addEventListener('click', async () => {
-        const notes = modalVisitNotes.value.trim();
         let personIdToSave = state.selectedPersonId;
-
         if (!personIdToSave && personInput.value.trim()) {
-            const newName = personInput.value.trim();
-            personIdToSave = await addToStore('people', { houseId: state.currentHouseId, name: newName, isRV: isRvCheck.checked });
+            personIdToSave = await addToStore('people', { houseId: state.currentHouseId, name: personInput.value.trim(), isRV: isRvCheck.checked });
         }
-
-        await addToStore('visits', { houseId: state.currentHouseId, date: new Date().toISOString(), notes: notes || "Visit logged.", personId: personIdToSave, isNotAtHome: false, isVisitAttempt: true });
-        
+        await addToStore('visits', { houseId: state.currentHouseId, date: new Date().toISOString(), notes: modalVisitNotes.value.trim() || "Visit logged.", personId: personIdToSave, isNotAtHome: false, isVisitAttempt: true });
         if (modalRemoveNHCheck.checked) {
             const house = await getFromStore('houses', state.currentHouseId);
             house.isCurrentlyNH = false;
             await updateInStore('houses', house);
         }
-        
         hideNoteModal();
-        state.selectedPersonId = null;
-        
         await (state.currentView === 'house-list-view' ? actions.refreshHouses() : actions.refreshHouseDetails());
     });
 
-    // --- ADDED: SAVE & NEW BUTTONS ---
-    document.getElementById('modal-territory-save-new-btn').addEventListener('click', async () => {
-        const number = modalTerritoryNumber.value.trim();
-        const description = modalTerritoryDescription.value.trim();
-        if (!number || !description) return alert('Please fill out both fields.');
-
-        await addToStore('territories', { description, number, createdAt: new Date().toISOString() });
-        
-        modalTerritoryNumber.value = '';
-        modalTerritoryDescription.value = '';
-        modalTerritoryNumber.focus(); 
-        
-        await actions.refreshTerritories();
-    });
-
-    document.getElementById('modal-street-save-new-btn').addEventListener('click', async () => {
-        const name = modalStreetName.value.trim();
-        if (!name) return alert('Street name is required.');
-        
-        await addToStore('streets', { territoryId: state.currentTerritoryId, name });
-        modalStreetName.value = '';
-        modalStreetName.focus();
-        await actions.refreshStreets();
-    });
-
-    document.getElementById('modal-house-save-new-btn').addEventListener('click', async () => {
-        const houseNumber = modalHouseNumber.value.trim();
-        if (!houseNumber) return alert('Please enter a house number.');
-
-        const street = await getFromStore('streets', state.currentStreetId);
-        const newHouse = {
-            streetId: state.currentStreetId,
-            address: `${houseNumber} ${street.name}`,
-            hasMailbox: houseModalToggles.querySelector('[data-prop="hasMailbox"]').classList.contains('active'),
-            noTrespassing: houseModalToggles.querySelector('[data-prop="noTrespassing"]').classList.contains('active'),
-            isCurrentlyNH: houseModalToggles.querySelector('[data-prop="isCurrentlyNH"]').classList.contains('active'),
-            hasGate: houseModalToggles.querySelector('[data-prop="hasGate"]').classList.contains('active'),
-        };
-        const newHouseId = await addToStore('houses', newHouse);
-
-        await addToStore('visits', { houseId: newHouseId, date: new Date().toISOString(), notes: 'House record created.', isVisitAttempt: false });
-        if (modalHouseNotes.value.trim()) {
-            await addToStore('visits', { houseId: newHouseId, date: new Date().toISOString(), notes: modalHouseNotes.value.trim(), isVisitAttempt: false });
-        }
-
-        modalHouseNumber.value = '';
-        modalHouseNotes.value = '';
-        houseModalToggles.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
-        houseModalToggles.querySelector('[data-prop="isCurrentlyNH"]').classList.add('active');
-        modalHouseNumber.focus();
-        
-        await actions.refreshHouses();
-    });
-
-    // --- ADDED: UNIVERSAL MODAL CLOSE/CANCEL LISTENERS ---
     document.querySelectorAll('.modal-backdrop').forEach(modal => {
         modal.addEventListener('click', (e) => {
-            // If the click is on the backdrop itself (not the content) or a close button
             if (e.target === modal || e.target.closest('.close-modal-btn, [id$="-cancel-btn"]')) {
-                hideNoteModal();
-                hideTerritoryModal();
-                hideStreetModal();
-                hideHouseModal();
+                hideNoteModal(); hideTerritoryModal(); hideStreetModal(); hideHouseModal();
             }
         });
     });
     
-    // --- IMPORT/EXPORT LISTENERS ---
-    const csvImportCallback = async () => await actions.refreshTerritories();
+    const csvImportCallback = async () => actions.refreshTerritories();
     document.getElementById('export-full-btn').addEventListener('click', handleFullBackup);
     document.getElementById('export-territory-mscribe-btn').addEventListener('click', () => handleTerritoryBackup(state.currentTerritoryId));
     document.getElementById('export-street-mscribe-btn').addEventListener('click', () => handleStreetBackup(state.currentStreetId));
@@ -476,21 +321,20 @@ function initializeEventListeners(state, actions) {
     document.getElementById('import-csv-btn').addEventListener('click', () => document.getElementById('import-csv-input').click());
     document.getElementById('import-csv-input').addEventListener('change', (e) => handleCSVImport(e, csvImportCallback));
     
-    // --- HOUSE DETAIL CHECKBOX LISTENER ---
     document.getElementById('house-detail-view').addEventListener('change', async (e) => {
-        if (e.target.type === 'checkbox') {
-            const house = await getFromStore('houses', state.currentHouseId);
-            if (!house) return;
-
-            switch (e.target.id) {
-                case 'not-at-home-check': house.isCurrentlyNH = e.target.checked; break;
-                case 'not-interested-check': house.isNotInterested = e.target.checked; break;
-                case 'mailbox-check': house.hasMailbox = e.target.checked; break;
-                case 'notrespass-check': house.noTrespassing = e.target.checked; break;
-                case 'gate-check': house.hasGate = e.target.checked; break;
-            }
-            
+        if (e.target.type !== 'checkbox') return;
+        const house = await getFromStore('houses', state.currentHouseId);
+        if (!house) return;
+        const wasNotInterested = house.isNotInterested;
+        const propMap = { 'not-at-home-check': 'isCurrentlyNH', 'not-interested-check': 'isNotInterested', 'mailbox-check': 'hasMailbox', 'notrespass-check': 'noTrespassing', 'gate-check': 'hasGate' };
+        const propToUpdate = propMap[e.target.id];
+        if (propToUpdate) {
+            house[propToUpdate] = e.target.checked;
             await updateInStore('houses', house);
+            if (propToUpdate === 'isNotInterested' && !wasNotInterested && e.target.checked) {
+                await addToStore('visits', { houseId: state.currentHouseId, date: new Date().toISOString(), notes: "Marked as 'Not Interested'.", isVisitAttempt: false });
+                await actions.refreshHouseDetails();
+            }
         }
     });
 }
