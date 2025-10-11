@@ -1,33 +1,26 @@
-// Version 1.06.01
-// --- NEW FILE: ui.js ---
+// Version 1.06.02
+// --- FILE: ui.js ---
 // This file contains all functions related to UI rendering and DOM manipulation.
 
-// --- DOM ELEMENT GETTERS ---
 const views = document.querySelectorAll('.view');
 const territoryList = document.getElementById('territory-list');
 const streetList = document.getElementById('street-list');
 const houseList = document.getElementById('house-list');
 const visitList = document.getElementById('visit-notes-list');
 
-// --- VIEW MANAGEMENT ---
 function showView(viewId) {
-    views.forEach(view => {
-        view.classList.toggle('active', view.id === viewId);
-    });
+    views.forEach(view => view.classList.toggle('active', view.id === viewId));
 }
 
-// --- RERENDER HELPER ---
 async function rerenderHousesAndPreserveScroll(street, activeHouseFilters) {
     const scrollPos = window.scrollY;
     await renderHouses(street, activeHouseFilters);
     setTimeout(() => window.scrollTo(0, scrollPos), 0);
 }
 
-// --- RENDER FUNCTIONS ---
 async function renderTerritories(territories, territorySort, filter = '') {
     territoryList.innerHTML = '';
     let territoriesToRender = territories;
-
     if (filter) {
         const searchTerm = filter.toLowerCase();
         territoriesToRender = territories.filter(t => 
@@ -35,27 +28,29 @@ async function renderTerritories(territories, territorySort, filter = '') {
             String(t.number || '').toLowerCase().includes(searchTerm)
         );
     }
-
     territoriesToRender.sort((a, b) => {
         if (territorySort === 'description') return a.description.localeCompare(b.description);
         if (territorySort === 'number') return (a.number || '').localeCompare(b.number || '', undefined, { numeric: true, sensitivity: 'base' });
         return new Date(b.createdAt) - new Date(a.createdAt);
     });
-
     if (territoriesToRender.length === 0) {
         territoryList.innerHTML = filter
             ? `<li class="placeholder">No territories match "${filter}".</li>`
             : '<li class="placeholder">Click "+ Add New Territory" to begin.</li>';
     } else {
+        const streetCounts = new Map();
+        const allStreets = await getAllFromStore('streets');
+        for (const street of allStreets) {
+            streetCounts.set(street.territoryId, (streetCounts.get(street.territoryId) || 0) + 1);
+        }
         for (const territory of territoriesToRender) {
-            const streets = await getByIndex('streets', 'territoryId', territory.id);
             const li = document.createElement('li');
             li.dataset.id = territory.id;
             const numberDisplay = territory.number ? `<strong>#${territory.number}</strong> -` : 'No # -';
             li.innerHTML = `
-                <span>${numberDisplay} ${territory.description} (${streets.length} streets)</span>
+                <span>${numberDisplay} ${territory.description} (${streetCounts.get(territory.id) || 0} streets)</span>
                 <div class="territory-actions">
-                    <button class="icon-btn edit-territory-btn" title="Edit Territory">✏️</button>
+                    <button class="icon-btn edit-territory-btn" data-id="${territory.id}" title="Edit Territory">✏️</button>
                     <button class="delete-btn" data-id="${territory.id}" data-type="territory">X</button>
                 </div>`;
             territoryList.appendChild(li);
@@ -68,18 +63,21 @@ async function renderStreets(territory) {
     streetList.innerHTML = '';
     document.getElementById('street-list-title').textContent = `Territory #${territory.number}: ${territory.description}`;
     const streets = (await getByIndex('streets', 'territoryId', territory.id)).sort((a,b) => a.name.localeCompare(b.name));
-
     if (streets.length === 0) {
         streetList.innerHTML = '<li class="placeholder">No streets added to this territory yet.</li>';
     } else {
+        const houseCounts = new Map();
+        const allHouses = await getAllFromStore('houses');
+        for (const house of allHouses) {
+            houseCounts.set(house.streetId, (houseCounts.get(house.streetId) || 0) + 1);
+        }
         for (const street of streets) {
-            const houses = await getByIndex('houses', 'streetId', street.id);
             const li = document.createElement('li');
             li.dataset.id = street.id;
             li.innerHTML = `
-                <span>${street.name} (${houses.length} houses)</span>
+                <span>${street.name} (${houseCounts.get(street.id) || 0} houses)</span>
                 <div class="street-actions">
-                    <button class="icon-btn edit-street-btn" title="Edit Street Name">✏️</button>
+                    <button class="icon-btn edit-street-btn" data-id="${street.id}" title="Edit Street Name">✏️</button>
                     <button class="delete-btn" data-id="${street.id}" data-type="street">X</button>
                 </div>`;
             streetList.appendChild(li);
@@ -91,14 +89,12 @@ async function renderHouses(street, activeHouseFilters) {
     houseList.innerHTML = '';
     document.getElementById('house-list-title').textContent = street.name;
     const allHouses = (await getByIndex('houses', 'streetId', street.id)).sort((a, b) => a.address.localeCompare(b.address, undefined, { numeric: true, sensitivity: 'base' }));
-
     const houseVisitPromises = allHouses.map(house => getByIndex('visits', 'houseId', house.id));
     const allVisitsArrays = await Promise.all(houseVisitPromises);
     const visitsByHouseId = allHouses.reduce((acc, house, index) => {
         acc[house.id] = allVisitsArrays[index] || [];
         return acc;
     }, {});
-    
     const housesToRender = allHouses.filter(house => {
         if (activeHouseFilters.ni && house.isNotInterested) return false;
         if (activeHouseFilters.nt && house.noTrespassing) return false;
@@ -110,7 +106,6 @@ async function renderHouses(street, activeHouseFilters) {
         }
         return true;
     });
-
     if (housesToRender.length === 0) {
         const hasActiveFilters = Object.values(activeHouseFilters).some(v => v);
         if (hasActiveFilters) houseList.innerHTML = '<li class="placeholder">No houses match the current filters.</li>';
@@ -127,7 +122,7 @@ async function renderHouses(street, activeHouseFilters) {
             if (house.hasGate) iconsHTML += `<span title="Gated Property">🚧</span>`;
             if (house.isCurrentlyNH) iconsHTML += `<span title="Status: Not at Home">⏰</span>`;
             const lastActivityDate = lastVisit ? `Last Visit: <strong>${new Date(lastVisit.date).toLocaleDateString()}</strong>` : 'No activity yet';
-            const personMet = lastVisit && !lastVisit.isNotAtHome && lastVisit.personName ? `Met: <strong>${lastVisit.personName}</strong>` : '';
+            const personMet = lastVisit && !lastVisit.isNotAtHome && (lastVisit.personName || lastVisit.personId) ? `Met: <strong>${lastVisit.personName || 'Resident'}</strong>` : '';
             const li = document.createElement('li');
             li.className = `house-card ${house.isNotInterested ? 'is-ni' : ''}`;
             li.dataset.id = house.id;
@@ -160,7 +155,6 @@ async function renderHouseDetails(houseId) {
     document.getElementById('gate-check').checked = house.hasGate || false;
     document.getElementById('not-at-home-check').checked = house.isCurrentlyNH || false;
     document.getElementById('not-interested-check').checked = house.isNotInterested || false;
-
     const peopleList = document.getElementById('people-list');
     peopleList.innerHTML = '';
     const people = await getByIndex('people', 'houseId', houseId);
@@ -178,7 +172,6 @@ async function renderHouseDetails(houseId) {
     } else {
         peopleList.innerHTML = '<li class="placeholder">No individuals recorded yet.</li>';
     }
-
     visitList.innerHTML = '';
     const visits = (await getByIndex('visits', 'houseId', houseId)).sort((a, b) => new Date(b.date) - new Date(a.date));
     visits.forEach(visit => {
@@ -206,14 +199,12 @@ async function renderRVList() {
     const rvList = document.getElementById('rv-list');
     rvList.innerHTML = '';
     const rvs = (await getAllFromStore('people')).filter(p => p.isRV);
-
     if (rvs.length === 0) {
         rvList.innerHTML = '<li class="placeholder">No individuals are marked as an RV yet.</li>';
     } else {
         const allHouses = new Map((await getAllFromStore('houses')).map(h => [h.id, h]));
         const allStreets = new Map((await getAllFromStore('streets')).map(s => [s.id, s]));
         const allTerritories = new Map((await getAllFromStore('territories')).map(t => [t.id, t]));
-
         for (const person of rvs) {
             const house = allHouses.get(person.houseId);
             if (!house) continue;
@@ -221,10 +212,8 @@ async function renderRVList() {
             if (!street) continue;
             const territory = allTerritories.get(street.territoryId);
             if (!territory) continue;
-            
             const personVisits = (await getByIndex('visits', 'houseId', house.id)).filter(v => v.personId === person.id).sort((a, b) => new Date(b.date) - new Date(a.date));
             const lastVisitDate = personVisits.length > 0 ? new Date(personVisits[0].date).toLocaleDateString() : 'No visits';
-
             const li = document.createElement('li');
             li.dataset.houseId = house.id;
             li.innerHTML = `
@@ -239,8 +228,6 @@ async function renderRVList() {
     }
 }
 
-
-// --- MODAL MANAGEMENT ---
 const noteModal = document.getElementById('note-modal');
 const territoryModal = document.getElementById('territory-modal');
 const streetModal = document.getElementById('street-modal');
@@ -304,7 +291,7 @@ function showHouseModal() {
     document.getElementById('modal-house-notes').value = '';
     const toggles = document.querySelector('#house-modal .modal-toggles');
     toggles.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
-    toggles.querySelector('[data-prop="isCurrentlyNH"]').classList.add('active'); // Default NH to true
+    toggles.querySelector('[data-prop="isCurrentlyNH"]').classList.add('active');
     houseModal.classList.remove('hidden');
     document.getElementById('modal-house-number').focus();
 }

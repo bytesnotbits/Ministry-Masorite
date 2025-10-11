@@ -1,5 +1,5 @@
-// Version 1.06.01
-// --- REFACTORED FILE: events.js ---
+// Version 1.06.02
+// --- FILE: events.js ---
 // This file contains all event listeners for the application. It uses actions to modify state.
 
 function initializeEventListeners(state, actions) {
@@ -58,7 +58,6 @@ function initializeEventListeners(state, actions) {
     });
 
     document.getElementById('search-territory-input').addEventListener('input', () => actions.refreshTerritories());
-
     houseModalToggles.addEventListener('click', (e) => {
         const btn = e.target.closest('.toggle-btn');
         if (btn) btn.classList.toggle('active');
@@ -81,10 +80,9 @@ function initializeEventListeners(state, actions) {
             state.currentStreetId = street.id;
             return actions.navigateToHouseDetails(houseId);
         }
-
         const cardActions = target.closest('.card-actions');
         if (cardActions) {
-            const houseId = Number(target.dataset.id);
+            const houseId = Number(target.closest('button').dataset.id);
             if (!houseId) return;
             if (target.classList.contains('log-nh-btn')) {
                 const house = await getFromStore('houses', houseId);
@@ -107,23 +105,20 @@ function initializeEventListeners(state, actions) {
             }
             return actions.refreshHouses();
         }
-        
         if (target.classList.contains('back-btn')) return actions.navigateBack(target.dataset.target);
-        
         const editTerritoryBtn = target.closest('.edit-territory-btn');
         if (editTerritoryBtn) {
-            state.currentEditTerritoryId = Number(target.closest('li').dataset.id);
+            state.currentEditTerritoryId = Number(editTerritoryBtn.dataset.id);
             const territory = await getFromStore('territories', state.currentEditTerritoryId);
             return showTerritoryModal(territory);
         }
         const editStreetBtn = target.closest('.edit-street-btn');
         if (editStreetBtn) {
-            state.currentEditStreetId = Number(target.closest('li').dataset.id);
+            state.currentEditStreetId = Number(editStreetBtn.dataset.id);
             const street = await getFromStore('streets', state.currentEditStreetId);
             return showStreetModal(street);
         }
         if (target.classList.contains('sort-btn')) return actions.updateTerritorySort(target.dataset.sort);
-        
         const deleteBtn = target.closest('.delete-btn');
         if (deleteBtn) {
             const id = Number(deleteBtn.dataset.id);
@@ -138,32 +133,24 @@ function initializeEventListeners(state, actions) {
                 const streets = await getByIndex('streets', 'territoryId', id);
                 for (const street of streets) {
                     const houses = await getByIndex('houses', 'streetId', street.id);
-                    for (const house of houses) {
-                        await deleteHouseChildren(house.id);
-                        await deleteFromStore('houses', house.id);
-                    }
+                    for (const house of houses) { await deleteHouseChildren(house.id); await deleteFromStore('houses', house.id); }
                     await deleteFromStore('streets', street.id);
                 }
                 await deleteFromStore('territories', id);
                 return actions.refreshTerritories();
             } else if (type === 'street' && confirm('DELETE this street and ALL its houses?')) {
                 const houses = await getByIndex('houses', 'streetId', id);
-                for (const house of houses) {
-                    await deleteHouseChildren(house.id);
-                    await deleteFromStore('houses', house.id);
-                }
+                for (const house of houses) { await deleteHouseChildren(house.id); await deleteFromStore('houses', house.id); }
                 await deleteFromStore('streets', id);
                 return actions.refreshStreets();
             } else if (type === 'house' && confirm('Delete this house and its history?')) {
-                await deleteHouseChildren(id);
-                await deleteFromStore('houses', id);
+                await deleteHouseChildren(id); await deleteFromStore('houses', id);
                 return actions.refreshHouses();
             } else if (type === 'visit' && confirm('Delete this visit note?')) {
                 await deleteFromStore('visits', id);
                 return actions.refreshHouseDetails();
             }
         }
-
         const editPersonBtn = target.closest('.edit-person-btn');
         if (editPersonBtn) {
             const personId = Number(editPersonBtn.dataset.id);
@@ -185,12 +172,10 @@ function initializeEventListeners(state, actions) {
             }
             return;
         }
-
         if (target.id === 'data-menu-toggle-btn') document.getElementById('territory-data-management').classList.toggle('hidden');
         if (target.id === 'export-territory-menu-toggle-btn') document.getElementById('territory-export-management').classList.toggle('hidden');
         if (target.id === 'export-street-menu-toggle-btn') document.getElementById('street-data-management').classList.toggle('hidden');
         if (target.id === 'about-menu-toggle-btn') document.getElementById('about-section').classList.toggle('hidden');
-
         if (target.classList.contains('edit-date-btn')) {
             const visitId = Number(target.dataset.id);
             const visit = await getFromStore('visits', visitId);
@@ -206,7 +191,6 @@ function initializeEventListeners(state, actions) {
             }
         }
     });
-
     document.getElementById('add-territory-btn').addEventListener('click', () => showTerritoryModal());
     document.getElementById('add-street-btn').addEventListener('click', () => showStreetModal());
     document.getElementById('add-house-btn').addEventListener('click', showHouseModal);
@@ -218,15 +202,13 @@ function initializeEventListeners(state, actions) {
         btn.classList.toggle('active');
         actions.toggleHouseFilter(btn.dataset.filter);
     });
-
     const saveTerritory = async () => {
         const number = modalTerritoryNumber.value.trim();
         const description = modalTerritoryDescription.value.trim();
-        if (!number || !description) return alert('Please fill out both fields.');
+        if (!number || !description) { alert('Please fill out both fields.'); return false; }
         if (state.currentEditTerritoryId) {
             const t = await getFromStore('territories', state.currentEditTerritoryId);
-            t.number = number; t.description = description;
-            await updateInStore('territories', t);
+            t.number = number; t.description = description; await updateInStore('territories', t);
         } else {
             await addToStore('territories', { description, number, createdAt: new Date().toISOString() });
         }
@@ -235,15 +217,11 @@ function initializeEventListeners(state, actions) {
     };
     document.getElementById('modal-territory-save-btn').addEventListener('click', async () => { if (await saveTerritory()) hideTerritoryModal(); });
     document.getElementById('modal-territory-save-new-btn').addEventListener('click', async () => {
-        if (await saveTerritory()) {
-            modalTerritoryNumber.value = ''; modalTerritoryDescription.value = '';
-            modalTerritoryNumber.focus();
-        }
+        if (await saveTerritory()) { modalTerritoryNumber.value = ''; modalTerritoryDescription.value = ''; modalTerritoryNumber.focus(); }
     });
-
     const saveStreet = async () => {
         const name = modalStreetName.value.trim();
-        if (!name) return alert('Street name is required.');
+        if (!name) { alert('Street name is required.'); return false; }
         if (state.currentEditStreetId) {
             const s = await getFromStore('streets', state.currentEditStreetId);
             s.name = name; await updateInStore('streets', s);
@@ -257,14 +235,12 @@ function initializeEventListeners(state, actions) {
     document.getElementById('modal-street-save-new-btn').addEventListener('click', async () => {
         if (await saveStreet()) { modalStreetName.value = ''; modalStreetName.focus(); }
     });
-
     const saveHouse = async () => {
         const houseNumber = modalHouseNumber.value.trim();
-        if (!houseNumber) return alert('Please enter a house number.');
+        if (!houseNumber) { alert('Please enter a house number.'); return false; }
         const street = await getFromStore('streets', state.currentStreetId);
         const newHouse = {
-            streetId: state.currentStreetId,
-            address: `${houseNumber} ${street.name}`,
+            streetId: state.currentStreetId, address: `${houseNumber} ${street.name}`,
             hasMailbox: houseModalToggles.querySelector('[data-prop="hasMailbox"]').classList.contains('active'),
             noTrespassing: houseModalToggles.querySelector('[data-prop="noTrespassing"]').classList.contains('active'),
             isCurrentlyNH: houseModalToggles.querySelector('[data-prop="isCurrentlyNH"]').classList.contains('active'),
@@ -287,7 +263,6 @@ function initializeEventListeners(state, actions) {
             modalHouseNumber.focus();
         }
     });
-
     document.getElementById('modal-save-note-btn').addEventListener('click', async () => {
         let personIdToSave = state.selectedPersonId;
         if (!personIdToSave && personInput.value.trim()) {
@@ -302,7 +277,6 @@ function initializeEventListeners(state, actions) {
         hideNoteModal();
         await (state.currentView === 'house-list-view' ? actions.refreshHouses() : actions.refreshHouseDetails());
     });
-
     document.querySelectorAll('.modal-backdrop').forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal || e.target.closest('.close-modal-btn, [id$="-cancel-btn"]')) {
@@ -310,7 +284,6 @@ function initializeEventListeners(state, actions) {
             }
         });
     });
-    
     const csvImportCallback = async () => actions.refreshTerritories();
     document.getElementById('export-full-btn').addEventListener('click', handleFullBackup);
     document.getElementById('export-territory-mscribe-btn').addEventListener('click', () => handleTerritoryBackup(state.currentTerritoryId));
@@ -320,7 +293,6 @@ function initializeEventListeners(state, actions) {
     document.getElementById('restore-file-input').addEventListener('change', (e) => handleCSVImport(e, csvImportCallback));
     document.getElementById('import-csv-btn').addEventListener('click', () => document.getElementById('import-csv-input').click());
     document.getElementById('import-csv-input').addEventListener('change', (e) => handleCSVImport(e, csvImportCallback));
-    
     document.getElementById('house-detail-view').addEventListener('change', async (e) => {
         if (e.target.type !== 'checkbox') return;
         const house = await getFromStore('houses', state.currentHouseId);
@@ -337,4 +309,3 @@ function initializeEventListeners(state, actions) {
             }
         }
     });
-}
