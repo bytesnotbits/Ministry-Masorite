@@ -1,4 +1,4 @@
-// 1.01.01
+// 1.01.02
 
 const { jsPDF } = window.jspdf;
 
@@ -1032,7 +1032,7 @@ const visitList = document.getElementById('visit-notes-list');
         document.getElementById('export-full-btn').addEventListener('click', handleFullBackup);
         document.getElementById('export-territory-mscribe-btn').addEventListener('click', handleTerritoryBackup);
         document.getElementById('export-street-mscribe-btn').addEventListener('click', handleStreetBackup); // <-- FIXED ID and function name
-        document.getElementById('export-csv-btn').addEventListener('click', handleExportCSV);
+        // document.getElementById('export-csv-btn').addEventListener('click', handleExportCSV);
         document.getElementById('export-pdf-btn').addEventListener('click', handleExportPDF);
         document.getElementById('restore-btn').addEventListener('click', () => document.getElementById('restore-file-input').click());
         document.getElementById('restore-file-input').addEventListener('change', handleCSVImport);
@@ -1306,32 +1306,6 @@ function parseCSV(csvText) {
             }
         }
     }
-    
-    /*
-    async function handleExportCSV() {
-        // This function now exports a STREET, not a territory
-        const street = await getFromStore('streets', currentStreetId);
-        const houses = await getByIndex('houses', 'streetId', currentStreetId);
-        
-        let csvContent = "Address,Status,Mailbox,No Trespassing,Gate,Last Visit Date,Last Visit Note,Person Met\n";
-        
-        for (const house of houses) {
-            // Internal logic for getting house details is unchanged
-            const visits = (await getByIndex('visits', 'houseId', house.id)).sort((a,b) => new Date(b.date) - new Date(a.date));
-            const lastVisit = visits[0];
-            const cleanNote = lastVisit ? `"${lastVisit.notes.replace(/"/g, '""')}"` : 'N/A';
-            const status = house.isCurrentlyNH ? "Not at Home" : "OK";
-            csvContent += `"${house.address}",${status},${house.hasMailbox},${house.noTrespassing},${house.hasGate},${lastVisit ? new Date(lastVisit.date).toLocaleDateString() : 'N/A'},${cleanNote},""\n`;
-        }
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `${street.name.replace(/[^\w\s]/gi, '').replace(/\s/g, '_')}.csv`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-    }
-    */
 
     async function handleExportPDF() {
         const doc = new jsPDF();
