@@ -62,8 +62,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         async navigateBack(targetView) {
             AppState.currentView = targetView;
             if (targetView === 'house-list-view') {
-                // No data fetching needed, just show the view and restore scroll
+                // Data might have changed on the details screen, so we must re-render the list
+                // to show the latest changes (like new icons for 'Gated', 'NT', etc.).
+                await renderHouses(AppState.currentStreetId, AppState.activeHouseFilters);
                 showView(targetView);
+                // Now, restore the saved scroll position for this view.
                 setTimeout(() => window.scrollTo(0, AppState.houseListScrollPosition), 0);
             } else if (targetView === 'street-list-view') {
                 showView(targetView);
