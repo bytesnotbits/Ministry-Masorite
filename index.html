@@ -47,7 +47,9 @@
                 <p><strong>Thank you Sarah, Norman, Nathaniel, Loly for the GREAT FEEDBACK so far!</strong></p>
                 <h3>We've reached version 1.0 ya'll! 1.01.00 We're officially out of Beta!</h3>
                 <p><strong>1.01.03</strong> Switched to CSV file format for import/export.</p>
-                <p><strong>1.02.03</strong> REFACTOR!</p>
+                <p>1.02.03 REFACTOR!</p>
+                <p>1.02.03 REFACTOR COMPLETE!</p>
+                <p><strong>1.08.01</strong> Add new modal to capture phone call details</p>
                 <p>List meta data in street card. x/x visited, x/x letters, x NT etc....</p>
                 <p>Implement "Territory Complete" flag [active=false]</p>
                 <p>Hide [active=false] territories</p>
@@ -283,7 +285,35 @@
             </div>
         </div>
     </div>
-        
+       
+     <!-- PHONE CALL MODAL 
+      This HTML creates the modal window. We are reusing existing CSS classes like .modal-backdrop, .modal-content, and .toggle-btn, 
+      so it will automatically match the style of your other modals without requiring any changes to style.css.
+      -->
+    <div id="phone-call-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <button class="close-modal-btn">&times;</button>
+            <h3>Log Phone Call</h3>
+
+            <label>Call Outcome</label>
+            <div class="modal-toggles">
+                <button class="toggle-btn" data-outcome="no-answer">No Answer</button>
+                <button class="toggle-btn" data-outcome="left-voicemail">Left Voicemail</button>
+            </div>
+
+            <label for="modal-phone-person-name">Person Spoken With</label>
+            <input type="text" id="modal-phone-person-name" placeholder="e.g., Jane Doe (optional)">
+
+            <label for="modal-phone-notes">Notes</label>
+            <textarea id="modal-phone-notes" rows="4" placeholder="Details of the conversation..."></textarea>
+
+            <div class="modal-actions">
+                <button id="modal-phone-cancel-btn">Cancel</button>
+                <button id="modal-phone-save-btn" class="primary-action">Save</button>
+            </div>
+        </div>
+    </div>
+
     </main>
 
     <!-- App Logic -->

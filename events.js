@@ -1,4 +1,4 @@
-// Version 1.07.04
+// Version 1.08.01
 // --- FILE: events.js ---
 // This file contains all event listeners for the application. It uses actions to modify state.
 function initializeEventListeners(state, actions) {
@@ -14,6 +14,10 @@ const modalStreetName = document.getElementById('modal-street-name');
 const modalHouseNumber = document.getElementById('modal-house-number');
 const modalHouseNotes = document.getElementById('modal-house-notes');
 const houseModalToggles = document.querySelector('#house-modal .modal-toggles');
+const modalPhonePersonName = document.getElementById('modal-phone-person-name');
+const modalPhoneNotes = document.getElementById('modal-phone-notes');
+const phoneCallModalToggles = document.querySelector('#phone-call-modal .modal-toggles');
+
 
     async function populateAndShowSuggestions() {
         suggestionsList.innerHTML = '';
@@ -62,6 +66,19 @@ const houseModalToggles = document.querySelector('#house-modal .modal-toggles');
         if (btn) btn.classList.toggle('active');
     });
 
+    phoneCallModalToggles.addEventListener('click', (e) => {
+        const btn = e.target.closest('.toggle-btn');
+        if (!btn) return;
+
+        // This logic makes the buttons act like radio buttons.
+        const wasActive = btn.classList.contains('active');
+        phoneCallModalToggles.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+        if (!wasActive) {
+            btn.classList.add('active');
+        }
+    });
+
+
     document.addEventListener('click', async (e) => {
         const target = e.target;
         const territoryLi = target.closest('#territory-list li:not(.placeholder)');
@@ -104,7 +121,9 @@ const houseModalToggles = document.querySelector('#house-modal .modal-toggles');
                         await updateInStore('houses', house);
                 }
             } else if (target.classList.contains('phone-call-btn')) {
-                await addToStore('visits', { houseId, date: new Date().toISOString(), notes: 'Phone call attempt.', isVisitAttempt: true, visitType: 'phone' });
+                state.currentHouseId = houseId; // Ensure currentHouseId is set for the modal
+                showPhoneCallModal();
+                return; // Prevent refreshHouses from running immediately
             }
             return actions.refreshHouses();
         }
@@ -266,6 +285,47 @@ const houseModalToggles = document.querySelector('#house-modal .modal-toggles');
             modalHouseNumber.focus();
         }
     });
+    document.getElementById('modal-phone-save-btn').addEventListener('click', async () => {
+        const noAnswerBtn = phoneCallModalToggles.querySelector('[data-outcome="no-answer"]');
+        const voicemailBtn = phoneCallModalToggles.querySelector('[data-outcome="left-voicemail"]');
+
+        const personName = modalPhonePersonName.value.trim();
+        const notes = modalPhoneNotes.value.trim();
+        let constructedNotes = [];
+
+        if (noAnswerBtn.classList.contains('active')) {
+            constructedNotes.push("No answer.");
+        } else if (voicemailBtn.classList.contains('active')) {
+            constructedNotes.push("Left voicemail.");
+        }
+
+        if (personName) {
+            constructedNotes.push(`Spoke with ${personName}.`);
+        }
+
+        if (notes) {
+            constructedNotes.push(notes);
+        }
+        
+        // If no specific info was entered, use the default message.
+        if (constructedNotes.length === 0) {
+            constructedNotes.push("Phone call attempt.");
+        }
+
+        const newVisit = {
+            houseId: state.currentHouseId,
+            date: new Date().toISOString(),
+            notes: constructedNotes.join(' '),
+            personName: personName || null,
+            isVisitAttempt: true,
+            visitType: 'phone'
+        };
+
+        await addToStore('visits', newVisit);
+        hidePhoneCallModal();
+        await actions.refreshHouses();
+    });
+
     document.getElementById('modal-save-note-btn').addEventListener('click', async () => {
         let personIdToSave = state.selectedPersonId;
         let personNameToSave = personInput.value.trim();
@@ -302,7 +362,7 @@ const houseModalToggles = document.querySelector('#house-modal .modal-toggles');
     document.querySelectorAll('.modal-backdrop').forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal || e.target.closest('.close-modal-btn, [id$="-cancel-btn"]')) {
-                hideNoteModal(); hideTerritoryModal(); hideStreetModal(); hideHouseModal();
+                hideNoteModal(); hideTerritoryModal(); hideStreetModal(); hideHouseModal(); hidePhoneCallModal();
             }
         });
     });

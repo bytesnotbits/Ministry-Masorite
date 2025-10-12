@@ -1,5 +1,4 @@
-// Version 1.07.04
-// Version 1.06.04
+// Version 1.08.01
 // --- FILE: ui.js ---
 // This file contains all functions related to UI rendering and DOM manipulation.
 
@@ -237,6 +236,7 @@ const noteModal = document.getElementById('note-modal');
 const territoryModal = document.getElementById('territory-modal');
 const streetModal = document.getElementById('street-modal');
 const houseModal = document.getElementById('house-modal');
+const phoneCallModal = document.getElementById('phone-call-modal');
 
 function showNoteModal(title = 'Add Visit Note') {
     document.querySelector('#note-modal h3').textContent = title;
@@ -304,3 +304,27 @@ function showHouseModal() {
 function hideHouseModal() {
     houseModal.classList.add('hidden');
 }
+
+/*
+These functions encapsulate the logic for interacting with the phone call modal, keeping our code clean and reusable. 
+The hidePhoneCallModal function is particularly important as it resets the form, ensuring a clean slate every time the user logs a call.
+*/
+function hideHouseModal() {
+    houseModal.classList.add('hidden');
+}
+
+// START: FUNCTIONS FOR PHONE CALL MODAL
+function showPhoneCallModal() {
+    phoneCallModal.classList.remove('hidden');
+    // We can focus the first input field for better UX
+    document.getElementById('modal-phone-person-name').focus();
+}
+
+function hidePhoneCallModal() {
+    phoneCallModal.classList.add('hidden');
+    // Reset all fields inside the modal for the next use
+    document.getElementById('modal-phone-person-name').value = '';
+    document.getElementById('modal-phone-notes').value = '';
+    phoneCallModal.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+}
+// END: FUNCTIONS FOR PHONE CALL MODAL
