@@ -1,4 +1,4 @@
-// Version 1.11.01
+// Version 1.11.02
 // --- FILE: ui.js ---
 // This file contains all functions related to UI rendering and DOM manipulation.
 
@@ -67,8 +67,11 @@ async function renderStreets(territory) {
     if (streets.length === 0) {
         streetList.innerHTML = '<li class="placeholder">No streets added to this territory yet.</li>';
     } else {
-        // For performance, we fetch all houses once and group them by street.
+        // For performance, we fetch all necessary data at once and organize it.
         const allHouses = await getAllFromStore('houses');
+        const allPeople = await getAllFromStore('people');
+        
+        // Group houses by their street ID for quick lookup.
         const housesByStreet = new Map();
         for (const house of allHouses) {
             if (!housesByStreet.has(house.streetId)) {
@@ -76,6 +79,9 @@ async function renderStreets(territory) {
             }
             housesByStreet.get(house.streetId).push(house);
         }
+        
+        // Create an efficient lookup Set of house IDs that contain an RV.
+        const rvHouseIds = new Set(allPeople.filter(p => p.isRV).map(p => p.houseId));
 
         for (const street of streets) {
             const streetHouses = housesByStreet.get(street.id) || [];
@@ -101,7 +107,8 @@ async function renderStreets(territory) {
             
             const li = document.createElement('li');
             li.dataset.id = street.id;
-            // The new innerHTML structure using the CSS classes we just added
+            
+            // The new innerHTML structure with the updated street name and metadata
             li.innerHTML = `
                 <div class="street-card-info">
                     <span class="street-name">${street.name}</span>
@@ -115,7 +122,6 @@ async function renderStreets(territory) {
         }
     }
 }
-
 async function renderHouses(street, activeHouseFilters) {
     houseList.innerHTML = '';
     document.getElementById('house-list-title').textContent = street.name;
