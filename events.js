@@ -1,35 +1,34 @@
-// Version 1.12.01
+// Version 1.12.03
 // --- FILE: events.js ---
 // This file contains all event listeners for the application. It uses actions to modify state.
 function initializeEventListeners(state, actions) {
-const personInput = document.getElementById('modal-person-input');
-const suggestionsList = document.getElementById('modal-suggestions-list');
-const rvToggle = document.getElementById('modal-rv-toggle');
-const isRvCheck = document.getElementById('modal-is-rv-check');
-const modalRemoveNHCheck = document.getElementById('modal-remove-nh-check');
-const modalVisitNotes = document.getElementById('modal-visit-notes');
-const modalTerritoryNumber = document.getElementById('modal-territory-number');
-const modalTerritoryDescription = document.getElementById('modal-territory-description');
-const modalStreetName = document.getElementById('modal-street-name');
-const modalHouseNumber = document.getElementById('modal-house-number');
-const modalHouseNotes = document.getElementById('modal-house-notes');
-const houseModalToggles = document.querySelector('#house-modal .modal-toggles');
-const modalPhonePersonName = document.getElementById('modal-phone-person-name');
-const modalPhoneNotes = document.getElementById('modal-phone-notes');
-const phoneCallModalToggles = document.querySelector('#phone-call-modal .modal-toggles');
-const toggleTerritories = document.getElementById('toggle-completed-territories');
-const toggleStreets = document.getElementById('toggle-completed-streets');
+    const personInput = document.getElementById('modal-person-input');
+    const suggestionsList = document.getElementById('modal-suggestions-list');
+    const rvToggle = document.getElementById('modal-rv-toggle');
+    const isRvCheck = document.getElementById('modal-is-rv-check');
+    const modalRemoveNHCheck = document.getElementById('modal-remove-nh-check');
+    const modalVisitNotes = document.getElementById('modal-visit-notes');
+    const modalTerritoryNumber = document.getElementById('modal-territory-number');
+    const modalTerritoryDescription = document.getElementById('modal-territory-description');
+    const modalStreetName = document.getElementById('modal-street-name');
+    const modalHouseNumber = document.getElementById('modal-house-number');
+    const modalHouseNotes = document.getElementById('modal-house-notes');
+    const houseModalToggles = document.querySelector('#house-modal .modal-toggles');
+    const modalPhonePersonName = document.getElementById('modal-phone-person-name');
+    const modalPhoneNotes = document.getElementById('modal-phone-notes');
+    const phoneCallModalToggles = document.querySelector('#phone-call-modal .modal-toggles');
+    const toggleTerritories = document.getElementById('toggle-completed-territories');
+    const toggleStreets = document.getElementById('toggle-completed-streets');
 
     function handleToggleChange(event) {
         state.hideCompleted = event.target.checked;
-        // Sync both toggles so the state is consistent between views
         toggleTerritories.checked = state.hideCompleted;
         toggleStreets.checked = state.hideCompleted;
         document.body.classList.toggle('hide-completed', state.hideCompleted);
     }
 
-toggleTerritories.addEventListener('change', handleToggleChange);
-toggleStreets.addEventListener('change', handleToggleChange);
+    toggleTerritories.addEventListener('change', handleToggleChange);
+    toggleStreets.addEventListener('change', handleToggleChange);
 
     async function populateAndShowSuggestions() {
         suggestionsList.innerHTML = '';
@@ -81,15 +80,12 @@ toggleStreets.addEventListener('change', handleToggleChange);
     phoneCallModalToggles.addEventListener('click', (e) => {
         const btn = e.target.closest('.toggle-btn');
         if (!btn) return;
-
-        // This logic makes the buttons act like radio buttons.
         const wasActive = btn.classList.contains('active');
         phoneCallModalToggles.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
         if (!wasActive) {
             btn.classList.add('active');
         }
     });
-
 
     document.addEventListener('click', async (e) => {
         const target = e.target;
@@ -129,13 +125,13 @@ toggleStreets.addEventListener('change', handleToggleChange);
                     if (lastLetterVisit)
                         await deleteFromStore('visits', lastLetterVisit.id);
                         const house = await getFromStore('houses', houseId);
-                        house.isCurrentlyNH = true; // Set the house back to "Not at Home"
+                        house.isCurrentlyNH = true;
                         await updateInStore('houses', house);
                 }
             } else if (target.classList.contains('phone-call-btn')) {
-                state.currentHouseId = houseId; // Ensure currentHouseId is set for the modal
-                showPhoneCallModal();
-                return; // Prevent refreshHouses from running immediately
+                state.currentHouseId = houseId;
+                UI.showPhoneCallModal(); // FIX: Call UI method
+                return;
             }
             return actions.refreshHouses();
         }
@@ -144,13 +140,13 @@ toggleStreets.addEventListener('change', handleToggleChange);
         if (editTerritoryBtn) {
             state.currentEditTerritoryId = Number(editTerritoryBtn.dataset.id);
             const territory = await getFromStore('territories', state.currentEditTerritoryId);
-            return showTerritoryModal(territory);
+            return UI.showTerritoryModal(territory); // FIX: Call UI method
         }
         const editStreetBtn = target.closest('.edit-street-btn');
         if (editStreetBtn) {
             state.currentEditStreetId = Number(editStreetBtn.dataset.id);
             const street = await getFromStore('streets', state.currentEditStreetId);
-            return showStreetModal(street);
+            return UI.showStreetModal(street); // FIX: Call UI method
         }
         if (target.classList.contains('sort-btn')) return actions.updateTerritorySort(target.dataset.sort);
         const deleteBtn = target.closest('.delete-btn');
@@ -190,7 +186,6 @@ toggleStreets.addEventListener('change', handleToggleChange);
             const visitId = Number(editNoteBtn.dataset.id);
             const visit = await getFromStore('visits', visitId);
             const newNote = prompt('Enter new note text:', visit.notes);
-            
             if (newNote !== null) {
                 visit.notes = newNote.trim();
                 await updateInStore('visits', visit);
@@ -238,10 +233,11 @@ toggleStreets.addEventListener('change', handleToggleChange);
             }
         }
     });
-    document.getElementById('add-territory-btn').addEventListener('click', () => showTerritoryModal());
-    document.getElementById('add-street-btn').addEventListener('click', () => showStreetModal());
-    document.getElementById('add-house-btn').addEventListener('click', showHouseModal);
-    document.getElementById('add-visit-btn').addEventListener('click', () => showNoteModal('Add New Visit Note'));
+
+    document.getElementById('add-territory-btn').addEventListener('click', () => UI.showTerritoryModal());
+    document.getElementById('add-street-btn').addEventListener('click', () => UI.showStreetModal());
+    document.getElementById('add-house-btn').addEventListener('click', UI.showHouseModal);
+    document.getElementById('add-visit-btn').addEventListener('click', () => UI.showNoteModal('Add New Visit Note'));
     document.getElementById('show-rvs-btn').addEventListener('click', actions.navigateToRVs);
     document.querySelector('.filter-controls').addEventListener('click', (e) => {
         const btn = e.target.closest('.filter-btn');
@@ -262,7 +258,7 @@ toggleStreets.addEventListener('change', handleToggleChange);
         await actions.refreshTerritories();
         return true;
     };
-    document.getElementById('modal-territory-save-btn').addEventListener('click', async () => { if (await saveTerritory()) hideTerritoryModal(); });
+    document.getElementById('modal-territory-save-btn').addEventListener('click', async () => { if (await saveTerritory()) UI.hideTerritoryModal(); });
     document.getElementById('modal-territory-save-new-btn').addEventListener('click', async () => {
         if (await saveTerritory()) { modalTerritoryNumber.value = ''; modalTerritoryDescription.value = ''; modalTerritoryNumber.focus(); }
     });
@@ -278,7 +274,7 @@ toggleStreets.addEventListener('change', handleToggleChange);
         await actions.refreshStreets();
         return true;
     };
-    document.getElementById('modal-street-save-btn').addEventListener('click', async () => { if (await saveStreet()) hideStreetModal(); });
+    document.getElementById('modal-street-save-btn').addEventListener('click', async () => { if (await saveStreet()) UI.hideStreetModal(); });
     document.getElementById('modal-street-save-new-btn').addEventListener('click', async () => {
         if (await saveStreet()) { modalStreetName.value = ''; modalStreetName.focus(); }
     });
@@ -301,7 +297,7 @@ toggleStreets.addEventListener('change', handleToggleChange);
         await actions.refreshHouses();
         return true;
     };
-    document.getElementById('modal-house-save-btn').addEventListener('click', async () => { if (await saveHouse()) hideHouseModal(); });
+    document.getElementById('modal-house-save-btn').addEventListener('click', async () => { if (await saveHouse()) UI.hideHouseModal(); });
     document.getElementById('modal-house-save-new-btn').addEventListener('click', async () => {
         if (await saveHouse()) {
             modalHouseNumber.value = ''; modalHouseNotes.value = '';
@@ -313,29 +309,14 @@ toggleStreets.addEventListener('change', handleToggleChange);
     document.getElementById('modal-phone-save-btn').addEventListener('click', async () => {
         const noAnswerBtn = phoneCallModalToggles.querySelector('[data-outcome="no-answer"]');
         const voicemailBtn = phoneCallModalToggles.querySelector('[data-outcome="left-voicemail"]');
-
         const personName = modalPhonePersonName.value.trim();
         const notes = modalPhoneNotes.value.trim();
         let constructedNotes = [];
-
-        if (noAnswerBtn.classList.contains('active')) {
-            constructedNotes.push("No answer.");
-        } else if (voicemailBtn.classList.contains('active')) {
-            constructedNotes.push("Left voicemail.");
-        }
-
-        if (personName) {
-            constructedNotes.push(`Spoke with ${personName}.`);
-        }
-
-        if (notes) {
-            constructedNotes.push(notes);
-        }
-        
-        if (constructedNotes.length === 0) {
-            constructedNotes.push("Phone call attempt.");
-        }
-
+        if (noAnswerBtn.classList.contains('active')) constructedNotes.push("No answer.");
+        else if (voicemailBtn.classList.contains('active')) constructedNotes.push("Left voicemail.");
+        if (personName) constructedNotes.push(`Spoke with ${personName}.`);
+        if (notes) constructedNotes.push(notes);
+        if (constructedNotes.length === 0) constructedNotes.push("Phone call attempt.");
         const newVisit = {
             houseId: state.currentHouseId,
             date: new Date().toISOString(),
@@ -344,16 +325,14 @@ toggleStreets.addEventListener('change', handleToggleChange);
             isVisitAttempt: true,
             visitType: 'phone'
         };
-
         await addToStore('visits', newVisit);
-        hidePhoneCallModal();
+        UI.hidePhoneCallModal(); // FIX: Call UI method
         await actions.refreshHouses();
     });
 
     document.getElementById('modal-save-note-btn').addEventListener('click', async () => {
         let personIdToSave = state.selectedPersonId;
         let personNameToSave = personInput.value.trim();
-
         if (!personNameToSave) {
             personIdToSave = null;
         } else if (!personIdToSave) {
@@ -363,7 +342,6 @@ toggleStreets.addEventListener('change', handleToggleChange);
                 isRV: isRvCheck.checked 
             });
         }
-        
         const newVisit = {
             houseId: state.currentHouseId,
             date: new Date().toISOString(),
@@ -374,44 +352,46 @@ toggleStreets.addEventListener('change', handleToggleChange);
             isVisitAttempt: true
         };
         await addToStore('visits', newVisit);
-
         if (modalRemoveNHCheck.checked) {
             const house = await getFromStore('houses', state.currentHouseId);
             house.isCurrentlyNH = false;
             await updateInStore('houses', house);
         }
-        hideNoteModal();
+        UI.hideNoteModal(); // FIX: Call UI method
         await (state.currentView === 'house-list-view' ? actions.refreshHouses() : actions.refreshHouseDetails());
     });
+
     document.querySelectorAll('.modal-backdrop').forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal || e.target.closest('.close-modal-btn, [id$="-cancel-btn"]')) {
-                hideNoteModal(); hideTerritoryModal(); hideStreetModal(); hideHouseModal(); hidePhoneCallModal(); hideImportConflictModal();
+                // FIX: Call all hide methods from the UI object
+                UI.hideNoteModal(); 
+                UI.hideTerritoryModal(); 
+                UI.hideStreetModal(); 
+                UI.hideHouseModal(); 
+                UI.hidePhoneCallModal(); 
+                UI.hideImportConflictModal();
             }
         });
     });
 
-    // --- START: NEW/UPDATED EVENT LISTENERS FOR IMPORT/EXPORT ---
     const importCallback = () => actions.refreshTerritories();
-    
     document.getElementById('export-full-json-btn').addEventListener('click', () => handleJsonExport('full'));
     document.getElementById('export-territory-json-btn').addEventListener('click', () => handleJsonExport('territory', state.currentTerritoryId));
     document.getElementById('export-street-json-btn').addEventListener('click', () => handleJsonExport('street', state.currentStreetId));
-    
     document.getElementById('import-file-btn').addEventListener('click', () => document.getElementById('import-file-input').click());
     document.getElementById('import-file-input').addEventListener('change', (e) => handleFileImport(e, importCallback));
-
     document.getElementById('modal-import-confirm-btn').addEventListener('click', async (e) => {
         const choice = document.querySelector('input[name="import-choice"]:checked').value;
         const bundle = JSON.parse(e.target.dataset.bundle);
         const conflict = JSON.parse(e.target.dataset.conflict);
         const callback = window.tempImportCallback;
         
-        hideImportConflictModal();
+        UI.hideImportConflictModal(); // FIX: Call UI method
 
         try {
             if (choice === 'merge') {
-                await executeMerge(bundle.data); // This is a simple merge for now
+                await executeMerge(bundle.data);
                 alert('Data merged successfully.');
             } else if (choice === 'overwrite') {
                 await executeOverwrite(bundle, conflict);
@@ -425,7 +405,6 @@ toggleStreets.addEventListener('change', handleToggleChange);
     });
 
     document.getElementById('export-pdf-btn').addEventListener('click', () => handleExportPDF(state.currentStreetId));
-    // --- END: NEW/UPDATED EVENT LISTENERS FOR IMPORT/EXPORT ---
 
     document.getElementById('house-detail-view').addEventListener('change', async (e) => {
         if (e.target.type !== 'checkbox') return;

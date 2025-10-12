@@ -1,4 +1,4 @@
-// Version 1.12.02
+// Version 1.12.03
 // --- FILE: database-api.js ---
 // This file acts as a data layer, handling complex data operations like import, export, and backup.
 
@@ -6,12 +6,6 @@ const { jsPDF } = window.jspdf;
 
 // --- START: NEW JSON EXPORT/IMPORT SYSTEM ---
 
-/**
- * Bundles all necessary data for export. Can be scoped to full DB, a territory, or a street.
- * @param {string} scope - 'full', 'territory', or 'street'
- * @param {number|null} id - The ID of the territory or street, if applicable.
- * @returns {Promise<Object>} A structured object ready for export.
- */
 async function bundleDataForExport(scope = 'full', id = null) {
     const bundle = {
         meta: {
@@ -73,11 +67,6 @@ async function bundleDataForExport(scope = 'full', id = null) {
     return bundle;
 }
 
-/**
- * Handles the export process, using Web Share API if available, otherwise falling back to download.
- * @param {string} scope - 'full', 'territory', or 'street'
- * @param {number|null} id - The ID for territory/street scope.
- */
 async function handleJsonExport(scope = 'full', id = null) {
     try {
         const bundle = await bundleDataForExport(scope, id);
@@ -95,7 +84,6 @@ async function handleJsonExport(scope = 'full', id = null) {
 
         const file = new File([blob], filename, { type: 'application/json' });
 
-        // Use Web Share API if available (great for mobile)
         if (navigator.share && navigator.canShare({ files: [file] })) {
             await navigator.share({
                 title: 'Ministry Scribe Backup',
@@ -103,7 +91,6 @@ async function handleJsonExport(scope = 'full', id = null) {
                 files: [file],
             });
         } else {
-            // Fallback for desktop browsers
             const a = document.createElement('a');
             a.href = URL.createObjectURL(file);
             a.download = filename;
@@ -116,11 +103,6 @@ async function handleJsonExport(scope = 'full', id = null) {
     }
 }
 
-/**
- * Handles the initial processing of an imported file.
- * @param {Event} event - The file input change event.
- * @param {function} callback - Function to run after successful import.
- */
 function handleFileImport(event, callback) {
     const file = event.target.files[0];
     if (!file) return;
@@ -173,7 +155,9 @@ async function processPartialImport(bundle, callback) {
     const conflict = existingTerritories.find(t => t.number === importedTerritory.number);
     
     if (conflict) {
-        showImportConflictModal(bundle, conflict, callback);
+        // --- START OF FIX ---
+        UI.showImportConflictModal(bundle, conflict, callback);
+        // --- END OF FIX ---
     } else {
         await executeMerge(bundle.data);
         alert(`Territory #${importedTerritory.number} imported successfully.`);
@@ -192,7 +176,6 @@ async function executeMerge(data) {
         const newId = await addToStore('territories', territory);
         territoryMap.set(oldId, newId);
     }
-
     for (const street of data.streets) {
         const oldId = street.id;
         delete street.id;
@@ -200,7 +183,6 @@ async function executeMerge(data) {
         const newId = await addToStore('streets', street);
         streetMap.set(oldId, newId);
     }
-
     for (const house of data.houses) {
         const oldId = house.id;
         delete house.id;
@@ -208,20 +190,17 @@ async function executeMerge(data) {
         const newId = await addToStore('houses', house);
         houseMap.set(oldId, newId);
     }
-
     for (const person of data.people) {
         delete person.id;
         person.houseId = houseMap.get(person.houseId);
         await addToStore('people', person);
     }
-
     for (const visit of data.visits) {
         delete visit.id;
         visit.houseId = houseMap.get(visit.houseId);
         await addToStore('visits', visit);
     }
 }
-
 
 async function executeOverwrite(bundle, conflict) {
     const streetsToDelete = await getByIndex('streets', 'territoryId', conflict.id);
@@ -237,7 +216,6 @@ async function executeOverwrite(bundle, conflict) {
         await deleteFromStore('streets', street.id);
     }
     await deleteFromStore('territories', conflict.id);
-
     await executeMerge(bundle.data);
 }
 
