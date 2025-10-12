@@ -17,13 +17,22 @@
     <main>
     <!-- LEVEL 1: This is the main screen showing the list of territories -->
     <div id="territory-list-view" class="view active">
-        <h2>My Territories</h2>
+        <header>
+            <h2>All Territories</h2>
+            <div class="view-options">
+                <label for="toggle-completed-territories">Hide Completed</label>
+                <label class="switch">
+                    <input type="checkbox" id="toggle-completed-territories">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <button id="add-territory-btn" class="primary-action">+ Add New Territory</button>
+        </header>
+
         <input type="search" id="search-territory-input" placeholder="Search by number or description...">
-        
-        <button id="add-territory-btn" class="primary-action">+ Add New Territory</button>
-        <button id="show-rvs-btn" class="secondary-action">Show All RVs</button>
-        
+
         <div class="controls">
+            <button id="show-rvs-btn" class="secondary-action">Show All RVs</button>
             <span>Sort by:</span>
             <button class="sort-btn" data-sort="number">Territory #</button>
             <button class="sort-btn" data-sort="description">Description</button>
@@ -49,9 +58,9 @@
                 <p>1.01.03 Switched to CSV file format for import/export.</p>
                 <p>1.02.03 REFACTOR!</p>
                 <p>1.02.03 REFACTOR COMPLETE!</p>
-                <p><strong>1.08.01</strong> Add new modal to capture phone call details</p>
-                <p>List meta data in street card. x/x visited, x/x letters, x NT etc....</p>
-                <p>Implement "Territory Complete" flag [active=false]</p>
+                <p>1.08.01 Add new modal to capture phone call details</p>
+                <p><strong>1.10.03</strong> List meta data in street card. x/x visited, x/x letters, x NT etc....</p>
+                <p><strong>Under development 1.11.01</strong> "Territory Complete" flag [active=false]</p>
                 <p>Hide [active=false] territories</p>
                 <p>Filter/Export only NH</p>
                 <p>Report bug from within app</p>
@@ -112,9 +121,19 @@
 
     <!-- LEVEL 2: This new screen shows the list of streets for a single territory -->
     <div id="street-list-view" class="view">
-        <button class="back-btn" data-target="territory-list-view">&larr; Back to Territories</button>
-        <h2 id="street-list-title"></h2>
-        <button id="add-street-btn" class="primary-action">+ Add New Street</button>
+        <header>
+            <button class="back-btn" data-target="territory-list-view">&larr; Back to Territories</button>
+            <h2 id="street-list-title"></h2>
+            <div class="view-options">
+                <label for="toggle-completed-streets">Hide Completed</label>
+                <label class="switch">
+                    <input type="checkbox" id="toggle-completed-streets">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <button id="add-street-btn" class="primary-action">+ Add New Street</button>
+        </header>
+
         <ul id="street-list"></ul>
         
         <button id="export-territory-menu-toggle-btn" class="menu-toggle-btn">Export Options 📤</button>

@@ -1,4 +1,4 @@
-// Version 1.09.01
+// Version 1.11.01
 // --- FILE: events.js ---
 // This file contains all event listeners for the application. It uses actions to modify state.
 function initializeEventListeners(state, actions) {
@@ -17,7 +17,19 @@ const houseModalToggles = document.querySelector('#house-modal .modal-toggles');
 const modalPhonePersonName = document.getElementById('modal-phone-person-name');
 const modalPhoneNotes = document.getElementById('modal-phone-notes');
 const phoneCallModalToggles = document.querySelector('#phone-call-modal .modal-toggles');
+const toggleTerritories = document.getElementById('toggle-completed-territories');
+const toggleStreets = document.getElementById('toggle-completed-streets');
 
+    function handleToggleChange(event) {
+        state.hideCompleted = event.target.checked;
+        // Sync both toggles so the state is consistent between views
+        toggleTerritories.checked = state.hideCompleted;
+        toggleStreets.checked = state.hideCompleted;
+        document.body.classList.toggle('hide-completed', state.hideCompleted);
+    }
+
+toggleTerritories.addEventListener('change', handleToggleChange);
+toggleStreets.addEventListener('change', handleToggleChange);
 
     async function populateAndShowSuggestions() {
         suggestionsList.innerHTML = '';

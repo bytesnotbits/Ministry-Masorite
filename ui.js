@@ -1,4 +1,4 @@
-// Version 1.11.03
+// Version 1.11.01
 // --- FILE: ui.js ---
 // This file contains all functions related to UI rendering and DOM manipulation.
 
@@ -18,45 +18,60 @@ async function rerenderHousesAndPreserveScroll(street, activeHouseFilters) {
     setTimeout(() => window.scrollTo(0, scrollPos), 0);
 }
 
-async function renderTerritories(territories, territorySort, filter = '') {
+async function renderTerritories() {
     territoryList.innerHTML = '';
-    let territoriesToRender = territories;
-    if (filter) {
-        const searchTerm = filter.toLowerCase();
-        territoriesToRender = territories.filter(t => 
-            t.description.toLowerCase().includes(searchTerm) || 
-            String(t.number || '').toLowerCase().includes(searchTerm)
-        );
-    }
-    territoriesToRender.sort((a, b) => {
-        if (territorySort === 'description') return a.description.localeCompare(b.description);
-        if (territorySort === 'number') return (a.number || '').localeCompare(b.number || '', undefined, { numeric: true, sensitivity: 'base' });
-        return new Date(b.createdAt) - new Date(a.createdAt);
+    const territories = await getAllFromStore('territories');
+
+    // Efficiently pre-fetch all data needed to calculate completion status
+    const allStreets = await getAllFromStore('streets');
+    const allHouses = await getAllFromStore('houses');
+    
+    // Group streets by territoryId and houses by streetId for fast lookups
+    const streetsByTerritory = new Map(territories.map(t => [t.id, []]));
+    allStreets.forEach(s => {
+        if (streetsByTerritory.has(s.territoryId)) {
+            streetsByTerritory.get(s.territoryId).push(s);
+        }
     });
-    if (territoriesToRender.length === 0) {
-        territoryList.innerHTML = filter
-            ? `<li class="placeholder">No territories match "${filter}".</li>`
-            : '<li class="placeholder">Click "+ Add New Territory" to begin.</li>';
-    } else {
-        const streetCounts = new Map();
-        const allStreets = await getAllFromStore('streets');
-        for (const street of allStreets) {
-            streetCounts.set(street.territoryId, (streetCounts.get(street.territoryId) || 0) + 1);
+
+    const housesByStreet = new Map(allStreets.map(s => [s.id, []]));
+    allHouses.forEach(h => {
+        if (housesByStreet.has(h.streetId)) {
+            housesByStreet.get(h.streetId).push(h);
         }
-        for (const territory of territoriesToRender) {
-            const li = document.createElement('li');
-            li.dataset.id = territory.id;
-            const numberDisplay = territory.number ? `<strong>#${territory.number}</strong> -` : 'No # -';
-            li.innerHTML = `
-                <span>${numberDisplay} ${territory.description} (${streetCounts.get(territory.id) || 0} streets)</span>
-                <div class="territory-actions">
-                    <button class="icon-btn edit-territory-btn" data-id="${territory.id}" title="Edit Territory">✏️</button>
-                    <button class="delete-btn" data-id="${territory.id}" data-type="territory">X</button>
-                </div>`;
-            territoryList.appendChild(li);
+    });
+
+    for (const territory of territories) {
+        const streetsInTerritory = streetsByTerritory.get(territory.id) || [];
+        let totalHousesInTerritory = 0;
+        let unvisitedHouses = 0;
+
+        for (const street of streetsInTerritory) {
+            const housesOnStreet = housesByStreet.get(street.id) || [];
+            totalHousesInTerritory += housesOnStreet.length;
+            unvisitedHouses += housesOnStreet.filter(h => h.isCurrentlyNH).length;
         }
+
+        // A territory is complete if it has houses and none are unvisited.
+        const isComplete = totalHousesInTerritory > 0 && unvisitedHouses === 0;
+
+        const li = document.createElement('li');
+        li.dataset.id = territory.id;
+        if (isComplete) {
+            li.classList.add('is-complete'); // Apply completion class
+        }
+
+        li.innerHTML = `
+            <div class="territory-card-info">
+                <span>Territory #${territory.number}</span>
+                <small>${territory.description}</small>
+            </div>
+            <div class="territory-actions">
+                <button class="icon-btn edit-territory-btn" data-id="${territory.id}" title="Edit Territory">✏️</button>
+                <button class="delete-btn" data-id="${territory.id}" data-type="territory">X</button>
+            </div>`;
+        territoryList.appendChild(li);
     }
-    document.getElementById('search-territory-input').classList.toggle('hidden', territories.length <= 10);
 }
 
 async function renderStreets(territory) {
@@ -67,40 +82,32 @@ async function renderStreets(territory) {
     if (streets.length === 0) {
         streetList.innerHTML = '<li class="placeholder">No streets added to this territory yet.</li>';
     } else {
-        // For performance, we fetch all necessary data at once and organize it.
-        const allHouses = await getAllFromStore('houses');
-        // --- START OF CORRECTION ---
+        const allHouses = await getByIndex('houses', 'streetId', streets.map(s => s.id));
         const allPeople = await getAllFromStore('people');
-        // --- END OF CORRECTION ---
         
-        // Group houses by their street ID for quick lookup.
-        const housesByStreet = new Map();
-        for (const house of allHouses) {
-            if (!housesByStreet.has(house.streetId)) {
-                housesByStreet.set(house.streetId, []);
-            }
-            housesByStreet.get(house.streetId).push(house);
-        }
+        const housesByStreet = new Map(streets.map(s => [s.id, []]));
+        allHouses.forEach(h => {
+            if (housesByStreet.has(h.streetId)) housesByStreet.get(h.streetId).push(h);
+        });
         
-        // Create an efficient lookup Set of house IDs that contain an RV.
         const rvHouseIds = new Set(allPeople.filter(p => p.isRV).map(p => p.houseId));
 
         for (const street of streets) {
             const streetHouses = housesByStreet.get(street.id) || [];
             const houseCount = streetHouses.length;
-
-            // Calculate all the required metadata stats from the street's houses.
             const nhCount = streetHouses.filter(h => h.isCurrentlyNH).length;
+
+            // A street is complete if it has houses and none are unvisited.
+            const isComplete = houseCount > 0 && nhCount === 0;
+            
+            // ... (rest of the metadata calculation is the same)
             const niCount = streetHouses.filter(h => h.isNotInterested).length;
             const ntCount = streetHouses.filter(h => h.noTrespassing).length;
             const gatedCount = streetHouses.filter(h => h.hasGate).length;
             const mailboxCount = streetHouses.filter(h => h.hasMailbox).length;
             const rvCount = streetHouses.filter(h => rvHouseIds.has(h.id)).length;
             
-            // Build the metadata HTML string. The primary stat is now the unvisited count.
             let metaHtmlParts = [`<strong>${nhCount}</strong> of <strong>${houseCount}</strong> Unvisited`];
-            
-            // Add the other stats only if their count is greater than zero
             if (niCount > 0) metaHtmlParts.push(`<strong>${niCount}</strong> NI`);
             if (rvCount > 0) metaHtmlParts.push(`<strong>${rvCount}</strong> RV`);
             if (mailboxCount > 0) metaHtmlParts.push(`<strong>${mailboxCount}</strong> MB`);
@@ -109,8 +116,10 @@ async function renderStreets(territory) {
             
             const li = document.createElement('li');
             li.dataset.id = street.id;
+            if (isComplete) {
+                li.classList.add('is-complete'); // Apply completion class
+            }
             
-            // The new innerHTML structure with the updated street name and metadata
             li.innerHTML = `
                 <div class="street-card-info">
                     <span class="street-name">${street.name}</span>

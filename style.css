@@ -1,4 +1,4 @@
-/*Version 1.10.01*/
+/* Version 1.11.01 */
 
 /* General Body and Font Styling */
 :root {
@@ -711,3 +711,47 @@ ul li {
     color: var(--dark-text); /* Makes the numbers slightly darker than the labels */
 }
 /* --- END: STYLES FOR STREET CARD METADATA --- */
+
+header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+header h2 {
+    margin: 0; /* Removes default heading margin */
+}
+
+/* --- START: STYLES FOR COMPLETED ITEMS & TOGGLE --- */
+.view-options {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto; /* Pushes the toggle to the left of the "Add New" button */
+    font-size: 14px;
+}
+
+#territory-list > li.is-complete .territory-card-info::before,
+#street-list > li.is-complete .street-card-info::before {
+    content: '✔';
+    color: var(--success-color);
+    font-weight: bold;
+    margin-right: 8px;
+}
+
+#territory-list > li.is-complete,
+#street-list > li.is-complete {
+    opacity: 0.7;
+    background-color: #f8f9fa; /* A very light gray */
+}
+
+/* Logic to hide completed items when the toggle is active */
+body.hide-completed #territory-list > li.is-complete,
+body.hide-completed #street-list > li.is-complete {
+    display: none;
+}
+
+/* Basic Toggle Switch Styles */
+.switch{position:relative;display:inline-block;width:40px;height:22px}.switch input{opacity:0;width:0;height:0}.slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#ccc;transition:.4s;border-radius:22px}.slider:before{position:absolute;content:"";height:16px;width:16px;left:3px;bottom:3px;background-color:#fff;transition:.4s;border-radius:50%}input:checked+.slider{background-color:var(--primary-color)}input:checked+.slider:before{transform:translateX(18px)}
+/* --- END: STYLES FOR COMPLETED ITEMS & TOGGLE --- */

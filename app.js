@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentTerritoryId: null,
         currentStreetId: null,
         currentHouseId: null,
+        hideCompleted: false,
         territorySort: 'number',
         selectedPersonId: null,
         currentEditTerritoryId: null,
