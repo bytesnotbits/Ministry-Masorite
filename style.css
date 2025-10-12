@@ -1,4 +1,4 @@
-/* Version 1.11.02 */
+/* Version 1.11.03 */
 
 /* General Body and Font Styling */
 :root {
@@ -735,7 +735,7 @@ body > header {
 /* Make the title inside the view header white */
 .view-header h2 {
     margin: 0;
-    flex-grow: 1; /* Allow the title to take up space */
+    /* The flex-grow: 1; line has been removed */
 }
 
 /* Make the back button white and visible */
