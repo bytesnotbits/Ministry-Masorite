@@ -1,4 +1,4 @@
-// Version 1.11.02
+// Version 1.12.01
 // --- FILE: ui.js ---
 // This file contains all functions related to UI rendering and DOM manipulation.
 
@@ -302,6 +302,7 @@ const territoryModal = document.getElementById('territory-modal');
 const streetModal = document.getElementById('street-modal');
 const houseModal = document.getElementById('house-modal');
 const phoneCallModal = document.getElementById('phone-call-modal');
+const importConflictModal = document.getElementById('import-conflict-modal');
 
 function showNoteModal(title = 'Add Visit Note') {
     document.querySelector('#note-modal h3').textContent = title;
@@ -370,26 +371,43 @@ function hideHouseModal() {
     houseModal.classList.add('hidden');
 }
 
-/*
-These functions encapsulate the logic for interacting with the phone call modal, keeping our code clean and reusable. 
-The hidePhoneCallModal function is particularly important as it resets the form, ensuring a clean slate every time the user logs a call.
-*/
-function hideHouseModal() {
-    houseModal.classList.add('hidden');
-}
-
-// START: FUNCTIONS FOR PHONE CALL MODAL
 function showPhoneCallModal() {
     phoneCallModal.classList.remove('hidden');
-    // We can focus the first input field for better UX
     document.getElementById('modal-phone-person-name').focus();
 }
 
 function hidePhoneCallModal() {
     phoneCallModal.classList.add('hidden');
-    // Reset all fields inside the modal for the next use
     document.getElementById('modal-phone-person-name').value = '';
     document.getElementById('modal-phone-notes').value = '';
     phoneCallModal.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
 }
-// END: FUNCTIONS FOR PHONE CALL MODAL
+
+// --- START: NEW MODAL FOR IMPORT CONFLICTS ---
+function showImportConflictModal(bundle, conflict, callback) {
+    const territoryNumber = bundle.data.territories[0].number;
+    document.getElementById('conflict-territory-number').textContent = territoryNumber;
+
+    // Attach data to the modal buttons to be retrieved by the event listener
+    const confirmBtn = document.getElementById('modal-import-confirm-btn');
+    confirmBtn.dataset.bundle = JSON.stringify(bundle);
+    confirmBtn.dataset.conflict = JSON.stringify(conflict);
+    
+    // Store callback in a temporary, accessible way
+    window.tempImportCallback = callback;
+
+    importConflictModal.classList.remove('hidden');
+}
+
+
+function hideImportConflictModal() {
+    importConflictModal.classList.add('hidden');
+    // Clean up temporary data
+    const confirmBtn = document.getElementById('modal-import-confirm-btn');
+    delete confirmBtn.dataset.bundle;
+    delete confirmBtn.dataset.conflict;
+    delete window.tempImportCallback;
+    // Reset radio button to default
+    document.getElementById('import-choice-merge').checked = true;
+}
+// --- END: NEW MODAL FOR IMPORT CONFLICTS ---

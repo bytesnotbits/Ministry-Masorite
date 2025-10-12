@@ -1,4 +1,4 @@
-// Version 1.11.01
+// Version 1.12.01
 // --- FILE: events.js ---
 // This file contains all event listeners for the application. It uses actions to modify state.
 function initializeEventListeners(state, actions) {
@@ -191,8 +191,6 @@ toggleStreets.addEventListener('change', handleToggleChange);
             const visit = await getFromStore('visits', visitId);
             const newNote = prompt('Enter new note text:', visit.notes);
             
-            // newNote will be null if the user clicks "Cancel"
-            // We check for this to allow users to clear a note if they wish.
             if (newNote !== null) {
                 visit.notes = newNote.trim();
                 await updateInStore('visits', visit);
@@ -334,7 +332,6 @@ toggleStreets.addEventListener('change', handleToggleChange);
             constructedNotes.push(notes);
         }
         
-        // If no specific info was entered, use the default message.
         if (constructedNotes.length === 0) {
             constructedNotes.push("Phone call attempt.");
         }
@@ -389,19 +386,47 @@ toggleStreets.addEventListener('change', handleToggleChange);
     document.querySelectorAll('.modal-backdrop').forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal || e.target.closest('.close-modal-btn, [id$="-cancel-btn"]')) {
-                hideNoteModal(); hideTerritoryModal(); hideStreetModal(); hideHouseModal(); hidePhoneCallModal();
+                hideNoteModal(); hideTerritoryModal(); hideStreetModal(); hideHouseModal(); hidePhoneCallModal(); hideImportConflictModal();
             }
         });
     });
-    const csvImportCallback = async () => actions.refreshTerritories();
-    document.getElementById('export-full-btn').addEventListener('click', handleFullBackup);
-    document.getElementById('export-territory-mscribe-btn').addEventListener('click', () => handleTerritoryBackup(state.currentTerritoryId));
-    document.getElementById('export-street-mscribe-btn').addEventListener('click', () => handleStreetBackup(state.currentStreetId));
+
+    // --- START: NEW/UPDATED EVENT LISTENERS FOR IMPORT/EXPORT ---
+    const importCallback = () => actions.refreshTerritories();
+    
+    document.getElementById('export-full-json-btn').addEventListener('click', () => handleJsonExport('full'));
+    document.getElementById('export-territory-json-btn').addEventListener('click', () => handleJsonExport('territory', state.currentTerritoryId));
+    document.getElementById('export-street-json-btn').addEventListener('click', () => handleJsonExport('street', state.currentStreetId));
+    
+    document.getElementById('import-file-btn').addEventListener('click', () => document.getElementById('import-file-input').click());
+    document.getElementById('import-file-input').addEventListener('change', (e) => handleFileImport(e, importCallback));
+
+    document.getElementById('modal-import-confirm-btn').addEventListener('click', async (e) => {
+        const choice = document.querySelector('input[name="import-choice"]:checked').value;
+        const bundle = JSON.parse(e.target.dataset.bundle);
+        const conflict = JSON.parse(e.target.dataset.conflict);
+        const callback = window.tempImportCallback;
+        
+        hideImportConflictModal();
+
+        try {
+            if (choice === 'merge') {
+                await executeMerge(bundle.data); // This is a simple merge for now
+                alert('Data merged successfully.');
+            } else if (choice === 'overwrite') {
+                await executeOverwrite(bundle, conflict);
+                alert('Data overwritten successfully.');
+            }
+            if (callback) callback();
+        } catch (error) {
+            alert(`An error occurred during import: ${error.message}`);
+            console.error(error);
+        }
+    });
+
     document.getElementById('export-pdf-btn').addEventListener('click', () => handleExportPDF(state.currentStreetId));
-    document.getElementById('restore-btn').addEventListener('click', () => document.getElementById('restore-file-input').click());
-    document.getElementById('restore-file-input').addEventListener('change', (e) => handleCSVImport(e, csvImportCallback));
-    document.getElementById('import-csv-btn').addEventListener('click', () => document.getElementById('import-csv-input').click());
-    document.getElementById('import-csv-input').addEventListener('change', (e) => handleCSVImport(e, csvImportCallback));
+    // --- END: NEW/UPDATED EVENT LISTENERS FOR IMPORT/EXPORT ---
+
     document.getElementById('house-detail-view').addEventListener('change', async (e) => {
         if (e.target.type !== 'checkbox') return;
         const house = await getFromStore('houses', state.currentHouseId);
@@ -415,7 +440,6 @@ toggleStreets.addEventListener('change', handleToggleChange);
             if (propToUpdate === 'isNotInterested' && !wasNotInterested && e.target.checked) {
                 await addToStore('visits', { houseId: state.currentHouseId, date: new Date().toISOString(), notes: "Marked as 'Not Interested'.", isVisitAttempt: false });
             }
-            // Always refresh details view to ensure consistency
             await actions.refreshHouseDetails();
         }
     });

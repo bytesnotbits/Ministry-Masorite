@@ -1,4 +1,4 @@
-/* Version 1.11.05 */
+/* Version 1.06.01 */
 
 /* General Body and Font Styling */
 :root {
@@ -8,6 +8,7 @@
     --dark-text: #333;
     --light-text: #777;
     --border-color: #eee;
+    --success-color: #28a745;
 }
 
 body {
@@ -18,15 +19,6 @@ body {
     padding: 20px;
 }
 
-header {
-    background-color: var(--primary-color);
-    color: var(--white);
-    padding: 15px 20px;
-    text-align: center;
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-
 /* Layout for Views */
 .view { display: none; }
 .view.active { display: block; }
@@ -35,15 +27,12 @@ header {
 .hidden { display: none; }
 
 /* List Styling */
-ul {
-    list-style-type: none;
-    padding: 0;
-}
+ul { list-style-type: none; padding: 0; }
 
 ul li {
     background-color: var(--white);
     padding: 15px;
-    padding-bottom: 45px; 
+    padding-bottom: 50px; 
     border-radius: 8px;
     margin-bottom: 10px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
@@ -54,768 +43,229 @@ ul li {
 ul li:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
 ul li.placeholder { text-align: center; color: var(--light-text); cursor: default; }
 
-/* This is the new flexbox container for the top row of the card */
 .card-header {
     display: flex;
-    justify-content: space-between; /* Pushes children to opposite ends */
-    align-items: flex-start;     /* Aligns items to the top */
-    gap: 8px;                    /* Adds a small space between columns if they touch */
-    margin-bottom: 8px;          /* Adds space below the header */
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
 }
-
-.card-title {
-    flex-grow: 1; /* Allows the title to take up all available space */
-}
-
-.card-title strong {
-    font-size: 18px; /* Make the address a bit more prominent */
-    line-height: 1.2;
-}
-
-.card-controls {
-    display: flex;
-    align-items: center;
-    gap: 16px;      /* Space between the icon group and the delete 'X' */
-    flex-shrink: 0; /* Prevents this container from shrinking */
-}
-
-/* This replaces the old .icons style */
-.icons {
-    /* This is no longer absolutely positioned */
-    display: flex;
-    gap: 4px; /* Space between each icon */
-    font-size: 20px;
-    color: var(--light-text);
-}
-
-.icons span {
-    margin-right: 0; /* Remove old margin */
-}
-
-/* This replaces the old .delete-btn style */
+.card-title { flex-grow: 1; }
+.card-title strong { font-size: 18px; line-height: 1.2; }
+.card-controls { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+.icons { display: flex; gap: 4px; font-size: 20px; color: var(--light-text); }
 .delete-btn {
-    /* This is no longer absolutely positioned */
     position: static; 
-    background: none;
-    color: #a00;
-    border: none;
-    font-size: 24px;
-    font-weight: bold;
-    cursor: pointer;
-    padding: 0;
-    line-height: 1; /* Ensures tight alignment */
-    transition: color 0.2s;
+    background: none; color: #a00; border: none; font-size: 24px; font-weight: bold;
+    cursor: pointer; padding: 0; line-height: 1; transition: color 0.2s;
 }
-
-.delete-btn:hover {
-    color: #e00;
-}
-
-/* --- END OF NEW CARD HEADER & ICON STYLES --- */
-
-.house-card .icons {
-    font-size: 18px;
-    margin-top: 8px;
-    color: var(--light-text);
-}
-.house-card .icons span { margin-right: 12px; }
-.house-card .icons .active { color: var(--primary-color); }
+.delete-btn:hover { color: #e00; }
+.house-card-details { font-size: 14px; color: var(--light-text); margin-top: 8px; }
+.house-card-details strong { color: var(--dark-text); }
 
 /* Buttons */
 button {
-    font-size: 16px;
-    padding: 10px 15px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    background-color: #e9e9ed;
-    cursor: pointer;
+    font-size: 16px; padding: 10px 15px; border-radius: 8px; border: 1px solid #ccc;
+    background-color: #e9e9ed; cursor: pointer;
 }
-
 button.primary-action {
-    font-size: 18px;
-    font-weight: bold;
-    background-color: var(--primary-color);
-    color: var(--white);
-    border: none;
-    width: 100%;
-    padding: 15px;
-    margin-bottom: 20px;
+    font-size: 18px; font-weight: bold; background-color: var(--primary-color);
+    color: var(--white); border: none; width: 100%; padding: 15px; margin-bottom: 20px;
 }
 button:hover { opacity: 0.9; }
-
-/* Style for the moved RVs button and other secondary actions */
 button.secondary-action {
-    background-color: #6c757d;
-    color: var(--white);
-    border: none;
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 20px;
+    background-color: #6c757d; color: var(--white); border: none; width: 100%;
+    padding: 12px; margin-bottom: 20px;
 }
-
 button.back-btn {
-    border: none;
-    background: none;
-    font-size: 16px;
-    color: var(--primary-color);
-    padding: 0;
-    margin-bottom: 15px;
-}
-
-.delete-btn:hover {
-    color: #e00; /* Make the 'X' brighter on hover */
+    border: none; background: none; font-size: 16px; color: var(--primary-color);
+    padding: 0; margin-bottom: 15px;
 }
 
 /* Detail View */
-.detail-section {
-    background-color: var(--white);
-    padding: 20px;
-    border-radius: 8px;
-    margin-top: 20px;
-}
-.detail-section h3 {
-    margin-top: 0;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 10px;
-}
-
+.detail-section { background-color: var(--white); padding: 20px; border-radius: 8px; margin-top: 20px; }
+.detail-section h3 { margin-top: 0; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
 #visit-notes-list p { margin: 5px 0 15px; }
-.edit-date-btn { cursor: pointer; color: var(--primary-color); font-size: 14px; margin-left: 10px; }
 
-/* Forms */
-.inline-form {
-    display: flex;
-    gap: 10px;
-    margin-top: 15px;
-    flex-wrap: wrap;
+/* Forms & Inputs */
+input[type="search"] {
+    width: 100%; padding: 12px; font-size: 16px; border: 1px solid #ccc;
+    border-radius: 8px; box-sizing: border-box; margin-bottom: 10px;
 }
-.inline-form input, .inline-form select, .inline-form textarea {
-    font-size: 16px;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    flex-grow: 1;
-}
-.inline-form button { flex-shrink: 0; }
-textarea { width: 100%; box-sizing: border-box; }
-
-#search-territory-input {
-    width: 100%;
-    padding: 12px;
-    font-size: 16px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    box-sizing: border-box; /* Ensures padding doesn't affect the width */
-    margin-bottom: 10px;
-}
-
-/* Data Management Section */
-.data-management-section {
-    margin-top: 10px;
-    padding: 20px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background-color: #fafafa;
-}
-.data-management-section button {
-    display: block;
-    width: 100%;
-    margin-bottom: 10px;
-    background-color: #d1d5db;
-    border-color: #b0b4ba;
-}
-
-/* Style for the menu toggle buttons */
 .menu-toggle-btn {
-    width: 100%;
-    margin-top: 30px;
-    margin-bottom: 0;
-    padding: 12px;
-    background-color: #e9e9ed;
-    border: 1px solid #ccc;
-    font-weight: bold;
+    width: 100%; margin-top: 30px; margin-bottom: 0; padding: 12px;
+    background-color: #e9e9ed; border: 1px solid #ccc; font-weight: bold;
 }
-
-/* The About/TODO button should not have a top margin */
-#about-menu-toggle-btn {
-    margin-top: 10px;
+#about-menu-toggle-btn { margin-top: 10px; }
+.data-management-section {
+    margin-top: 10px; padding: 20px; border: 1px solid var(--border-color);
+    border-radius: 8px; background-color: #fafafa;
 }
+.data-management-section button { display: block; width: 100%; margin-bottom: 10px; background-color: #d1d5db; border-color: #b0b4ba; }
 
-
-.controls { margin-bottom: 15px; }
-
-/* STYLES FOR ENHANCED HOUSE CARD */
-.house-card-details {
-    font-size: 14px;
-    color: var(--light-text);
-    margin-top: 8px;
+/* --- HEADER STYLES --- */
+body > header {
+    background-color: var(--primary-color); color: var(--white); padding: 15px 20px;
+    text-align: center; border-radius: 8px; margin-bottom: 20px;
 }
-
-.house-card-details strong {
-    color: var(--dark-text);
+.view-header {
+    display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px;
+    background-color: var(--primary-color); color: var(--white); padding: 15px; border-radius: 8px;
 }
-
-/* 'Log NH' BUTTON ON HOUSE CARDS */
-.log-nh-btn {
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
-    background-color: #f0ad4e;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    font-size: 14px;
-    font-weight: bold;
-    border-radius: 6px;
+.header-row-main { display: flex; align-items: center; gap: 15px; }
+.header-row-main h2 { margin: 0; font-size: 20px; }
+#territory-list-view .header-row-main { justify-content: center; }
+#street-list-view .header-row-main h2, #house-list-view .header-row-main h2 { flex-grow: 1; }
+.header-row-actions { display: flex; justify-content: space-between; align-items: center; }
+.view-header .back-btn { color: var(--white); font-weight: bold; padding: 0; margin: 0; background: none; border: none; }
+.view-header .primary-action {
+    background-color: var(--white); color: var(--primary-color); border: none; width: auto;
+    padding: 10px 15px; margin-bottom: 0; flex-shrink: 0;
 }
+.view-options { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 14px; }
 
-/* STYLES FOR THE NOTE-TAKING MODAL */
+/* --- MODAL STYLES --- */
 .modal-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: center;
+    align-items: center; z-index: 1000;
 }
-
-.modal-backdrop.hidden {
-    display: none;
-}
-
 .modal-content {
-    background-color: var(--white);
-    padding: 25px;
-    border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    width: 90%;
-    max-width: 500px;
-    position: relative;
+    background-color: var(--white); padding: 25px; border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3); width: 90%; max-width: 500px; position: relative;
 }
-
 .close-modal-btn {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 24px;
-    font-weight: bold;
-    background: none;
-    border: none;
-    color: #aaa;
-    cursor: pointer;
+    position: absolute; top: 10px; right: 15px; font-size: 24px; font-weight: bold;
+    background: none; border: none; color: #aaa; cursor: pointer;
 }
-
-.modal-content h3 {
-    margin-top: 0;
+.modal-content h3 { margin-top: 0; }
+.modal-content label { display: block; margin-top: 15px; font-weight: bold; margin-bottom: 5px; }
+.modal-content input[type="text"], .modal-content textarea {
+    width: 100%; font-size: 16px; padding: 10px; border: 1px solid #ccc;
+    border-radius: 8px; box-sizing: border-box;
 }
-
-.modal-content label {
-    display: block;
-    margin-top: 15px;
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-
-.modal-content input[type="text"],
-.modal-content textarea,
-.modal-content select {
-    width: 100%;
-    font-size: 16px;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    box-sizing: border-box; /* Important for padding */
-}
-
-.modal-toggle {
-    display: flex;
-    align-items: center;
-    font-weight: normal;
-}
-
-.modal-toggle input {
-    margin-right: 10px;
-    width: 18px;
-    height: 18px;
-}
-
-.modal-actions {
-    margin-top: 20px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-}
-
-.modal-actions button {
-    padding: 10px 20px;
-}
-
-.modal-toggles {
-    display: flex;
-    gap: 10px;
-    margin-top: 5px;
-    margin-bottom: 15px;
-}
-
+.modal-toggle { display: flex; align-items: center; font-weight: normal; }
+.modal-toggle input { margin-right: 10px; width: 18px; height: 18px; }
+.modal-actions { margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px; }
+.modal-actions button { padding: 10px 20px; }
+.modal-toggles { display: flex; gap: 10px; margin-top: 5px; margin-bottom: 15px; }
 .toggle-btn {
-    flex-grow: 1;
-    background-color: #f0f0f0; /* Default off state */
-    border: 1px solid #ccc;
-    color: #555;
-    font-weight: bold;
-    transition: background-color 0.2s, color 0.2s;
+    flex-grow: 1; background-color: #f0f0f0; border: 1px solid #ccc;
+    color: #555; font-weight: bold; transition: background-color 0.2s, color 0.2s;
 }
+.toggle-btn.active { background-color: var(--primary-color); color: var(--white); border-color: var(--primary-color); }
 
-.toggle-btn.active {
-    background-color: var(--primary-color); /* Active on state */
-    color: var(--white);
-    border-color: var(--primary-color);
+/* --- CARD & LIST SPECIFIC STYLES --- */
+.rv-badge, .ni-badge {
+    color: white; font-size: 12px; font-weight: bold; padding: 3px 8px;
+    border-radius: 4px; margin-left: 10px; vertical-align: middle;
 }
+.rv-badge { background-color: #28a745; }
+.ni-badge { background-color: #a00; }
+.house-card.is-ni { border-left: 4px solid #a00; }
 
-.rv-badge {
-    background-color: #28a745; /* A nice green color */
-    color: white;
-    font-size: 12px;
-    font-weight: bold;
-    padding: 3px 6px;
-    border-radius: 4px;
-    margin-left: 8px;
-}
-
-#new-person-fields {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border-color);
-}
-
-/* STYLES FOR PEOPLE LIST IN HOUSE DETAILS */
 #people-list li {
-    display: flex; /* Use flexbox for easy alignment */
-    justify-content: space-between; /* Pushes name and actions to opposite ends */
-    align-items: center; /* Vertically aligns items in the middle */
-    padding-bottom: 15px; /* Override the default large padding */
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 15px 15px 15px 0; /* Adjust padding */
+}
+.person-name { font-size: 18px; }
+.person-actions { display: flex; gap: 10px; }
+.icon-btn {
+    background: none; border: none; cursor: pointer; padding: 5px; font-size: 22px;
+    line-height: 1; color: var(--light-text); transition: color 0.2s;
+}
+.icon-btn:hover { color: var(--dark-text); }
+.icon-btn.delete-person-btn { color: #a00; font-weight: bold; }
+.icon-btn.delete-person-btn:hover { color: #e00; }
+
+.combobox-container { position: relative; margin-bottom: 15px; }
+.suggestions-list {
+    position: absolute; top: 100%; left: 0; right: 0; background-color: var(--white);
+    border: 1px solid #ccc; border-top: none; border-radius: 0 0 8px 8px;
+    z-index: 1001; max-height: 150px; overflow-y: auto;
+}
+.suggestion-item { padding: 12px 15px; cursor: pointer; font-size: 16px; }
+.suggestion-item:hover, .suggestion-item.active { background-color: var(--primary-color); color: var(--white); }
+.suggestion-item.is-new { font-style: italic; color: #555; }
+#modal-rv-toggle { display: none; }
+
+.filter-controls { margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; }
+.filter-btn { flex-grow: 1; background-color: #f0f0f0; border: 1px solid #ccc; color: #555; font-weight: bold; }
+.filter-btn.active { background-color: var(--primary-color); color: var(--white); border-color: var(--primary-color); }
+
+.card-actions {
+    position: absolute; bottom: 8px; left: 10px; right: 10px;
+    display: flex; gap: 8px; justify-content: flex-start;
+}
+.card-actions button {
+    flex-grow: 1; padding: 6px 8px; font-size: 13px; font-weight: bold;
+    border-radius: 6px; border: none; color: white; cursor: pointer;
+    text-align: center; transition: opacity 0.2s;
+}
+.card-actions button:hover { opacity: 0.85; }
+.log-nh-btn { position: static; background-color: #f0ad4e; }
+.sent-letter-btn { background-color: #337ab7; }
+.sent-letter-btn.letter-sent { background-color: #777; color: #eee; }
+.phone-call-btn { background-color: #5cb85c; }
+
+#territory-list li, #street-list li {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 15px;
+}
+.territory-actions, .street-actions { display: flex; align-items: center; gap: 20px; flex-shrink: 0; }
+
+#visit-notes-list li { padding-bottom: 15px; }
+.visit-note-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.visit-note-date { display: flex; align-items: center; gap: 8px; font-weight: bold; }
+.visit-note-body { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.visit-note-body p { flex-grow: 1; margin: 0; }
+
+.street-card-info { flex-grow: 1; }
+.street-name { font-size: 18px; }
+.street-metadata { font-size: 13px; color: var(--light-text); margin-top: 6px; }
+.street-metadata strong { color: var(--dark-text); }
+
+/* --- COMPLETED ITEMS & TOGGLE SWITCH --- */
+#territory-list > li.is-complete .territory-card-info::before,
+#street-list > li.is-complete .street-card-info::before {
+    content: '✔'; color: var(--success-color); font-weight: bold; margin-right: 8px;
+}
+#territory-list > li.is-complete, #street-list > li.is-complete { opacity: 0.7; background-color: #f8f9fa; }
+body.hide-completed #territory-list > li.is-complete,
+body.hide-completed #street-list > li.is-complete { display: none; }
+.switch{position:relative;display:inline-block;width:40px;height:22px}.switch input{opacity:0;width:0;height:0}.slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#ccc;transition:.4s;border-radius:22px}.slider:before{position:absolute;content:"";height:16px;width:16px;left:3px;bottom:3px;background-color:#fff;transition:.4s;border-radius:50%}input:checked+.slider{background-color:var(--primary-color)}input:checked+.slider:before{transform:translateX(18px)}
+
+/* --- START: NEW STYLES FOR IMPORT CONFLICT MODAL --- */
+.import-choices {
+    margin-top: 20px;
+    border-top: 1px solid var(--border-color);
     padding-top: 15px;
 }
 
-.person-name {
-    font-size: 18px; /* Make the name a bit larger */
-}
-
-.person-actions {
-    display: flex;
-    gap: 10px; /* Adds space between the two icons */
-}
-
-/* STYLES FOR THE NEW ICON BUTTONS */
-.icon-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 5px;
-    font-size: 22px; /* Makes the icons larger */
-    line-height: 1; /* Ensures tight vertical alignment */
-    color: var(--light-text);
-    transition: color 0.2s;
-}
-
-.icon-btn:hover {
-    color: var(--dark-text);
-}
-
-/* Make the delete icon red, consistent with other delete buttons */
-.icon-btn.delete-person-btn {
-    color: #a00;
-    font-weight: bold;
-}
-
-.icon-btn.delete-person-btn:hover {
-    color: #e00;
-}
-
-/* STYLES FOR COMBOBOX */
-.combobox-container {
-    position: relative; /* Establishes a positioning context for the suggestions list */
-    margin-bottom: 15px; /* Adds space below the input */
-}
-
-.suggestions-list {
-    position: absolute; /* Lifts the list out of the normal flow */
-    top: 100%; /* Positions it right below the input field */
-    left: 0;
-    right: 0;
-    background-color: var(--white);
-    border: 1px solid #ccc;
-    border-top: none; /* Avoids a double border with the input */
-    border-radius: 0 0 8px 8px; /* Rounds the bottom corners */
-    z-index: 1001; /* Ensures it appears above other modal content */
-    max-height: 150px; /* Limits the height for long lists */
-    overflow-y: auto; /* Adds a scrollbar if the list is too long */
-}
-
-.suggestions-list.hidden {
-    display: none;
-}
-
-.suggestion-item {
-    padding: 12px 15px;
-    cursor: pointer;
-    font-size: 16px;
-}
-
-.suggestion-item:hover, .suggestion-item.active {
-    background-color: var(--primary-color);
-    color: var(--white);
-}
-
-.suggestion-item.is-new {
-    font-style: italic;
-    color: #555;
-}
-
-#modal-rv-toggle {
-    display: none; /* Hidden by default, JS will show it */
-}
-
-/* MODIFIED: STYLES FOR VERSION FOOTER to match other collapsible sections */
-.version-footer {
-    margin-top: 10px;
-    padding: 20px;
-    border: 1px solid var(--border-color);
+.import-choices label {
+    display: block;
+    padding: 10px;
+    border: 1px solid #ddd;
     border-radius: 8px;
-    background-color: #fafafa;
-}
-
-.version-footer h3 {
-    margin-top: 0;
     margin-bottom: 10px;
+    cursor: pointer;
+    font-weight: normal;
 }
 
-.version-footer p {
-    font-size: 14px;
-    color: var(--light-text);
-    margin: 4px 0;
-    background-color: transparent;
-    padding: 0;
-    box-shadow: none;
-    cursor: default;
-}
-
-/* STYLES FOR RV LIST VIEW */
-#rv-list li {
-    padding-bottom: 15px; /* Reduce the large default bottom padding */
-}
-
-.rv-details {
-    font-size: 14px;
-    color: var(--light-text);
-    margin-top: 8px;
-    line-height: 1.5;
-}
-
-.rv-details strong {
-    color: var(--dark-text);
-}
-
-/* STYLES FOR NOT INTERESTED (NI) BADGE */
-.ni-badge {
-    background-color: #a00; /* A strong red */
-    color: white;
-    font-size: 12px;
-    font-weight: bold;
-    padding: 3px 8px;
-    border-radius: 4px;
-    margin-left: 10px;
-    vertical-align: middle; /* Aligns the badge nicely with the address text */
-}
-
-/* Optional: Add a subtle style to the entire list item for NI houses */
-.house-card.is-ni {
-    border-left: 4px solid #a00;
-}
-
-/* STYLES FOR ADVANCED FILTER CONTROLS */
-.filter-controls {
-    margin-bottom: 15px;
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.filter-btn {
-    flex-grow: 1; /* Allows buttons to share space */
-    background-color: #f0f0f0;
-    border: 1px solid #ccc;
-    color: #555;
-    font-weight: bold;
-    transition: background-color 0.2s, color 0.2s;
-}
-
-.filter-btn.active {
-    background-color: var(--primary-color);
-    color: var(--white);
+.import-choices label:has(input:checked) {
+    background-color: #eef2f8;
     border-color: var(--primary-color);
 }
 
-/* --- STYLES FOR CARD ACTION BUTTONS --- */
-
-/* Container for the buttons at the bottom of the card */
-.card-actions {
-    position: absolute;
-    bottom: 8px;
-    left: 10px;
-    right: 10px;
-    display: flex;
-    gap: 8px; /* Space between buttons */
-    justify-content: flex-start;
+.import-choices input[type="radio"] {
+    margin-right: 10px;
 }
 
-/* Base style for all small action buttons on the card */
-.card-actions button {
-    flex-grow: 1; /* Allow buttons to share the space */
-    padding: 6px 8px;
-    font-size: 13px;
-    font-weight: bold;
-    border-radius: 6px;
-    border: none;
-    color: white;
-    cursor: pointer;
-    text-align: center;
-    transition: opacity 0.2s;
-}
-
-.card-actions button:hover {
-    opacity: 0.85;
-}
-
-/* Overwrite specific button styles */
-.log-nh-btn {
-    position: static; /* Remove absolute positioning */
-    background-color: #f0ad4e; /* Keep the orange color for NH */
-}
-
-.sent-letter-btn {
-    background-color: #337ab7; /* A nice blue for letters */
-}
-
-/* This new class will be added by JS to show the action is complete */
-.sent-letter-btn.letter-sent {
-    background-color: #777; /* A neutral gray to indicate "done" */
-    color: #eee;
-}
-
-.sent-letter-btn.letter-sent:hover {
-    opacity: 0.9; /* Slightly lighten on hover to show it's still clickable */
-}
-
-.phone-call-btn {
-    background-color: #5cb85c; /* A friendly green for calls */
-}
-
-/* Adjust the main card padding to make space for the buttons */
-ul li {
-    /* This rule should already exist, just confirm the padding */
-    padding-bottom: 50px; 
-}
-
-/* --- STYLES FOR TERRITORY LIST LAYOUT --- */
-#territory-list li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: 15px; /* Resetting padding for flex alignment */
-}
-
-.territory-actions {
-    display: flex;
-    align-items: center;
-    gap: 20px; /* Controls the space between the pencil and the X */
-    flex-shrink: 0; /* Prevents the buttons from shrinking */
-}
-
-/* --- NEW: STYLES FOR STREET LIST LAYOUT --- */
-#street-list li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: 15px; /* Resetting padding for flex alignment */
-}
-
-.street-actions {
-    display: flex;
-    align-items: center;
-    gap: 20px; /* Controls the space between the pencil and the X */
-    flex-shrink: 0; /* Prevents the buttons from shrinking */
-}
-
-/* --- START: STYLES FOR VISIT HISTORY NOTES --- */
-#visit-notes-list li {
-    padding-bottom: 15px; /* Reduce default bottom padding for a tighter look */
-}
-
-.visit-note-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 8px;
-}
-
-.visit-note-date {
-    display: flex;
-    align-items: center;
-    gap: 8px; /* Space between date and edit icon */
-    font-weight: bold;
-    color: var(--dark-text);
-}
-
-.visit-note-body {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 8px; /* Space between note text and edit icon */
-}
-
-.visit-note-body p {
-    flex-grow: 1; /* Allows the text to take up available space */
-    margin: 0; /* Removes default paragraph margin */
-}
-
-/* We need to override the old edit-date-btn style */
-.edit-date-btn {
-    cursor: pointer;
-    color: var(--primary-color);
-    font-size: 14px;
-    margin-left: 0; /* Remove old margin */
-}
-/* --- END: STYLES FOR VISIT HISTORY NOTES --- */
-
-/* --- START: STYLES FOR STREET CARD METADATA --- */
-.street-card-info {
-    flex-grow: 1; /* Allows this info block to take up the available space */
-}
-
-.street-name {
-    font-size: 18px; /* Making the name stand out */
-}
-
-.street-metadata {
+.import-choices small {
+    display: block;
+    margin-top: 5px;
     font-size: 13px;
     color: var(--light-text);
-    margin-top: 6px;
+    padding-left: 28px; /* Aligns with text above */
 }
-
-.street-metadata strong {
-    color: var(--dark-text); /* Makes the numbers slightly darker than the labels */
-}
-/* --- END: STYLES FOR STREET CARD METADATA --- */
-
-body > header {
-    background-color: var(--primary-color);
-    color: var(--white);
-    padding: 15px 20px;
-    text-align: center;
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-
-/* The main blue header container */
-.view-header {
-    display: flex;
-    flex-direction: column; 
-    gap: 15px; 
-    margin-bottom: 20px;
-    background-color: var(--primary-color);
-    color: var(--white);
-    padding: 15px;
-    border-radius: 8px;
-}
-
-/* --- Row 1: Navigation & Context --- */
-.header-row-main {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-.header-row-main h2 {
-    margin: 0;
-    font-size: 20px;
-}
-
-/* NEW: This rule centers the title ONLY on the Territory page */
-#territory-list-view .header-row-main {
-    justify-content: center;
-}
-
-/* NEW: This rule makes the title fill the space ONLY on the Street page */
-#street-list-view .header-row-main h2 {
-    flex-grow: 1;
-}
-
-
-/* --- Row 2: Actions & Options --- */
-.header-row-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-/* --- Component Styles within the Header --- */
-.view-header .back-btn {
-    color: var(--white);
-    font-weight: bold;
-    padding: 0;
-    margin: 0;
-    background: none;
-    border: none;
-}
-.view-header .view-options {
-    margin-left: 0;
-}
-.view-header .primary-action {
-    background-color: var(--white);
-    color: var(--primary-color);
-    border: none;
-    width: auto;
-    padding: 10px 15px;
-    margin-bottom: 0;
-    flex-shrink: 0;
-}
-.view-header .primary-action:hover {
-    opacity: 0.9;
-}
-
-/* --- START: STYLES FOR COMPLETED ITEMS & TOGGLE --- */
-.view-options {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-left: auto; /* Pushes the toggle to the left of the "Add New" button */
-    font-size: 14px;
-}
-
-#territory-list > li.is-complete .territory-card-info::before,
-#street-list > li.is-complete .street-card-info::before {
-    content: '✔';
-    color: var(--success-color);
-    font-weight: bold;
-    margin-right: 8px;
-}
-
-#territory-list > li.is-complete,
-#street-list > li.is-complete {
-    opacity: 0.7;
-    background-color: #f8f9fa; /* A very light gray */
-}
-
-/* Logic to hide completed items when the toggle is active */
-body.hide-completed #territory-list > li.is-complete,
-body.hide-completed #street-list > li.is-complete {
-    display: none;
-}
-
-/* Basic Toggle Switch Styles */
-.switch{position:relative;display:inline-block;width:40px;height:22px}.switch input{opacity:0;width:0;height:0}.slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#ccc;transition:.4s;border-radius:22px}.slider:before{position:absolute;content:"";height:16px;width:16px;left:3px;bottom:3px;background-color:#fff;transition:.4s;border-radius:50%}input:checked+.slider{background-color:var(--primary-color)}input:checked+.slider:before{transform:translateX(18px)}
-/* --- END: STYLES FOR COMPLETED ITEMS & TOGGLE --- */
+/* --- END: NEW STYLES FOR IMPORT CONFLICT MODAL --- */

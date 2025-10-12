@@ -1,9 +1,10 @@
+<!-- 1.12.01 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ministry Masorite</title>
+    <title>Ministry Scribe</title>
     <link rel="stylesheet" href="style.css">
     <!-- For PDF Generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -11,7 +12,7 @@
 <body>
 
     <header>
-        <h1>Ministry Masorite</h1>
+        <h1>Ministry Scribe</h1>
     </header>
 
     <main>
@@ -47,79 +48,15 @@
         <button id="data-menu-toggle-btn" class="menu-toggle-btn">Data Menu ⚙️</button>
         <div id="territory-data-management" class="data-management-section hidden">
             <h3>Data Management</h3>
-            <button id="import-csv-btn">Import Territory from CSV</button>
-            <button id="restore-btn">Import from CSV</button>
-            <button id="export-full-btn">Export Full Backup (CSV)</button>
-            <input type="file" id="restore-file-input" accept=".csv" hidden>
-            <input type="file" id="import-csv-input" accept=".csv" hidden>
+            <button id="import-file-btn">Import from File</button>
+            <button id="export-full-json-btn">Export Full Backup (JSON)</button>
+            <input type="file" id="import-file-input" accept=".json,application/json" hidden>
         </div>
 
         <button id="about-menu-toggle-btn" class="menu-toggle-btn">About / TODOs ℹ️</button>
         <div id="about-section" class="version-footer hidden">
                 <h3>Version & TODO</h3>
-                <p><strong>Thank you Sarah, Norman, Nathaniel, Loly for the GREAT FEEDBACK so far!</strong></p>
-                <h3>We've reached version 1.0 ya'll! 1.01.00 We're officially out of Beta!</h3>
-                <p>1.01.03 Switched to CSV file format for import/export.</p>
-                <p>1.02.03 REFACTOR!</p>
-                <p>1.02.03 REFACTOR COMPLETE!</p>
-                <p>1.08.01 Add new modal to capture phone call details</p>
-                <p><strong>1.10.03</strong> List meta data in street card. x/x visited, x/x letters, x NT etc....</p>
-                <p><strong>Under development 1.11.04</strong> "Territory Complete" flag [active=false]</p>
-                <p>Hide [active=false] territories</p>
-                <p>Filter/Export only NH</p>
-                <p>Report bug from within app</p>
-                <p>Implement DNC (maybe)</p>
-                <p>--------------------------------------------------</p>
-                <p>0.xx.xx Filter view, only see NH</p>
-                <p>0.xx.xx Maintain persistant screen position when modifers are used</p>
-                <p>0.xx.xx Houses should sort by house number</p>
-                <p>0.xx.xx Implement individual street sharing (export/import) (Sarah)</p>
-                <p>0.21.03 improve UI/UX for householder name edit/delete buttons</p>
-                <p>0.21.04 Move "+ Add New Visit Note" button to top of Note List</p>
-                <p>0.21.05 update footer position and format</p>
-                <p>0.22.00 Fix Update Date calculation error</p>
-                <p>0.22.00 Add HH:MM to visit date (Nathaniel)</time></p>
-                <p>0.23.00 Confirm HH:MM can be properly edited along with date</p>
-                <p>0.23.00 Edit Territory name/number</p>
-                <p>0.24.01 Filter view for RVs</p>
-                <p>0.25.01 Implement Not Interested attribute</p>
-                <p>0.26.04 Filter view for unvisited houses by street</p>
-                <p>0.27.02 Implement letter writing and phone call buttons</p>
-                <p>0.28.00 'Sent Letter' changed to 'Send Letter' then toggles to 'Sent Letter' with button color change</p>
-                <p>0.29.03 Fix icon overcrowding</p>
-                <p>0.30.00 Add more robust backup/restore status messages</p>
-                <p>0.31.00 Retain scroll position when returning to previous screen</p>
-                <p>0.32.00 Hide backup and less-requently used buttons. Move + Add territory button to top of screen.</p>
-                <p>0.33.00 Better manage footer display.</p>
-                <p>0.34.00 Scroll position retained when using house modifier buttons</p>
-                <p>--------------------------------------------------</p>
-                <p>0.35.01</p>
-                <p>When creating a new house record</p>
-                <p>NH should be toggled true by default</p>
-                <p>Add a field that the user can put notes into that will be logged in the Visit History section for that house.</p>
-                <p>Add a note in the Visit History that shows the "Created Date" of the record.</p>
-                <p>--------------------------------------------------</p>
-                <p>0.36.00</p>
-                <p>Houses now sort by number instead of date added</p>
-                <p>Using the "natural sort" method.</p>
-                <p>It will correctly sort house numbers like "2 Main St", "10 Main St", and "100 Main St" in the right numerical order, instead of treating them like simple text.</p>
-                <p>--------------------------------------------------</p>
-                <p>0.37.05</p>
-                <p>New level added:
-                <p>Before: Territory/Street --> House</p>
-                <p>After: Territory --> Street --> House</p>
-                <p>Resolves scalability problem by grouping together individual streets under a main territory ubmrella</p>
-                <p>--------------------------------------------------</p>
-                <p>0.38.00</p>
-                <p>Database version increased from version 2 to version 3</p>
-                <p>This would break existing users data when loading this version.</p>
-                <p>Code upgraded to account for this.</p>
-                <p>Gave the onupgradeneeded function instructions on how to "move the furniture."</p>
-                <p>For every territory that exists in the old database, we will automatically create a corresponding "default" street. Then, we will go through every single old house, find its new default street, and assign the correct streetId to it.</p>
-                <p>--------------------------------------------------</p>
-                <p>0.39.00 Import streets & houses via CSV</p>
-                <p>0.40.01 Fix eventListener on Export Territory button</p>
-                <p>0.41.03 Change DB backup file extension to .txt for compatibility</p>
+                <p><strong>1.06.01</strong> Major overhaul of Import/Export system. Implemented robust JSON backup and restore with mobile sharing support and conflict resolution.</p>
         </div>
     </div>
 
@@ -147,16 +84,22 @@
         <button id="export-territory-menu-toggle-btn" class="menu-toggle-btn">Export Options 📤</button>
         <div id="territory-export-management" class="data-management-section hidden">
             <h3>Export This Entire Territory</h3>
-            <button id="export-territory-mscribe-btn">Export Territory (CSV)</button>
+            <button id="export-territory-json-btn">Export Territory (JSON)</button>
         </div>
     </div>
 
     <!-- LEVEL 3: This screen shows the list of houses for a single street -->
     <div id="house-list-view" class="view">
-        <button class="back-btn" data-target="street-list-view">&larr; Back to Street List</button>
-        <h2 id="house-list-title"></h2>
+        <header class="view-header">
+             <div class="header-row-main">
+                <button class="back-btn" data-target="street-list-view">&larr; Back to Streets</button>
+                <h2 id="house-list-title"></h2>
+            </div>
+            <div class="header-row-actions">
+                 <button id="add-house-btn" class="primary-action">+ Add New House</button>
+            </div>
+        </header>
 
-        <!-- ADVANCED FILTER CONTROLS -->
         <div class="filter-controls">
             <button class="filter-btn" data-filter="visited">Hide Visited</button>
             <button class="filter-btn" data-filter="ni">Hide NI</button>
@@ -164,13 +107,12 @@
             <button class="filter-btn" data-filter="gated">Hide Gated</button>
         </div>
         
-        <button id="add-house-btn" class="primary-action">+ Add New House</button>
         <ul id="house-list"></ul>
         
         <button id="export-street-menu-toggle-btn" class="menu-toggle-btn">Export Options 📤</button>
         <div id="street-data-management" class="data-management-section hidden">
             <h3>Export This Street</h3>
-            <button id="export-street-mscribe-btn">Export this Street (CSV)</button>
+            <button id="export-street-json-btn">Export this Street (JSON)</button>
             <button id="export-pdf-btn">Export as Printable PDF</button>
         </div>
     </div>
@@ -191,17 +133,13 @@
 
         <div class="detail-section">
            <h3>Individuals Met</h3>
-           <ul id="people-list">
-               <!-- Names will be dynamically inserted here -->
-           </ul>
+           <ul id="people-list"></ul>
         </div>
 
         <div class="detail-section">
             <h3>Visit History</h3>
             <button id="add-visit-btn" class="primary-action">+ Add New Visit Note</button>
-            <ul id="visit-notes-list">
-               <!-- Visit notes will be dynamically inserted here -->
-            </ul>
+            <ul id="visit-notes-list"></ul>
         </div>
     </div>
 
@@ -209,9 +147,7 @@
     <div id="rv-list-view" class="view">
         <button class="back-btn" data-target="territory-list-view">&larr; Back to Territories</button>
         <h2>Return Visits (RVs)</h2>
-        <ul id="rv-list">
-            <!-- RVs will be dynamically inserted here -->
-        </ul>
+        <ul id="rv-list"></ul>
     </div>
 
     <!-- NOTE-TAKING MODAL -->
@@ -223,9 +159,7 @@
             <label for="modal-person-input">Person Met</label>
             <div class="combobox-container">
                 <input type="text" id="modal-person-input" placeholder="Type or select a name..." autocomplete="off">
-                <div id="modal-suggestions-list" class="suggestions-list hidden">
-                    <!-- Suggestions will be populated by JavaScript -->
-                </div>
+                <div id="modal-suggestions-list" class="suggestions-list hidden"></div>
             </div>
 
             <label class="modal-toggle" id="modal-rv-toggle">
@@ -242,7 +176,7 @@
             </label>
 
             <div class="modal-actions">
-                <button id="modal-cancel-btn">Cancel</button>
+                <button id="modal-note-cancel-btn">Cancel</button>
                 <button id="modal-save-note-btn" class="primary-action">Save Note</button>
             </div>
         </div>
@@ -268,7 +202,7 @@
         </div>
     </div>
 
-    <!-- ADD NEW STREET MODAL (ENTIRELY NEW) -->
+    <!-- ADD NEW STREET MODAL -->
     <div id="street-modal" class="modal-backdrop hidden">
         <div class="modal-content">
             <button class="close-modal-btn">&times;</button>
@@ -313,10 +247,7 @@
         </div>
     </div>
        
-     <!-- PHONE CALL MODAL 
-      This HTML creates the modal window. We are reusing existing CSS classes like .modal-backdrop, .modal-content, and .toggle-btn, 
-      so it will automatically match the style of your other modals without requiring any changes to style.css.
-      -->
+     <!-- PHONE CALL MODAL -->
     <div id="phone-call-modal" class="modal-backdrop hidden">
         <div class="modal-content">
             <button class="close-modal-btn">&times;</button>
@@ -341,13 +272,40 @@
         </div>
     </div>
 
+    <!-- IMPORT CONFLICT MODAL (NEW) -->
+    <div id="import-conflict-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <button class="close-modal-btn">&times;</button>
+            <h3>Existing Territory Found</h3>
+            <p>The file you are importing contains 'Territory #<strong id="conflict-territory-number"></strong>', which already exists. How would you like to proceed?</p>
+
+            <div class="import-choices">
+                <label>
+                    <input type="radio" name="import-choice" id="import-choice-merge" value="merge" checked>
+                    <strong>Merge with Existing Data (Recommended)</strong>
+                    <small>This will add new streets and houses from the file. No existing data will be deleted. This is the safest option.</small>
+                </label>
+                <label>
+                    <input type="radio" name="import-choice" id="import-choice-overwrite" value="overwrite">
+                    <strong>Overwrite Existing Data</strong>
+                    <small>This will <strong style="color: #a00;">delete</strong> your current territory and all its data, replacing it with the version from the file. This cannot be undone.</small>
+                </label>
+            </div>
+
+            <div class="modal-actions">
+                <button id="modal-import-cancel-btn">Cancel</button>
+                <button id="modal-import-confirm-btn" class="primary-action">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     </main>
 
     <!-- App Logic -->
-        <script src="database.js"></script>
-        <script src="ui.js"></script>
-        <script src="database-api.js"></script>
-        <script src="events.js"></script>
-        <script src="app.js"></script>
+    <script src="database.js"></script>
+    <script src="ui.js"></script>
+    <script src="database-api.js"></script>
+    <script src="events.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
