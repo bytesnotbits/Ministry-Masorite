@@ -1,4 +1,4 @@
-// Version 1.10.01
+// Version 1.11.01
 // --- FILE: ui.js ---
 // This file contains all functions related to UI rendering and DOM manipulation.
 
@@ -81,16 +81,21 @@ async function renderStreets(territory) {
             const streetHouses = housesByStreet.get(street.id) || [];
             const houseCount = streetHouses.length;
 
-            // Calculate the metadata from the street's houses
-            const unvisitedCount = streetHouses.filter(h => h.isCurrentlyNH).length;
-            const gatedCount = streetHouses.filter(h => h.hasGate).length;
-            const ntCount = streetHouses.filter(h => h.noTrespassing).length;
+            // Calculate all the required metadata stats from the street's houses.
+            const nhCount = streetHouses.filter(h => h.isCurrentlyNH).length;
             const niCount = streetHouses.filter(h => h.isNotInterested).length;
+            const ntCount = streetHouses.filter(h => h.noTrespassing).length;
+            const gatedCount = streetHouses.filter(h => h.hasGate).length;
+            const mailboxCount = streetHouses.filter(h => h.hasMailbox).length;
+            const rvCount = streetHouses.filter(h => rvHouseIds.has(h.id)).length;
             
-            // Build the metadata HTML string, only showing stats that are greater than zero.
-            let metaHtmlParts = [];
-            if (unvisitedCount > 0) metaHtmlParts.push(`<strong>${unvisitedCount}</strong> Unvisited`);
+            // Build the metadata HTML string. The primary stat is now the unvisited count.
+            let metaHtmlParts = [`<strong>${nhCount}</strong> of <strong>${houseCount}</strong> Unvisited`];
+            
+            // Add the other stats only if their count is greater than zero
             if (niCount > 0) metaHtmlParts.push(`<strong>${niCount}</strong> NI`);
+            if (rvCount > 0) metaHtmlParts.push(`<strong>${rvCount}</strong> RV`);
+            if (mailboxCount > 0) metaHtmlParts.push(`<strong>${mailboxCount}</strong> MB`);
             if (gatedCount > 0) metaHtmlParts.push(`<strong>${gatedCount}</strong> Gated`);
             if (ntCount > 0) metaHtmlParts.push(`<strong>${ntCount}</strong> NT`);
             
@@ -99,7 +104,7 @@ async function renderStreets(territory) {
             // The new innerHTML structure using the CSS classes we just added
             li.innerHTML = `
                 <div class="street-card-info">
-                    <span class="street-name">${street.name} (${houseCount} houses)</span>
+                    <span class="street-name">${street.name}</span>
                     <div class="street-metadata">${metaHtmlParts.join(' &bull; ')}</div>
                 </div>
                 <div class="street-actions">
