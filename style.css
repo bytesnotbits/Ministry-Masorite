@@ -1,4 +1,4 @@
-/* Version 1.11.01 */
+/* Version 1.11.02 */
 
 /* General Body and Font Styling */
 :root {
@@ -712,15 +712,47 @@ ul li {
 }
 /* --- END: STYLES FOR STREET CARD METADATA --- */
 
-header {
+body > header {
+    background-color: var(--primary-color);
+    color: var(--white);
+    padding: 15px 20px;
+    text-align: center;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.view-header {
     display: flex;
     align-items: center;
     gap: 15px;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
+    background-color: var(--primary-color); /* The blue background from the screenshot */
+    color: var(--white);
+    padding: 15px;
+    border-radius: 8px;
 }
 
-header h2 {
-    margin: 0; /* Removes default heading margin */
+/* Make the title inside the view header white */
+.view-header h2 {
+    margin: 0;
+    flex-grow: 1; /* Allow the title to take up space */
+}
+
+/* Make the back button white and visible */
+.view-header .back-btn {
+    color: var(--white);
+    font-weight: bold;
+}
+
+/* Make the Add New button have a "ghost" style so it's visible */
+.view-header .primary-action {
+    background-color: transparent;
+    border: 2px solid var(--white);
+    color: var(--white);
+    width: auto; /* Override the 100% width */
+    padding: 10px 15px;
+    margin-bottom: 0; /* Override the margin */
+    flex-shrink: 0;
 }
 
 /* --- START: STYLES FOR COMPLETED ITEMS & TOGGLE --- */

@@ -1,4 +1,4 @@
-// Version 1.11.01
+// Version 1.11.02
 // --- FILE: ui.js ---
 // This file contains all functions related to UI rendering and DOM manipulation.
 
@@ -76,14 +76,26 @@ async function renderTerritories() {
 
 async function renderStreets(territory) {
     streetList.innerHTML = '';
-    document.getElementById('street-list-title').textContent = `Territory #${territory.number}: ${territory.description}`;
+    // Let's use our new header for the title.
+    const streetListTitle = document.querySelector('#street-list-view .view-header h2');
+    streetListTitle.innerHTML = `Territory #${territory.number}: <small>${territory.description}</small>`;
+    
     const streets = (await getByIndex('streets', 'territoryId', territory.id)).sort((a,b) => a.name.localeCompare(b.name));
 
     if (streets.length === 0) {
         streetList.innerHTML = '<li class="placeholder">No streets added to this territory yet.</li>';
     } else {
-        const allHouses = await getByIndex('houses', 'streetId', streets.map(s => s.id));
+        // --- START OF FIX ---
+        // 1. Fetch ALL houses and people from the database once. This is efficient.
+        const allHousesInDB = await getAllFromStore('houses');
         const allPeople = await getAllFromStore('people');
+        
+        // 2. Create a Set of the street IDs for this territory for a fast lookup.
+        const streetIdsInTerritory = new Set(streets.map(s => s.id));
+        
+        // 3. Filter all houses to get only the ones for the current territory.
+        const allHouses = allHousesInDB.filter(h => streetIdsInTerritory.has(h.streetId));
+        // --- END OF FIX ---
         
         const housesByStreet = new Map(streets.map(s => [s.id, []]));
         allHouses.forEach(h => {
@@ -97,10 +109,8 @@ async function renderStreets(territory) {
             const houseCount = streetHouses.length;
             const nhCount = streetHouses.filter(h => h.isCurrentlyNH).length;
 
-            // A street is complete if it has houses and none are unvisited.
             const isComplete = houseCount > 0 && nhCount === 0;
             
-            // ... (rest of the metadata calculation is the same)
             const niCount = streetHouses.filter(h => h.isNotInterested).length;
             const ntCount = streetHouses.filter(h => h.noTrespassing).length;
             const gatedCount = streetHouses.filter(h => h.hasGate).length;
@@ -117,7 +127,7 @@ async function renderStreets(territory) {
             const li = document.createElement('li');
             li.dataset.id = street.id;
             if (isComplete) {
-                li.classList.add('is-complete'); // Apply completion class
+                li.classList.add('is-complete');
             }
             
             li.innerHTML = `
