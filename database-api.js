@@ -1,4 +1,4 @@
-// Version 1.12.01
+// Version 1.12.02
 // --- FILE: database-api.js ---
 // This file acts as a data layer, handling complex data operations like import, export, and backup.
 
@@ -15,7 +15,7 @@ const { jsPDF } = window.jspdf;
 async function bundleDataForExport(scope = 'full', id = null) {
     const bundle = {
         meta: {
-            version: '1.06.01',
+            version: '1.12.02',
             exportDate: new Date().toISOString(),
             scope: scope,
             appName: 'MinistryScribe'
@@ -131,7 +131,6 @@ function handleFileImport(event, callback) {
             const content = e.target.result;
             const data = JSON.parse(content);
 
-            // Basic validation
             if (!data.meta || data.meta.appName !== 'MinistryScribe' || !data.data) {
                 throw new Error("This does not appear to be a valid Ministry Scribe file.");
             }
@@ -150,7 +149,7 @@ function handleFileImport(event, callback) {
             alert(`Import failed: ${error.message}`);
             console.error("Import Error:", error);
         } finally {
-            event.target.value = ''; // Reset file input
+            event.target.value = '';
         }
     };
     reader.readAsText(file);
@@ -158,11 +157,8 @@ function handleFileImport(event, callback) {
 
 async function processFullImport(data) {
     await clearAllStores();
-    // This simple loop works because there are no existing IDs to conflict with.
     for (const storeName in data) {
         for (const item of data[storeName]) {
-            // The imported data should not have an ID, allowing autoIncrement to work.
-            // If it does, we must remove it to avoid constraint errors on a fresh DB.
             delete item.id;
             await addToStore(storeName, item);
         }
@@ -179,7 +175,6 @@ async function processPartialImport(bundle, callback) {
     if (conflict) {
         showImportConflictModal(bundle, conflict, callback);
     } else {
-        // No conflict, so we can just merge it in.
         await executeMerge(bundle.data);
         alert(`Territory #${importedTerritory.number} imported successfully.`);
         if (callback) callback();
@@ -187,9 +182,7 @@ async function processPartialImport(bundle, callback) {
 }
 
 async function executeMerge(data) {
-    // This is a simplified merge. A true merge would be much more complex.
-    // For now, it adds non-conflicting data.
-    const territoryMap = new Map(); // Old ID -> New ID
+    const territoryMap = new Map();
     const streetMap = new Map();
     const houseMap = new Map();
 
@@ -231,12 +224,10 @@ async function executeMerge(data) {
 
 
 async function executeOverwrite(bundle, conflict) {
-    // 1. Delete the conflicting territory and all its children
     const streetsToDelete = await getByIndex('streets', 'territoryId', conflict.id);
     for (const street of streetsToDelete) {
         const housesToDelete = await getByIndex('houses', 'streetId', street.id);
         for (const house of housesToDelete) {
-            // Delete visits and people for each house
             const visits = await getByIndex('visits', 'houseId', house.id);
             for(const visit of visits) await deleteFromStore('visits', visit.id);
             const people = await getByIndex('people', 'houseId', house.id);
@@ -247,32 +238,9 @@ async function executeOverwrite(bundle, conflict) {
     }
     await deleteFromStore('territories', conflict.id);
 
-    // 2. Import the new data as if there was no conflict
     await executeMerge(bundle.data);
 }
 
-
-// --- END: NEW JSON EXPORT/IMPORT SYSTEM ---
-
-// --- Deprecated/Legacy Functions (to be updated later) ---
-async function generateCSV(houseList) {
-    // This function will be overhauled for full-fidelity CSV export in a future patch.
-    console.warn("generateCSV is using a legacy format and does not export all data.");
-    if (!houseList || houseList.length === 0) return null;
-    return "CSV export is temporarily disabled pending upgrade.";
-}
-
-function downloadCSV(csvContent, filename) {
-    // This helper function is fine, but the content generation needs work.
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(a.href);
-}
-
-// PDF export is unaffected and remains as-is.
 async function handleExportPDF(streetId) {
     const street = await getFromStore('streets', streetId);
     const houses = (await getByIndex('houses', 'streetId', streetId)).sort((a, b) => a.address.localeCompare(b.address, undefined, { numeric: true, sensitivity: 'base' }));

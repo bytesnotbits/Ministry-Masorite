@@ -1,4 +1,4 @@
-// Version 1.12.01
+// Version 1.12.02
 // --- FILE: ui.js ---
 // This file contains all functions related to UI rendering and DOM manipulation.
 
@@ -7,6 +7,15 @@ const territoryList = document.getElementById('territory-list');
 const streetList = document.getElementById('street-list');
 const houseList = document.getElementById('house-list');
 const visitList = document.getElementById('visit-notes-list');
+
+// --- START OF FIX ---
+const noteModal = document.getElementById('note-modal');
+const territoryModal = document.getElementById('territory-modal');
+const streetModal = document.getElementById('street-modal');
+const houseModal = document.getElementById('house-modal');
+const phoneCallModal = document.getElementById('phone-call-modal');
+const importConflictModal = document.getElementById('import-conflict-modal'); // This line was missing
+// --- END OF FIX ---
 
 function showView(viewId) {
     views.forEach(view => view.classList.toggle('active', view.id === viewId));
@@ -85,17 +94,10 @@ async function renderStreets(territory) {
     if (streets.length === 0) {
         streetList.innerHTML = '<li class="placeholder">No streets added to this territory yet.</li>';
     } else {
-        // --- START OF FIX ---
-        // 1. Fetch ALL houses and people from the database once. This is efficient.
         const allHousesInDB = await getAllFromStore('houses');
         const allPeople = await getAllFromStore('people');
-        
-        // 2. Create a Set of the street IDs for this territory for a fast lookup.
         const streetIdsInTerritory = new Set(streets.map(s => s.id));
-        
-        // 3. Filter all houses to get only the ones for the current territory.
         const allHouses = allHousesInDB.filter(h => streetIdsInTerritory.has(h.streetId));
-        // --- END OF FIX ---
         
         const housesByStreet = new Map(streets.map(s => [s.id, []]));
         allHouses.forEach(h => {
@@ -108,9 +110,7 @@ async function renderStreets(territory) {
             const streetHouses = housesByStreet.get(street.id) || [];
             const houseCount = streetHouses.length;
             const nhCount = streetHouses.filter(h => h.isCurrentlyNH).length;
-
             const isComplete = houseCount > 0 && nhCount === 0;
-            
             const niCount = streetHouses.filter(h => h.isNotInterested).length;
             const ntCount = streetHouses.filter(h => h.noTrespassing).length;
             const gatedCount = streetHouses.filter(h => h.hasGate).length;
@@ -297,13 +297,6 @@ async function renderRVList() {
     }
 }
 
-const noteModal = document.getElementById('note-modal');
-const territoryModal = document.getElementById('territory-modal');
-const streetModal = document.getElementById('street-modal');
-const houseModal = document.getElementById('house-modal');
-const phoneCallModal = document.getElementById('phone-call-modal');
-const importConflictModal = document.getElementById('import-conflict-modal');
-
 function showNoteModal(title = 'Add Visit Note') {
     document.querySelector('#note-modal h3').textContent = title;
     noteModal.classList.remove('hidden');
@@ -383,31 +376,21 @@ function hidePhoneCallModal() {
     phoneCallModal.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
 }
 
-// --- START: NEW MODAL FOR IMPORT CONFLICTS ---
 function showImportConflictModal(bundle, conflict, callback) {
     const territoryNumber = bundle.data.territories[0].number;
     document.getElementById('conflict-territory-number').textContent = territoryNumber;
-
-    // Attach data to the modal buttons to be retrieved by the event listener
     const confirmBtn = document.getElementById('modal-import-confirm-btn');
     confirmBtn.dataset.bundle = JSON.stringify(bundle);
     confirmBtn.dataset.conflict = JSON.stringify(conflict);
-    
-    // Store callback in a temporary, accessible way
     window.tempImportCallback = callback;
-
     importConflictModal.classList.remove('hidden');
 }
 
-
 function hideImportConflictModal() {
     importConflictModal.classList.add('hidden');
-    // Clean up temporary data
     const confirmBtn = document.getElementById('modal-import-confirm-btn');
     delete confirmBtn.dataset.bundle;
     delete confirmBtn.dataset.conflict;
     delete window.tempImportCallback;
-    // Reset radio button to default
     document.getElementById('import-choice-merge').checked = true;
 }
-// --- END: NEW MODAL FOR IMPORT CONFLICTS ---
