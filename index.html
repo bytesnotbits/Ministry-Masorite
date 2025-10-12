@@ -60,7 +60,7 @@
                 <p>1.02.03 REFACTOR COMPLETE!</p>
                 <p>1.08.01 Add new modal to capture phone call details</p>
                 <p><strong>1.10.03</strong> List meta data in street card. x/x visited, x/x letters, x NT etc....</p>
-                <p><strong>Under development 1.11.02</strong> "Territory Complete" flag [active=false]</p>
+                <p><strong>Under development 1.11.04</strong> "Territory Complete" flag [active=false]</p>
                 <p>Hide [active=false] territories</p>
                 <p>Filter/Export only NH</p>
                 <p>Report bug from within app</p>
@@ -122,16 +122,20 @@
     <!-- LEVEL 2: This new screen shows the list of streets for a single territory -->
     <div id="street-list-view" class="view">
         <header class="view-header">
-            <button class="back-btn" data-target="territory-list-view">&larr; Back to Territories</button>
-            <h2 id="street-list-title"></h2>
-            <div class="view-options">
-                <label for="toggle-completed-streets">Hide Completed</label>
-                <label class="switch">
-                    <input type="checkbox" id="toggle-completed-streets">
-                    <span class="slider"></span>
-                </label>
+            <div class="header-row-main">
+                <button class="back-btn" data-target="territory-list-view">&larr; Back to Territories</button>
+                <h2 id="street-list-title"></h2>
             </div>
-            <button id="add-street-btn" class="primary-action">+ Add New Street</button>
+            <div class="header-row-actions">
+                <div class="view-options">
+                    <label for="toggle-completed-streets">Hide Completed</label>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-completed-streets">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <button id="add-street-btn" class="primary-action">+ Add New Street</button>
+            </div>
         </header>
 
         <ul id="street-list"></ul>

@@ -721,38 +721,65 @@ body > header {
     margin-bottom: 20px;
 }
 
+/* The main blue header container */
 .view-header {
     display: flex;
-    align-items: center;
-    gap: 15px;
+    flex-direction: column; /* This is the key: stack the rows vertically */
+    gap: 15px; /* Space between the two rows */
     margin-bottom: 20px;
-    background-color: var(--primary-color); /* The blue background from the screenshot */
+    background-color: var(--primary-color);
     color: var(--white);
     padding: 15px;
     border-radius: 8px;
 }
 
-/* Make the title inside the view header white */
-.view-header h2 {
+/* --- Row 1: Navigation & Context --- */
+.header-row-main {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+.header-row-main h2 {
     margin: 0;
-    /* The flex-grow: 1; line has been removed */
+    font-size: 20px; /* A slightly smaller, more balanced title size */
 }
 
-/* Make the back button white and visible */
+/* --- Row 2: Actions & Options --- */
+.header-row-actions {
+    display: flex;
+    justify-content: space-between; /* This is key: pushes children to opposite ends */
+    align-items: center;
+}
+
+/* --- Component Styles within the Header --- */
+
+/* The back button is clear and visible */
 .view-header .back-btn {
     color: var(--white);
     font-weight: bold;
+    padding: 0;
+    margin: 0;
+    background: none;
+    border: none;
 }
 
-/* Make the Add New button have a "ghost" style so it's visible */
+/* The "Hide Completed" toggle no longer needs the auto margin */
+.view-header .view-options {
+    margin-left: 0;
+}
+
+/* Restore the primary action button to its solid, clear style */
 .view-header .primary-action {
-    background-color: transparent;
-    border: 2px solid var(--white);
-    color: var(--white);
-    width: auto; /* Override the 100% width */
+    background-color: var(--white);
+    color: var(--primary-color);
+    border: none;
+    width: auto; /* Let the button size itself */
     padding: 10px 15px;
-    margin-bottom: 0; /* Override the margin */
+    margin-bottom: 0;
     flex-shrink: 0;
+}
+.view-header .primary-action:hover {
+    opacity: 0.9;
 }
 
 /* --- START: STYLES FOR COMPLETED ITEMS & TOGGLE --- */
