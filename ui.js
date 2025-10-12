@@ -1,4 +1,4 @@
-// Version 1.08.01
+// Version 1.09.01
 // --- FILE: ui.js ---
 // This file contains all functions related to UI rendering and DOM manipulation.
 
@@ -188,13 +188,19 @@ async function renderHouseDetails(houseId) {
         const visitDate = new Date(visit.date);
         const formattedDateTime = visitDate.toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
         li.innerHTML = `
-            <div>
-                <span>${formattedDateTime}</span>
-                <span class="edit-date-btn" data-id="${visit.id}">✏️ Change</span>
+            <div class="visit-note-header">
+                <div class="visit-note-date">
+                    <span>${formattedDateTime}</span>
+                    <button class="icon-btn edit-date-btn" data-id="${visit.id}" title="Edit Date/Time">✏️</button>
+                </div>
+                <button class="delete-btn" data-id="${visit.id}" data-type="visit">X</button>
             </div>
             ${personInfo}
-            <p>${visit.notes}</p>
-            <button class="delete-btn" data-id="${visit.id}" data-type="visit">X</button>`;
+            <div class="visit-note-body">
+                <p>${visit.notes}</p>
+                <button class="icon-btn edit-note-btn" data-id="${visit.id}" title="Edit Note">✏️</button>
+            </div>`;
+
         visitList.appendChild(li);
     });
 }

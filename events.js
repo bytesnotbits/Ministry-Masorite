@@ -1,4 +1,4 @@
-// Version 1.08.01
+// Version 1.09.01
 // --- FILE: events.js ---
 // This file contains all event listeners for the application. It uses actions to modify state.
 function initializeEventListeners(state, actions) {
@@ -172,6 +172,21 @@ const phoneCallModalToggles = document.querySelector('#phone-call-modal .modal-t
                 await deleteFromStore('visits', id);
                 return actions.refreshHouseDetails();
             }
+        }
+        const editNoteBtn = target.closest('.edit-note-btn');
+        if (editNoteBtn) {
+            const visitId = Number(editNoteBtn.dataset.id);
+            const visit = await getFromStore('visits', visitId);
+            const newNote = prompt('Enter new note text:', visit.notes);
+            
+            // newNote will be null if the user clicks "Cancel"
+            // We check for this to allow users to clear a note if they wish.
+            if (newNote !== null) {
+                visit.notes = newNote.trim();
+                await updateInStore('visits', visit);
+                await actions.refreshHouseDetails();
+            }
+            return;
         }
         const editPersonBtn = target.closest('.edit-person-btn');
         if (editPersonBtn) {

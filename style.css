@@ -648,3 +648,44 @@ ul li {
     gap: 20px; /* Controls the space between the pencil and the X */
     flex-shrink: 0; /* Prevents the buttons from shrinking */
 }
+
+/* --- START: STYLES FOR VISIT HISTORY NOTES --- */
+#visit-notes-list li {
+    padding-bottom: 15px; /* Reduce default bottom padding for a tighter look */
+}
+
+.visit-note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.visit-note-date {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space between date and edit icon */
+    font-weight: bold;
+    color: var(--dark-text);
+}
+
+.visit-note-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px; /* Space between note text and edit icon */
+}
+
+.visit-note-body p {
+    flex-grow: 1; /* Allows the text to take up available space */
+    margin: 0; /* Removes default paragraph margin */
+}
+
+/* We need to override the old edit-date-btn style */
+.edit-date-btn {
+    cursor: pointer;
+    color: var(--primary-color);
+    font-size: 14px;
+    margin-left: 0; /* Remove old margin */
+}
+/* --- END: STYLES FOR VISIT HISTORY NOTES --- */
