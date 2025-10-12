@@ -1,4 +1,4 @@
-// Version 1.06.02
+// Version 1.07.02
 
 // --- DATABASE INITIALIZATION ---
 const DB_NAME = 'MinistryScribeDB';
@@ -128,7 +128,7 @@ function initDB() {
 }
 
 
-// --- GENERIC CRUD FUNCTIONS (Unchanged) ---
+// --- GENERIC CRUD FUNCTIONS ---
 function addToStore(storeName, item) {
     return new Promise((resolve, reject) => {
         const transaction = db.transaction(storeName, 'readwrite');
