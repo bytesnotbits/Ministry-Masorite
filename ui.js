@@ -1,4 +1,4 @@
-// Version 1.11.02
+// Version 1.11.03
 // --- FILE: ui.js ---
 // This file contains all functions related to UI rendering and DOM manipulation.
 
@@ -69,7 +69,9 @@ async function renderStreets(territory) {
     } else {
         // For performance, we fetch all necessary data at once and organize it.
         const allHouses = await getAllFromStore('houses');
+        // --- START OF CORRECTION ---
         const allPeople = await getAllFromStore('people');
+        // --- END OF CORRECTION ---
         
         // Group houses by their street ID for quick lookup.
         const housesByStreet = new Map();
@@ -122,6 +124,7 @@ async function renderStreets(territory) {
         }
     }
 }
+
 async function renderHouses(street, activeHouseFilters) {
     houseList.innerHTML = '';
     document.getElementById('house-list-title').textContent = street.name;
