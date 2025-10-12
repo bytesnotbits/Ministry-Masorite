@@ -97,7 +97,11 @@ const houseModalToggles = document.querySelector('#house-modal .modal-toggles');
                 } else if (confirm('Undo "Letter Sent" note? This will delete the record.')) {
                     const allVisits = await getByIndex('visits', 'houseId', houseId);
                     const lastLetterVisit = allVisits.filter(v => v.visitType === 'letter').sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-                    if (lastLetterVisit) await deleteFromStore('visits', lastLetterVisit.id);
+                    if (lastLetterVisit)
+                        await deleteFromStore('visits', lastLetterVisit.id);
+                        const house = await getFromStore('houses', houseId);
+                        house.isCurrentlyNH = true; // Set the house back to "Not at Home"
+                        await updateInStore('houses', house);
                 }
             } else if (target.classList.contains('phone-call-btn')) {
                 await addToStore('visits', { houseId, date: new Date().toISOString(), notes: 'Phone call attempt.', isVisitAttempt: true, visitType: 'phone' });
