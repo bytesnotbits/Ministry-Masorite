@@ -1,20 +1,19 @@
-// Version 1.07.01
+// Version 1.07.04
 // --- FILE: events.js ---
 // This file contains all event listeners for the application. It uses actions to modify state.
-
 function initializeEventListeners(state, actions) {
-    const personInput = document.getElementById('modal-person-input');
-    const suggestionsList = document.getElementById('modal-suggestions-list');
-    const rvToggle = document.getElementById('modal-rv-toggle');
-    const isRvCheck = document.getElementById('modal-is-rv-check');
-    const modalRemoveNHCheck = document.getElementById('modal-remove-nh-check');
-    const modalVisitNotes = document.getElementById('modal-visit-notes');
-    const modalTerritoryNumber = document.getElementById('modal-territory-number');
-    const modalTerritoryDescription = document.getElementById('modal-territory-description');
-    const modalStreetName = document.getElementById('modal-street-name');
-    const modalHouseNumber = document.getElementById('modal-house-number');
-    const modalHouseNotes = document.getElementById('modal-house-notes');
-    const houseModalToggles = document.querySelector('#house-modal .modal-toggles');
+const personInput = document.getElementById('modal-person-input');
+const suggestionsList = document.getElementById('modal-suggestions-list');
+const rvToggle = document.getElementById('modal-rv-toggle');
+const isRvCheck = document.getElementById('modal-is-rv-check');
+const modalRemoveNHCheck = document.getElementById('modal-remove-nh-check');
+const modalVisitNotes = document.getElementById('modal-visit-notes');
+const modalTerritoryNumber = document.getElementById('modal-territory-number');
+const modalTerritoryDescription = document.getElementById('modal-territory-description');
+const modalStreetName = document.getElementById('modal-street-name');
+const modalHouseNumber = document.getElementById('modal-house-number');
+const modalHouseNotes = document.getElementById('modal-house-notes');
+const houseModalToggles = document.querySelector('#house-modal .modal-toggles');
 
     async function populateAndShowSuggestions() {
         suggestionsList.innerHTML = '';
@@ -45,7 +44,7 @@ function initializeEventListeners(state, actions) {
         rvToggle.style.display = 'block';
         populateAndShowSuggestions();
     });
-    
+
     suggestionsList.addEventListener('click', (e) => {
         const item = e.target.closest('.suggestion-item');
         if (!item) return;

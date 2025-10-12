@@ -1,4 +1,5 @@
-// Version 1.07.01
+// Version 1.07.04
+// Version 1.06.04
 // --- FILE: ui.js ---
 // This file contains all functions related to UI rendering and DOM manipulation.
 
@@ -90,7 +91,6 @@ async function renderHouses(street, activeHouseFilters) {
     document.getElementById('house-list-title').textContent = street.name;
     const allHouses = (await getByIndex('houses', 'streetId', street.id)).sort((a, b) => a.address.localeCompare(b.address, undefined, { numeric: true, sensitivity: 'base' }));
     
-    // We only need to fetch all visits once if the visited filter is active.
     let visitsByHouseId = {};
     if (Object.values(activeHouseFilters).some(v => v) || allHouses.length > 0) {
         const houseVisitPromises = allHouses.map(house => getByIndex('visits', 'houseId', house.id));
@@ -105,9 +105,6 @@ async function renderHouses(street, activeHouseFilters) {
         if (activeHouseFilters.ni && house.isNotInterested) return false;
         if (activeHouseFilters.nt && house.noTrespassing) return false;
         if (activeHouseFilters.gated && house.hasGate) return false;
-        // --- BUG FIX ---
-        // The old logic was too complex. A house is considered "visited"
-        // for filtering purposes if it is not currently marked as "Not at Home".
         if (activeHouseFilters.visited && !house.isCurrentlyNH) {
             return false;
         }
@@ -306,4 +303,4 @@ function showHouseModal() {
 
 function hideHouseModal() {
     houseModal.classList.add('hidden');
-} 
+}

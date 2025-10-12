@@ -1,3 +1,5 @@
+// 1.07.04
+// Version 1.06.04
 // --- REFACTORED FILE: app.js ---
 // This file initializes the application and manages its central state and actions.
 
