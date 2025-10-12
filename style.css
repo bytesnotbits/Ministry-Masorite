@@ -1,3 +1,5 @@
+/*Version 1.10.01*/
+
 /* General Body and Font Styling */
 :root {
     --primary-color: #4a6da7;
@@ -689,3 +691,23 @@ ul li {
     margin-left: 0; /* Remove old margin */
 }
 /* --- END: STYLES FOR VISIT HISTORY NOTES --- */
+
+/* --- START: STYLES FOR STREET CARD METADATA --- */
+.street-card-info {
+    flex-grow: 1; /* Allows this info block to take up the available space */
+}
+
+.street-name {
+    font-size: 18px; /* Making the name stand out */
+}
+
+.street-metadata {
+    font-size: 13px;
+    color: var(--light-text);
+    margin-top: 6px;
+}
+
+.street-metadata strong {
+    color: var(--dark-text); /* Makes the numbers slightly darker than the labels */
+}
+/* --- END: STYLES FOR STREET CARD METADATA --- */

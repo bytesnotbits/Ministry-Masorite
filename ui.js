@@ -1,4 +1,4 @@
-// Version 1.09.01
+// Version 1.10.01
 // --- FILE: ui.js ---
 // This file contains all functions related to UI rendering and DOM manipulation.
 
@@ -63,19 +63,45 @@ async function renderStreets(territory) {
     streetList.innerHTML = '';
     document.getElementById('street-list-title').textContent = `Territory #${territory.number}: ${territory.description}`;
     const streets = (await getByIndex('streets', 'territoryId', territory.id)).sort((a,b) => a.name.localeCompare(b.name));
+
     if (streets.length === 0) {
         streetList.innerHTML = '<li class="placeholder">No streets added to this territory yet.</li>';
     } else {
-        const houseCounts = new Map();
+        // For performance, we fetch all houses once and group them by street.
         const allHouses = await getAllFromStore('houses');
+        const housesByStreet = new Map();
         for (const house of allHouses) {
-            houseCounts.set(house.streetId, (houseCounts.get(house.streetId) || 0) + 1);
+            if (!housesByStreet.has(house.streetId)) {
+                housesByStreet.set(house.streetId, []);
+            }
+            housesByStreet.get(house.streetId).push(house);
         }
+
         for (const street of streets) {
+            const streetHouses = housesByStreet.get(street.id) || [];
+            const houseCount = streetHouses.length;
+
+            // Calculate the metadata from the street's houses
+            const unvisitedCount = streetHouses.filter(h => h.isCurrentlyNH).length;
+            const gatedCount = streetHouses.filter(h => h.hasGate).length;
+            const ntCount = streetHouses.filter(h => h.noTrespassing).length;
+            const niCount = streetHouses.filter(h => h.isNotInterested).length;
+            
+            // Build the metadata HTML string, only showing stats that are greater than zero.
+            let metaHtmlParts = [];
+            if (unvisitedCount > 0) metaHtmlParts.push(`<strong>${unvisitedCount}</strong> Unvisited`);
+            if (niCount > 0) metaHtmlParts.push(`<strong>${niCount}</strong> NI`);
+            if (gatedCount > 0) metaHtmlParts.push(`<strong>${gatedCount}</strong> Gated`);
+            if (ntCount > 0) metaHtmlParts.push(`<strong>${ntCount}</strong> NT`);
+            
             const li = document.createElement('li');
             li.dataset.id = street.id;
+            // The new innerHTML structure using the CSS classes we just added
             li.innerHTML = `
-                <span>${street.name} (${houseCounts.get(street.id) || 0} houses)</span>
+                <div class="street-card-info">
+                    <span class="street-name">${street.name} (${houseCount} houses)</span>
+                    <div class="street-metadata">${metaHtmlParts.join(' &bull; ')}</div>
+                </div>
                 <div class="street-actions">
                     <button class="icon-btn edit-street-btn" data-id="${street.id}" title="Edit Street Name">✏️</button>
                     <button class="delete-btn" data-id="${street.id}" data-type="street">X</button>
