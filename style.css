@@ -1,4 +1,4 @@
-/* Version 1.11.03 */
+/* Version 1.11.05 */
 
 /* General Body and Font Styling */
 :root {
@@ -724,8 +724,8 @@ body > header {
 /* The main blue header container */
 .view-header {
     display: flex;
-    flex-direction: column; /* This is the key: stack the rows vertically */
-    gap: 15px; /* Space between the two rows */
+    flex-direction: column; 
+    gap: 15px; 
     margin-bottom: 20px;
     background-color: var(--primary-color);
     color: var(--white);
@@ -741,19 +741,28 @@ body > header {
 }
 .header-row-main h2 {
     margin: 0;
-    font-size: 20px; /* A slightly smaller, more balanced title size */
+    font-size: 20px;
 }
+
+/* NEW: This rule centers the title ONLY on the Territory page */
+#territory-list-view .header-row-main {
+    justify-content: center;
+}
+
+/* NEW: This rule makes the title fill the space ONLY on the Street page */
+#street-list-view .header-row-main h2 {
+    flex-grow: 1;
+}
+
 
 /* --- Row 2: Actions & Options --- */
 .header-row-actions {
     display: flex;
-    justify-content: space-between; /* This is key: pushes children to opposite ends */
+    justify-content: space-between;
     align-items: center;
 }
 
 /* --- Component Styles within the Header --- */
-
-/* The back button is clear and visible */
 .view-header .back-btn {
     color: var(--white);
     font-weight: bold;
@@ -762,18 +771,14 @@ body > header {
     background: none;
     border: none;
 }
-
-/* The "Hide Completed" toggle no longer needs the auto margin */
 .view-header .view-options {
     margin-left: 0;
 }
-
-/* Restore the primary action button to its solid, clear style */
 .view-header .primary-action {
     background-color: var(--white);
     color: var(--primary-color);
     border: none;
-    width: auto; /* Let the button size itself */
+    width: auto;
     padding: 10px 15px;
     margin-bottom: 0;
     flex-shrink: 0;

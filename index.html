@@ -17,16 +17,20 @@
     <main>
     <!-- LEVEL 1: This is the main screen showing the list of territories -->
     <div id="territory-list-view" class="view active">
-        <header>
-            <h2>All Territories</h2>
-            <div class="view-options">
-                <label for="toggle-completed-territories">Hide Completed</label>
-                <label class="switch">
-                    <input type="checkbox" id="toggle-completed-territories">
-                    <span class="slider"></span>
-                </label>
+        <header class="view-header">
+            <div class="header-row-main">
+                <h2>All Territories</h2>
             </div>
-            <button id="add-territory-btn" class="primary-action">+ Add New Territory</button>
+            <div class="header-row-actions">
+                <div class="view-options">
+                    <label for="toggle-completed-territories">Hide Completed</label>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-completed-territories">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <button id="add-territory-btn" class="primary-action">+ Add New Territory</button>
+            </div>
         </header>
 
         <input type="search" id="search-territory-input" placeholder="Search by number or description...">
