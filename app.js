@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             AppState.currentTerritoryId = territoryId;
             AppState.currentView = 'street-list-view';
             const territory = await getFromStore('territories', territoryId);
-            rUI.renderStreets(territory);
+            UI.renderStreets(territory);
             UI.showView(AppState.currentView);
         },
 
@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         async navigateToRVs() {
             AppState.currentView = 'rv-list-view';
-            await renderRVList();
+            await UI.renderRVList();
             UI.showView(AppState.currentView);
         },
         
@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 setTimeout(() => window.scrollTo(0, AppState.streetListScrollPosition), 0);
             } else if (targetView === 'territory-list-view') {
                 this.refreshTerritories(); // Refresh in case street counts changed
-                showView(targetView);
+                UI.showView(targetView);
                 setTimeout(() => window.scrollTo(0, AppState.territoryListScrollPosition), 0);
             } else {
                 UI.showView(targetView);
