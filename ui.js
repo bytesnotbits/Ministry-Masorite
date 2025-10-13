@@ -1,4 +1,4 @@
-// Version 1.12.03
+// Version 1.14.02
 // --- FILE: ui.js ---
 // This file contains all functions related to UI rendering and DOM manipulation, now organized into a UI object.
 

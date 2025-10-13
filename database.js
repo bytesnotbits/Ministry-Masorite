@@ -1,4 +1,4 @@
-// Version 1.07.02
+// Version 1.14.02
 
 // --- DATABASE INITIALIZATION ---
 const DB_NAME = 'MinistryScribeDB';

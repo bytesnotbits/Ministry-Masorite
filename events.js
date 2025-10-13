@@ -1,4 +1,4 @@
-// Version 1.12.08
+// Version 1.14.02
 // --- FILE: events.js ---
 // This file contains all event listeners for the application. It uses actions to modify state.
 function initializeEventListeners(state, actions) {
