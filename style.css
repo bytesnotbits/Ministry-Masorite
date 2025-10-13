@@ -24,7 +24,7 @@ body {
 .view.active { display: block; }
 
 /* Generic hidden class */
-.hidden { display: none; }
+.hidden { display: none !important; }
 
 /* List Styling */
 ul { list-style-type: none; padding: 0; }

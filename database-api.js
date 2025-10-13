@@ -1,3 +1,4 @@
+// Version 1.12.08
 // --- FILE: database-api.js ---
 // This file acts as a data layer, handling complex data operations like import, export, and backup.
 
@@ -8,7 +9,7 @@ const { jsPDF } = window.jspdf;
 async function bundleDataForExport(scope = 'full', id = null) {
     const bundle = {
         meta: {
-            version: '1.12-06',
+            version: '1.12.08',
             exportDate: new Date().toISOString(),
             scope: scope,
             appName: 'MinistryScribe'
@@ -105,6 +106,10 @@ async function handleJsonExport(scope = 'full', id = null) {
 function handleFileImport(event, callback) {
     const fileInput = event.target;
     const file = fileInput.files[0];
+    
+    // CRITICAL FIX: Clear the input immediately to prevent reload loops
+    fileInput.value = '';
+    
     if (!file) return;
 
     const reader = new FileReader();
@@ -133,13 +138,11 @@ function handleFileImport(event, callback) {
         }
     };
     
+    reader.onerror = () => {
+        alert('Failed to read the file. Please try again.');
+    };
+    
     reader.readAsText(file);
-
-    // --- BUG FIX ---
-    // The file input value must be cleared synchronously. Previously, it was in an
-    // async 'finally' block, which allowed the browser to remember the file on
-    // refresh if the import process was interrupted, causing an infinite loop.
-    fileInput.value = '';
 }
 
 async function processFullImport(data) {
@@ -160,15 +163,21 @@ async function processPartialImport(bundle, callback) {
     const conflict = existingTerritories.find(t => t.number === importedTerritory.number);
     
     if (conflict) {
+        // Show conflict modal
         document.getElementById('conflict-territory-number').textContent = conflict.number;
         const confirmBtn = document.getElementById('modal-import-confirm-btn');
-        confirmBtn.dataset.bundle = JSON.stringify(bundle);
-        confirmBtn.dataset.conflict = JSON.stringify(conflict);
         
+        // Store data on the button
+        confirmBtn.setAttribute('data-bundle', JSON.stringify(bundle));
+        confirmBtn.setAttribute('data-conflict', JSON.stringify(conflict));
+        
+        // Store callback globally
         window.tempImportCallback = callback;
         
+        // Show the modal
         document.getElementById('import-conflict-modal').classList.remove('hidden');
     } else {
+        // No conflict - just merge directly
         await executeMerge(bundle.data);
         alert(`Territory #${importedTerritory.number} imported successfully.`);
         if (callback) callback();
