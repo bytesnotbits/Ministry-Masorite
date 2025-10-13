@@ -1,3 +1,4 @@
+// Version 1.14.02
 // --- FILE: database-api.js ---
 // This file acts as a data layer, handling complex data operations like import, export, and backup.
 
@@ -8,7 +9,7 @@ const { jsPDF } = window.jspdf;
 async function bundleDataForExport(scope = 'full', id = null) {
     const bundle = {
         meta: {
-            version: '1.14.01',
+            version: '1.14.02',
             exportDate: new Date().toISOString(),
             scope: scope,
             appName: 'MinistryScribe'
@@ -228,8 +229,14 @@ async function executeMerge(data) {
         delete house.id;
         // Ensure streetId is mapped
         house.streetId = idMaps.streets.get(house.streetId) || null;
-        // Ensure other properties (like isNotInterested) are present if they were added in a newer schema
+        
+        // CRITICAL: Ensure all boolean fields are present, especially for old imported data
         if (house.isNotInterested === undefined) house.isNotInterested = false; 
+        if (house.isCurrentlyNH === undefined) house.isCurrentlyNH = true; // Default to true if missing, typical of initial import
+        if (house.hasGate === undefined) house.hasGate = false;
+        if (house.hasMailbox === undefined) house.hasMailbox = false;
+        if (house.noTrespassing === undefined) house.noTrespassing = false;
+
 
         const newId = await addToStore('houses', house);
         idMaps.houses.set(oldId, newId);
