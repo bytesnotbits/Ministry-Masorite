@@ -1,4 +1,4 @@
-// Version 1.12.06
+// Version 1.12.07
 // --- FILE: events.js ---
 // This file contains all event listeners for the application. It uses actions to modify state.
 function initializeEventListeners(state, actions) {
@@ -8,9 +8,6 @@ function initializeEventListeners(state, actions) {
 
     const hideAllModals = () => {
         document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.add('hidden'));
-        // FIX: Ensure the import conflict modal is explicitly hidden on page load/closure
-        const conflictModal = document.getElementById('import-conflict-modal');
-        if (conflictModal) conflictModal.classList.add('hidden');
         
         // Clean up temporary state associated with the conflict modal
         window.tempImportCallback = undefined;
@@ -18,6 +15,13 @@ function initializeEventListeners(state, actions) {
         // Reset radio selection if browser caching forces it visible
         const mergeRadio = document.getElementById('import-choice-merge');
         if (mergeRadio) mergeRadio.checked = true;
+        
+        // Clear any stored data on confirm button
+        const confirmBtn = document.getElementById('modal-import-confirm-btn');
+        if (confirmBtn) {
+            confirmBtn.dataset.bundle = '';
+            confirmBtn.dataset.conflict = '';
+        }
     };
 
     const showTerritoryModal = (territory = null) => {
