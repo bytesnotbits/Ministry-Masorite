@@ -1,4 +1,4 @@
-// Version 1.12.01
+// Version 1.12.04
 // --- REFACTORED FILE: app.js ---
 // This file initializes the application and manages its central state and actions.
 
@@ -34,8 +34,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             AppState.currentTerritoryId = territoryId;
             AppState.currentView = 'street-list-view';
             const territory = await getFromStore('territories', territoryId);
-            renderStreets(territory);
-            showView(AppState.currentView);
+            rUI.renderStreets(territory);
+            UI.showView(AppState.currentView);
         },
 
         async navigateToHouses(streetId) {
@@ -45,42 +45,42 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
             AppState.currentView = 'house-list-view';
             const street = await getFromStore('streets', streetId);
-            await renderHouses(street, AppState.activeHouseFilters);
-            showView(AppState.currentView);
+            await UI.renderHouses(street, AppState.activeHouseFilters);
+            UI.showView(AppState.currentView);
         },
 
         async navigateToHouseDetails(houseId) {
             AppState.houseListScrollPosition = window.scrollY;
             AppState.currentHouseId = houseId;
             AppState.currentView = 'house-detail-view';
-            await renderHouseDetails(AppState.currentHouseId);
-            showView(AppState.currentView);
+            await UI.renderHouseDetails(AppState.currentHouseId);
+            UI.showView(AppState.currentView);
         },
         
         async navigateToRVs() {
             AppState.currentView = 'rv-list-view';
             await renderRVList();
-            showView(AppState.currentView);
+            UI.showView(AppState.currentView);
         },
         
         async navigateBack(targetView) {
             AppState.currentView = targetView;
             if (targetView === 'house-list-view') {
                 const street = await getFromStore('streets', AppState.currentStreetId);
-                await renderHouses(street, AppState.activeHouseFilters);
-                showView(targetView);
+                await UI.renderHouses(street, AppState.activeHouseFilters);
+                UI.showView(targetView);
                 setTimeout(() => window.scrollTo(0, AppState.houseListScrollPosition), 0);
             } else if (targetView === 'street-list-view') {
                 const territory = await getFromStore('territories', AppState.currentTerritoryId);
-                renderStreets(territory);
-                showView(targetView);
+                UI.renderStreets(territory);
+                UI.showView(targetView);
                 setTimeout(() => window.scrollTo(0, AppState.streetListScrollPosition), 0);
             } else if (targetView === 'territory-list-view') {
                 this.refreshTerritories(); // Refresh in case street counts changed
                 showView(targetView);
                 setTimeout(() => window.scrollTo(0, AppState.territoryListScrollPosition), 0);
             } else {
-                showView(targetView);
+                UI.showView(targetView);
             }
         },
         
@@ -88,21 +88,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         async refreshTerritories() {
             const allTerritories = await getAllFromStore('territories');
             const filter = document.getElementById('search-territory-input').value;
-            await renderTerritories(allTerritories, AppState.territorySort, filter);
+            await UI.renderTerritories(allTerritories, AppState.territorySort, filter);
         },
         
         async refreshStreets() {
             const territory = await getFromStore('territories', AppState.currentTerritoryId);
-            await renderStreets(territory);
+            await UI.renderStreets(territory);
         },
         
         async refreshHouses() {
             const street = await getFromStore('streets', AppState.currentStreetId);
-            await rerenderHousesAndPreserveScroll(street, AppState.activeHouseFilters);
+            await UI.rerenderHousesAndPreserveScroll(street, AppState.activeHouseFilters);
         },
         
         async refreshHouseDetails() {
-            await renderHouseDetails(AppState.currentHouseId);
+            await UI.renderHouseDetails(AppState.currentHouseId);
         },
 
         async updateTerritorySort(sortType) {
