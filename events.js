@@ -8,6 +8,16 @@ function initializeEventListeners(state, actions) {
 
     const hideAllModals = () => {
         document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.add('hidden'));
+        // FIX: Ensure the import conflict modal is explicitly hidden on page load/closure
+        const conflictModal = document.getElementById('import-conflict-modal');
+        if (conflictModal) conflictModal.classList.add('hidden');
+        
+        // Clean up temporary state associated with the conflict modal
+        window.tempImportCallback = undefined;
+        
+        // Reset radio selection if browser caching forces it visible
+        const mergeRadio = document.getElementById('import-choice-merge');
+        if (mergeRadio) mergeRadio.checked = true;
     };
 
     const showTerritoryModal = (territory = null) => {
@@ -438,6 +448,7 @@ function initializeEventListeners(state, actions) {
             }
         });
     });
+
 
     const importCallback = () => actions.refreshTerritories();
     document.getElementById('export-full-json-btn').addEventListener('click', () => handleJsonExport('full'));
