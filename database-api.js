@@ -9,7 +9,7 @@ const { jsPDF } = window.jspdf;
 async function bundleDataForExport(scope = 'full', id = null) {
     const bundle = {
         meta: {
-            version: '1.07.01',
+            version: '1.12.05',
             exportDate: new Date().toISOString(),
             scope: scope,
             appName: 'MinistryScribe'
@@ -155,29 +155,26 @@ async function processPartialImport(bundle, callback) {
     const conflict = existingTerritories.find(t => t.number === importedTerritory.number);
     
     if (conflict) {
-        // --- START OF BUG FIX ---
-        // The refactored call to UI.showImportConflictModal was not correctly implemented,
-        // causing a script error that prevented the file input from resetting.
-        // This direct implementation correctly sets up and displays the modal,
-        // allowing the import process to complete successfully.
+        // --- START OF FIX ---
+        // The original refactored call to a UI object was not implemented. This direct
+        // implementation correctly sets up and displays the modal. The corresponding
+        // fix in events.js ensures the modal can be closed correctly.
         document.getElementById('conflict-territory-number').textContent = conflict.number;
         const confirmBtn = document.getElementById('modal-import-confirm-btn');
         confirmBtn.dataset.bundle = JSON.stringify(bundle);
         confirmBtn.dataset.conflict = JSON.stringify(conflict);
         
         // The event listener in events.js relies on this global variable.
-        // We preserve this behavior to ensure compatibility with the existing code.
         window.tempImportCallback = callback;
         
         document.getElementById('import-conflict-modal').classList.remove('hidden');
-        // --- END OF BUG FIX ---
+        // --- END OF FIX ---
     } else {
         await executeMerge(bundle.data);
         alert(`Territory #${importedTerritory.number} imported successfully.`);
         if (callback) callback();
     }
 }
-
 
 async function executeMerge(data) {
     const territoryMap = new Map();

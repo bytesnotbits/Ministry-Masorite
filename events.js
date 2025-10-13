@@ -1,7 +1,77 @@
-// Version 1.12.03
+// Version 1.12.06
 // --- FILE: events.js ---
 // This file contains all event listeners for the application. It uses actions to modify state.
 function initializeEventListeners(state, actions) {
+    // --- START: MODAL HELPER FUNCTIONS ---
+    // The refactored UI object was not correctly implemented, leading to errors when
+    // trying to show or hide modals. These helpers handle the logic directly.
+
+    const hideAllModals = () => {
+        document.querySelectorAll('.modal-backdrop').forEach(m => m.classList.add('hidden'));
+    };
+
+    const showTerritoryModal = (territory = null) => {
+        const modal = document.getElementById('territory-modal');
+        const numberInput = document.getElementById('modal-territory-number');
+        const descriptionInput = document.getElementById('modal-territory-description');
+        const title = modal.querySelector('h3');
+        if (territory) {
+            title.textContent = 'Edit Territory';
+            numberInput.value = territory.number;
+            descriptionInput.value = territory.description;
+        } else {
+            title.textContent = 'Add New Territory';
+            numberInput.value = '';
+            descriptionInput.value = '';
+            state.currentEditTerritoryId = null;
+        }
+        modal.classList.remove('hidden');
+    };
+
+    const showStreetModal = (street = null) => {
+        const modal = document.getElementById('street-modal');
+        const nameInput = document.getElementById('modal-street-name');
+        const title = modal.querySelector('h3');
+        if (street) {
+            title.textContent = 'Edit Street';
+            nameInput.value = street.name;
+        } else {
+            title.textContent = 'Add New Street';
+            nameInput.value = '';
+            state.currentEditStreetId = null;
+        }
+        modal.classList.remove('hidden');
+    };
+
+    const showHouseModal = () => {
+        document.getElementById('modal-house-number').value = '';
+        document.getElementById('modal-house-notes').value = '';
+        document.querySelectorAll('#house-modal .toggle-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector('#house-modal [data-prop="isCurrentlyNH"]').classList.add('active');
+        document.getElementById('house-modal').classList.remove('hidden');
+    };
+
+    const showNoteModal = (titleText) => {
+        document.getElementById('note-modal').querySelector('h3').textContent = titleText;
+        document.getElementById('modal-person-input').value = '';
+        document.getElementById('modal-visit-notes').value = '';
+        document.getElementById('modal-suggestions-list').innerHTML = '';
+        document.getElementById('modal-suggestions-list').classList.add('hidden');
+        document.getElementById('modal-is-rv-check').checked = false;
+        document.getElementById('modal-remove-nh-check').checked = false;
+        state.selectedPersonId = null;
+        document.getElementById('note-modal').classList.remove('hidden');
+    };
+    
+    const showPhoneCallModal = () => {
+        document.getElementById('modal-phone-person-name').value = '';
+        document.getElementById('modal-phone-notes').value = '';
+        document.querySelectorAll('#phone-call-modal .toggle-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById('phone-call-modal').classList.remove('hidden');
+    };
+
+    // --- END: MODAL HELPER FUNCTIONS ---
+
     const personInput = document.getElementById('modal-person-input');
     const suggestionsList = document.getElementById('modal-suggestions-list');
     const rvToggle = document.getElementById('modal-rv-toggle');
@@ -130,7 +200,7 @@ function initializeEventListeners(state, actions) {
                 }
             } else if (target.classList.contains('phone-call-btn')) {
                 state.currentHouseId = houseId;
-                UI.showPhoneCallModal(); // FIX: Call UI method
+                showPhoneCallModal();
                 return;
             }
             return actions.refreshHouses();
@@ -140,13 +210,13 @@ function initializeEventListeners(state, actions) {
         if (editTerritoryBtn) {
             state.currentEditTerritoryId = Number(editTerritoryBtn.dataset.id);
             const territory = await getFromStore('territories', state.currentEditTerritoryId);
-            return UI.showTerritoryModal(territory); // FIX: Call UI method
+            return showTerritoryModal(territory);
         }
         const editStreetBtn = target.closest('.edit-street-btn');
         if (editStreetBtn) {
             state.currentEditStreetId = Number(editStreetBtn.dataset.id);
             const street = await getFromStore('streets', state.currentEditStreetId);
-            return UI.showStreetModal(street); // FIX: Call UI method
+            return showStreetModal(street);
         }
         if (target.classList.contains('sort-btn')) return actions.updateTerritorySort(target.dataset.sort);
         const deleteBtn = target.closest('.delete-btn');
@@ -234,10 +304,10 @@ function initializeEventListeners(state, actions) {
         }
     });
 
-    document.getElementById('add-territory-btn').addEventListener('click', () => UI.showTerritoryModal());
-    document.getElementById('add-street-btn').addEventListener('click', () => UI.showStreetModal());
-    document.getElementById('add-house-btn').addEventListener('click', UI.showHouseModal);
-    document.getElementById('add-visit-btn').addEventListener('click', () => UI.showNoteModal('Add New Visit Note'));
+    document.getElementById('add-territory-btn').addEventListener('click', () => showTerritoryModal());
+    document.getElementById('add-street-btn').addEventListener('click', () => showStreetModal());
+    document.getElementById('add-house-btn').addEventListener('click', showHouseModal);
+    document.getElementById('add-visit-btn').addEventListener('click', () => showNoteModal('Add New Visit Note'));
     document.getElementById('show-rvs-btn').addEventListener('click', actions.navigateToRVs);
     document.querySelector('.filter-controls').addEventListener('click', (e) => {
         const btn = e.target.closest('.filter-btn');
@@ -258,7 +328,7 @@ function initializeEventListeners(state, actions) {
         await actions.refreshTerritories();
         return true;
     };
-    document.getElementById('modal-territory-save-btn').addEventListener('click', async () => { if (await saveTerritory()) UI.hideTerritoryModal(); });
+    document.getElementById('modal-territory-save-btn').addEventListener('click', async () => { if (await saveTerritory()) hideAllModals(); });
     document.getElementById('modal-territory-save-new-btn').addEventListener('click', async () => {
         if (await saveTerritory()) { modalTerritoryNumber.value = ''; modalTerritoryDescription.value = ''; modalTerritoryNumber.focus(); }
     });
@@ -274,7 +344,7 @@ function initializeEventListeners(state, actions) {
         await actions.refreshStreets();
         return true;
     };
-    document.getElementById('modal-street-save-btn').addEventListener('click', async () => { if (await saveStreet()) UI.hideStreetModal(); });
+    document.getElementById('modal-street-save-btn').addEventListener('click', async () => { if (await saveStreet()) hideAllModals(); });
     document.getElementById('modal-street-save-new-btn').addEventListener('click', async () => {
         if (await saveStreet()) { modalStreetName.value = ''; modalStreetName.focus(); }
     });
@@ -297,7 +367,7 @@ function initializeEventListeners(state, actions) {
         await actions.refreshHouses();
         return true;
     };
-    document.getElementById('modal-house-save-btn').addEventListener('click', async () => { if (await saveHouse()) UI.hideHouseModal(); });
+    document.getElementById('modal-house-save-btn').addEventListener('click', async () => { if (await saveHouse()) hideAllModals(); });
     document.getElementById('modal-house-save-new-btn').addEventListener('click', async () => {
         if (await saveHouse()) {
             modalHouseNumber.value = ''; modalHouseNotes.value = '';
@@ -326,7 +396,7 @@ function initializeEventListeners(state, actions) {
             visitType: 'phone'
         };
         await addToStore('visits', newVisit);
-        UI.hidePhoneCallModal(); // FIX: Call UI method
+        hideAllModals();
         await actions.refreshHouses();
     });
 
@@ -357,20 +427,14 @@ function initializeEventListeners(state, actions) {
             house.isCurrentlyNH = false;
             await updateInStore('houses', house);
         }
-        UI.hideNoteModal(); // FIX: Call UI method
+        hideAllModals();
         await (state.currentView === 'house-list-view' ? actions.refreshHouses() : actions.refreshHouseDetails());
     });
 
     document.querySelectorAll('.modal-backdrop').forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal || e.target.closest('.close-modal-btn, [id$="-cancel-btn"]')) {
-                // FIX: Call all hide methods from the UI object
-                UI.hideNoteModal(); 
-                UI.hideTerritoryModal(); 
-                UI.hideStreetModal(); 
-                UI.hideHouseModal(); 
-                UI.hidePhoneCallModal(); 
-                UI.hideImportConflictModal();
+                hideAllModals();
             }
         });
     });
@@ -387,7 +451,7 @@ function initializeEventListeners(state, actions) {
         const conflict = JSON.parse(e.target.dataset.conflict);
         const callback = window.tempImportCallback;
         
-        UI.hideImportConflictModal(); // FIX: Call UI method
+        hideAllModals();
 
         try {
             if (choice === 'merge') {
