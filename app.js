@@ -1,4 +1,4 @@
-// Version 1.12.04
+// Version 1.13.01
 // --- REFACTORED FILE: app.js ---
 // This file initializes the application and manages its central state and actions.
 
