@@ -1,4 +1,4 @@
-// Version 1.14.02
+// Version 1.14.03
 // --- FILE: database-api.js ---
 // This file acts as a data layer, handling complex data operations like import, export, and backup.
 
@@ -9,7 +9,7 @@ const { jsPDF } = window.jspdf;
 async function bundleDataForExport(scope = 'full', id = null) {
     const bundle = {
         meta: {
-            version: '1.14.02',
+            version: '1.14.03',
             exportDate: new Date().toISOString(),
             scope: scope,
             appName: 'MinistryScribe'
@@ -158,12 +158,8 @@ function handleFileImport(event, callback) {
 
 async function processFullImport(data) {
     await clearAllStores();
-    for (const storeName in data) {
-        for (const item of data[storeName]) {
-            delete item.id;
-            await addToStore(storeName, item);
-        }
-    }
+    // *** FIX: Use the executeMerge function which correctly remaps foreign keys. ***
+    await executeMerge(data);
 }
 
 async function processPartialImport(bundle, callback) {
@@ -243,17 +239,21 @@ async function executeMerge(data) {
     }
 
     // 4. Process People (linking to new House IDs)
-    for (const person of data.people) {
-        delete person.id;
-        person.houseId = idMaps.houses.get(person.houseId) || null;
-        await addToStore('people', person);
+    if (data.people) { // Add check for older backups that may not have people
+        for (const person of data.people) {
+            delete person.id;
+            person.houseId = idMaps.houses.get(person.houseId) || null;
+            await addToStore('people', person);
+        }
     }
 
     // 5. Process Visits (linking to new House IDs)
-    for (const visit of data.visits) {
-        delete visit.id;
-        visit.houseId = idMaps.houses.get(visit.houseId) || null;
-        await addToStore('visits', visit);
+    if (data.visits) { // Add check for older backups that may not have visits
+        for (const visit of data.visits) {
+            delete visit.id;
+            visit.houseId = idMaps.houses.get(visit.houseId) || null;
+            await addToStore('visits', visit);
+        }
     }
 }
 
