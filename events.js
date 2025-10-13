@@ -1,4 +1,4 @@
-// Version 1.12.07
+// Version 1.12.08
 // --- FILE: events.js ---
 // This file contains all event listeners for the application. It uses actions to modify state.
 function initializeEventListeners(state, actions) {
@@ -19,8 +19,8 @@ function initializeEventListeners(state, actions) {
         // Clear any stored data on confirm button
         const confirmBtn = document.getElementById('modal-import-confirm-btn');
         if (confirmBtn) {
-            confirmBtn.dataset.bundle = '';
-            confirmBtn.dataset.conflict = '';
+            confirmBtn.removeAttribute('data-bundle');
+            confirmBtn.removeAttribute('data-conflict');
         }
     };
 
@@ -85,6 +85,9 @@ function initializeEventListeners(state, actions) {
     };
 
     // --- END: MODAL HELPER FUNCTIONS ---
+
+    // CRITICAL: Hide all modals on page load to prevent cached state issues
+    hideAllModals();
 
     const personInput = document.getElementById('modal-person-input');
     const suggestionsList = document.getElementById('modal-suggestions-list');
@@ -206,11 +209,12 @@ function initializeEventListeners(state, actions) {
                 } else if (confirm('Undo "Letter Sent" note? This will delete the record.')) {
                     const allVisits = await getByIndex('visits', 'houseId', houseId);
                     const lastLetterVisit = allVisits.filter(v => v.visitType === 'letter').sort((a, b) => new Date(b.date) - new Date(a.date))[0];
-                    if (lastLetterVisit)
+                    if (lastLetterVisit) {
                         await deleteFromStore('visits', lastLetterVisit.id);
                         const house = await getFromStore('houses', houseId);
                         house.isCurrentlyNH = true;
                         await updateInStore('houses', house);
+                    }
                 }
             } else if (target.classList.contains('phone-call-btn')) {
                 state.currentHouseId = houseId;
@@ -460,15 +464,27 @@ function initializeEventListeners(state, actions) {
     document.getElementById('export-street-json-btn').addEventListener('click', () => handleJsonExport('street', state.currentStreetId));
     document.getElementById('import-file-btn').addEventListener('click', () => document.getElementById('import-file-input').click());
     document.getElementById('import-file-input').addEventListener('change', (e) => handleFileImport(e, importCallback));
+    
+    // CRITICAL FIX: Import confirm button with proper validation
     document.getElementById('modal-import-confirm-btn').addEventListener('click', async (e) => {
-        const choice = document.querySelector('input[name="import-choice"]:checked').value;
-        const bundle = JSON.parse(e.target.dataset.bundle);
-        const conflict = JSON.parse(e.target.dataset.conflict);
-        const callback = window.tempImportCallback;
+        const bundleStr = e.target.dataset.bundle;
+        const conflictStr = e.target.dataset.conflict;
         
-        hideAllModals();
-
+        // Check if we have valid data - if not, just close the modal
+        if (!bundleStr || !conflictStr || bundleStr === '' || conflictStr === '') {
+            console.warn('Import modal opened without data - closing gracefully');
+            hideAllModals();
+            return;
+        }
+        
         try {
+            const choice = document.querySelector('input[name="import-choice"]:checked').value;
+            const bundle = JSON.parse(bundleStr);
+            const conflict = JSON.parse(conflictStr);
+            const callback = window.tempImportCallback;
+            
+            hideAllModals();
+
             if (choice === 'merge') {
                 await executeMerge(bundle.data);
                 alert('Data merged successfully.');
@@ -478,6 +494,7 @@ function initializeEventListeners(state, actions) {
             }
             if (callback) callback();
         } catch (error) {
+            hideAllModals();
             alert(`An error occurred during import: ${error.message}`);
             console.error(error);
         }
