@@ -1,4 +1,33 @@
-// Version 1.14.03
+// Version 1.14.04
+/*
+Root Cause Analysis
+The problem originates in the bundleDataForExport function within database-api.js. When performing a "full" backup (scope === 'full'), 
+the original logic was:
+Get all records from the territories store.
+Get all records from the streets store.
+Get all records from the houses store, and so on.
+The function dumped each data store independently without verifying the relationships between them.
+In your test case, your database likely contained "orphaned" streets and houses from previous operations (e.g., a territory was deleted, 
+but its streets were not). When you created a new "Full Backup", the function exported your one valid territory ("Test Territory") 
+but also included all the orphaned streets and houses that still existed in the database.
+This created a corrupted backup file where the streets array contained records whose territoryId did not correspond to any territory 
+in the territories array.
+When you re-imported this file:
+The executeMerge function created the "Test Territory" and mapped its old ID to its new ID.
+When it tried to process the orphaned streets from the file, it could not find their parent territoryId in its map of newly created 
+territories.
+This caused the streets to be created without a link to any territory, so they did not appear when you viewed the "Test Territory".
+
+The Solution
+The solution is to make the "Full Backup" process relational. Instead of blindly dumping each data store, 
+the function must be updated to:
+Get all territories.
+For each territory, find its associated streets.
+For each of those streets, find its associated houses.
+For each of those houses, find its associated people and visits.
+This top-down approach guarantees that every record included in the backup file has a valid parent, 
+creating a self-consistent and reliable backup. The import process can then correctly rebuild all these relationships.
+*/
 // --- FILE: database-api.js ---
 // This file acts as a data layer, handling complex data operations like import, export, and backup.
 
@@ -9,7 +38,7 @@ const { jsPDF } = window.jspdf;
 async function bundleDataForExport(scope = 'full', id = null) {
     const bundle = {
         meta: {
-            version: '1.14.03',
+            version: '1.14.04',
             exportDate: new Date().toISOString(),
             scope: scope,
             appName: 'MinistryScribe'
@@ -24,11 +53,21 @@ async function bundleDataForExport(scope = 'full', id = null) {
     };
 
     if (scope === 'full') {
-        bundle.data.territories = await getAllFromStore('territories');
-        bundle.data.streets = await getAllFromStore('streets');
-        bundle.data.houses = await getAllFromStore('houses');
-        bundle.data.people = await getAllFromStore('people');
-        bundle.data.visits = await getAllFromStore('visits');
+        // Build the data relationally.
+        const territories = await getAllFromStore('territories');
+        bundle.data.territories = territories;
+        for (const territory of territories) {
+            const streets = await getByIndex('streets', 'territoryId', territory.id);
+            bundle.data.streets.push(...streets);
+            for (const street of streets) {
+                const houses = await getByIndex('houses', 'streetId', street.id);
+                bundle.data.houses.push(...houses);
+                for (const house of houses) {
+                    bundle.data.people.push(...await getByIndex('people', 'houseId', house.id));
+                    bundle.data.visits.push(...await getByIndex('visits', 'houseId', house.id));
+                }
+            }
+        }
     } else if (scope === 'territory' && id) {
         const territory = await getFromStore('territories', id);
         if (!territory) throw new Error("Territory not found.");
