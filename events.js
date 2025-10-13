@@ -1,4 +1,8 @@
-// Version 1.14.02
+// Version 1.14.04
+/*
+Here, I'll modify the event listener for the import confirmation button to pass the conflict object to the executeMerge function 
+when the "merge" option is selected.
+*/
 // --- FILE: events.js ---
 // This file contains all event listeners for the application. It uses actions to modify state.
 function initializeEventListeners(state, actions) {
@@ -486,7 +490,7 @@ function initializeEventListeners(state, actions) {
             hideAllModals();
 
             if (choice === 'merge') {
-                await executeMerge(bundle.data);
+                await executeMerge(bundle.data, conflict);
                 alert('Data merged successfully.');
             } else if (choice === 'overwrite') {
                 await executeOverwrite(bundle, conflict);
