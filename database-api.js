@@ -84,13 +84,24 @@ async function handleJsonExport(scope = 'full', id = null) {
 
         const file = new File([blob], filename, { type: 'application/json' });
 
-        if (navigator.share && navigator.canShare({ files: [file] })) {
-            await navigator.share({
-                title: 'Ministry Scribe Backup',
-                text: `Backup file: ${filename}`,
-                files: [file],
-            });
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+                await navigator.share({
+                    title: 'Ministry Scribe Backup',
+                    text: `Backup file: ${filename}`,
+                    files: [file],
+                });
+            } catch (shareError) {
+                // User canceled share or desktop browser blocked it — fallback to download
+                console.warn("Share failed or not allowed, falling back to download:", shareError);
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(file);
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(a.href);
+            }
         } else {
+            // Default fallback for desktop browsers
             const a = document.createElement('a');
             a.href = URL.createObjectURL(file);
             a.download = filename;
