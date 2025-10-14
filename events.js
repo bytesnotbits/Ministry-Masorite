@@ -1,4 +1,4 @@
-// Version 1.15.02
+// Version 1.15.03
 /*
 Here, I'll modify the event listener for the import confirmation button to pass the conflict object to the executeMerge function 
 when the "merge" option is selected.
@@ -128,44 +128,39 @@ function initializeEventListeners(state, actions) {
     const toggleTerritories = document.getElementById('toggle-completed-territories');
     const toggleStreets = document.getElementById('toggle-completed-streets');
     
-    // --- START: BIBLE STUDY MODAL LOGIC ---
-    const studyPersonInput = document.getElementById('modal-study-person-input');
-    const studySuggestionsList = document.getElementById('modal-study-suggestions-list');
-
     // This function searches ALL people in the database to start a study with them.
     async function populateAndShowStudySuggestions() {
         studySuggestionsList.innerHTML = '';
         const allPeople = await getAllFromStore('people');
-        const filter = studyPersonInput.value.toLowerCase();
+        const filter = studyPersonInput.value.toLowerCase().trim();
         const allHouses = new Map((await getAllFromStore('houses')).map(h => [h.id, h]));
 
         const filteredPeople = allPeople.filter(p => p.name.toLowerCase().includes(filter));
 
-        if (filteredPeople.length === 0 && filter) {
-            studySuggestionsList.innerHTML = '<div class="suggestion-item">No people match. Add them from a house detail screen first.</div>';
-        } else {
-            filteredPeople.forEach(person => {
-                const house = allHouses.get(person.houseId);
-                const address = house ? `(${house.address})` : '(No address linked)';
-                const item = document.createElement('div');
-                item.className = 'suggestion-item';
-                item.textContent = `${person.name} ${address}`;
-                item.dataset.id = person.id;
-                item.dataset.name = person.name;
-                studySuggestionsList.appendChild(item);
-            });
-             // Add an option to create a new person if they do not yet exist
-            const exactMatch = allPeople.some(p => p.name.toLowerCase() === filter);
-                if (filter && !exactMatch) {
-                    const newItem = document.createElement('div');
-                    newItem.className = 'suggestion-item is-new';
-                    newItem.textContent = `+ Create new person: "${studyPersonInput.value}"`;
-                    newItem.dataset.id = 'new'; // Special identifier
-                    newItem.dataset.name = studyPersonInput.value;
-                    studySuggestionsList.appendChild(newItem);
-            }
+        filteredPeople.forEach(person => {
+            const house = allHouses.get(person.houseId);
+            const address = house ? `(${house.address})` : '(No address)';
+            const item = document.createElement('div');
+            item.className = 'suggestion-item';
+            item.textContent = `${person.name} ${address}`;
+            item.dataset.id = person.id;
+            item.dataset.name = person.name;
+            studySuggestionsList.appendChild(item);
+        });
+
+        // Add an option to create a new person if the text doesn't exactly match an existing one
+        const exactMatch = allPeople.some(p => p.name.toLowerCase() === filter);
+        if (filter && !exactMatch) {
+            const newItem = document.createElement('div');
+            newItem.className = 'suggestion-item is-new';
+            newItem.textContent = `+ Create new person: "${studyPersonInput.value}"`;
+            newItem.dataset.id = 'new'; // Special identifier
+            newItem.dataset.name = studyPersonInput.value;
+            studySuggestionsList.appendChild(newItem);
         }
-        studySuggestionsList.classList.toggle('hidden', filteredPeople.length === 0 && !filter);
+
+        // Show/hide the list based on whether it has any children
+        studySuggestionsList.classList.toggle('hidden', studySuggestionsList.children.length === 0);
     }
 
     // Event listeners for the person search input

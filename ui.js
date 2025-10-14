@@ -1,4 +1,4 @@
-// Version 1.15.02
+// Version 1.15.03
 // --- FILE: ui.js ---
 // This file contains all functions related to UI rendering and DOM manipulation, now organized into a UI object.
 
@@ -294,30 +294,40 @@ const UI = {
             const person = allPeople.get(study.personId);
             if (!person) continue; // Skip if the person was deleted
 
-            const house = allHouses.get(person.houseId);
-            if (!house) continue;
-            
-            const street = allStreets.get(house.streetId);
-            if (!street) continue;
-
-            const territory = allTerritories.get(street.territoryId);
-            if (!territory) continue;
-
             const li = document.createElement('li');
-            li.dataset.studyId = study.id; // We'll use this later
+            li.dataset.studyId = study.id;
             li.dataset.personId = person.id;
-            li.dataset.houseId = house.id;
+            
+            let locationInfo = '';
+            // --- MODIFICATION START ---
+            // Check if the person is linked to a house
+            if (person.houseId) {
+                const house = allHouses.get(person.houseId);
+                const street = house ? allStreets.get(house.streetId) : null;
+                const territory = street ? allTerritories.get(street.territoryId) : null;
+                
+                if (territory && street) {
+                    li.dataset.houseId = house.id;
+                    locationInfo = `Territory: #${territory.number} (${street.name})`;
+                } else {
+                    locationInfo = 'Location: Address data is missing or incomplete.';
+                }
+            } else {
+                locationInfo = 'Location: No address assigned.';
+            }
+            // --- MODIFICATION END ---
             
             li.innerHTML = `
                 <strong>${person.name}</strong>
                 <div class="rv-details">
                     Publication: <strong>${study.publication || 'Not Set'}</strong><br>
                     Current Lesson: <strong>${study.currentLesson || 'Not Set'}</strong><br>
-                    Territory: #${territory.number} (${street.name})
+                    ${locationInfo}
                 </div>`;
             studyList.appendChild(li);
         }
     },
+
 
     async renderStudyDetails(studyId) {
         // Get the specific study from the database
