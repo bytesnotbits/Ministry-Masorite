@@ -1,4 +1,4 @@
-// Version 1.15.03
+// Version 1.15.04
 /*
 Here, I'll modify the event listener for the import confirmation button to pass the conflict object to the executeMerge function 
 when the "merge" option is selected.
@@ -127,6 +127,8 @@ function initializeEventListeners(state, actions) {
     const phoneCallModalToggles = document.querySelector('#phone-call-modal .modal-toggles');
     const toggleTerritories = document.getElementById('toggle-completed-territories');
     const toggleStreets = document.getElementById('toggle-completed-streets');
+    const studyPersonInput = document.getElementById('modal-study-person-input');
+    const studySuggestionsList = document.getElementById('modal-study-suggestions-list');
     
     // This function searches ALL people in the database to start a study with them.
     async function populateAndShowStudySuggestions() {
