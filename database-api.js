@@ -5,7 +5,7 @@ const { jsPDF } = window.jspdf;
 async function bundleDataForExport(scope = 'full', id = null) {
     const bundle = {
         meta: {
-            version: '1.16.02',
+            version: '1.16.03',
             exportDate: new Date().toISOString(),
             scope: scope,
             appName: 'MinistryScribe'
@@ -22,28 +22,20 @@ async function bundleDataForExport(scope = 'full', id = null) {
     };
 
     if (scope === 'full') {
-        // Build the data relationally.
-        const territories = await getAllFromStore('territories');
-        bundle.data.territories = territories;
-
-        for (const territory of territories) {
-            const streets = await getByIndex('streets', 'territoryId', territory.id);
-            bundle.data.streets.push(...streets);
-            for (const street of streets) {
-                const houses = await getByIndex('houses', 'streetId', street.id);
-                bundle.data.houses.push(...houses);
-                for (const house of houses) {
-                    bundle.data.people.push(...await getByIndex('people', 'houseId', house.id));
-                    bundle.data.visits.push(...await getByIndex('visits', 'houseId', house.id));
-                }
-            }
-        }
+        // For a full backup, simply get ALL data from each store. This is more robust.
+        bundle.data.territories = await getAllFromStore('territories');
+        bundle.data.streets = await getAllFromStore('streets');
+        bundle.data.houses = await getAllFromStore('houses');
+        bundle.data.people = await getAllFromStore('people'); // This line is the critical fix
+        bundle.data.visits = await getAllFromStore('visits');
+        bundle.data.studies = await getAllFromStore('studies');
+        bundle.data.studyHistory = await getAllFromStore('studyHistory');
         
         // --- CORRECT PLACEMENT ---
         // This runs only ONCE, after all other data is gathered.
         bundle.data.studies = await getAllFromStore('studies');
         bundle.data.studyHistory = await getAllFromStore('studyHistory');
-        
+
     } else if (scope === 'territory' && id) {
         const territory = await getFromStore('territories', id);
         if (!territory) throw new Error("Territory not found.");
