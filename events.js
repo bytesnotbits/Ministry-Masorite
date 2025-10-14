@@ -1,10 +1,13 @@
-// Version 1.14.04
+// Version 1.15.01
 /*
 Here, I'll modify the event listener for the import confirmation button to pass the conflict object to the executeMerge function 
 when the "merge" option is selected.
 */
 // --- FILE: events.js ---
-// This file contains all event listeners for the application. It uses actions to modify state.
+// This file contains all event listeners for the application. It uses actions to modify state.+
+
+let selectedStudyPersonId = null;
+
 function initializeEventListeners(state, actions) {
     // --- START: MODAL HELPER FUNCTIONS ---
     // The refactored UI object was not correctly implemented, leading to errors when
@@ -88,6 +91,20 @@ function initializeEventListeners(state, actions) {
         document.getElementById('phone-call-modal').classList.remove('hidden');
     };
 
+    const showStudyModal = () => {
+    selectedStudyPersonId = null; // Reset selection
+    document.getElementById('study-modal').querySelector('h3').textContent = 'Start New Bible Study';
+    document.getElementById('modal-study-person-input').value = '';
+    document.getElementById('modal-study-publication').value = '';
+    document.getElementById('modal-study-lesson').value = '';
+    document.getElementById('modal-study-progress').value = '';
+    document.getElementById('modal-study-suggestions-list').innerHTML = '';
+    document.getElementById('modal-study-suggestions-list').classList.add('hidden');
+    document.getElementById('study-modal').classList.remove('hidden');
+    document.getElementById('modal-study-person-input').focus();
+};
+
+
     // --- END: MODAL HELPER FUNCTIONS ---
 
     // CRITICAL: Hide all modals on page load to prevent cached state issues
@@ -110,6 +127,91 @@ function initializeEventListeners(state, actions) {
     const phoneCallModalToggles = document.querySelector('#phone-call-modal .modal-toggles');
     const toggleTerritories = document.getElementById('toggle-completed-territories');
     const toggleStreets = document.getElementById('toggle-completed-streets');
+    
+    // --- START: BIBLE STUDY MODAL LOGIC ---
+    const studyPersonInput = document.getElementById('modal-study-person-input');
+    const studySuggestionsList = document.getElementById('modal-study-suggestions-list');
+
+    // This function searches ALL people in the database to start a study with them.
+    async function populateAndShowStudySuggestions() {
+        studySuggestionsList.innerHTML = '';
+        const allPeople = await getAllFromStore('people');
+        const filter = studyPersonInput.value.toLowerCase();
+        const allHouses = new Map((await getAllFromStore('houses')).map(h => [h.id, h]));
+
+        const filteredPeople = allPeople.filter(p => p.name.toLowerCase().includes(filter));
+
+        if (filteredPeople.length === 0 && filter) {
+            studySuggestionsList.innerHTML = '<div class="suggestion-item">No people match. Add them from a house detail screen first.</div>';
+        } else {
+            filteredPeople.forEach(person => {
+                const house = allHouses.get(person.houseId);
+                const address = house ? `(${house.address})` : '(No address linked)';
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.textContent = `${person.name} ${address}`;
+                item.dataset.id = person.id;
+                item.dataset.name = person.name;
+                studySuggestionsList.appendChild(item);
+            });
+        }
+        studySuggestionsList.classList.toggle('hidden', filteredPeople.length === 0 && !filter);
+    }
+
+    // Event listeners for the person search input
+    studyPersonInput.addEventListener('focus', populateAndShowStudySuggestions);
+    studyPersonInput.addEventListener('input', () => {
+        selectedStudyPersonId = null; // Clear selection on new input
+        populateAndShowStudySuggestions();
+    });
+
+    // Event listener for clicking a person in the suggestions list
+    studySuggestionsList.addEventListener('click', (e) => {
+        const item = e.target.closest('.suggestion-item');
+        if (!item || !item.dataset.id) return;
+        selectedStudyPersonId = Number(item.dataset.id);
+        studyPersonInput.value = item.dataset.name;
+        studySuggestionsList.classList.add('hidden');
+    });
+
+    // Event listener for the main button that opens the modal
+    document.getElementById('add-study-btn').addEventListener('click', () => showStudyModal());
+
+    // Event listener for the save button
+    document.getElementById('modal-study-save-btn').addEventListener('click', async () => {
+        if (!selectedStudyPersonId) {
+            alert('Please select the person this study is with.');
+            return;
+        }
+        const publication = document.getElementById('modal-study-publication').value.trim();
+        if (!publication) {
+            alert('Please enter the name of the publication.');
+            return;
+        }
+
+        const newStudy = {
+            personId: selectedStudyPersonId,
+            publication: publication,
+            currentLesson: document.getElementById('modal-study-lesson').value.trim(),
+            lessonProgress: document.getElementById('modal-study-progress').value.trim(),
+            isActive: true,
+            goals: [], // Initialize with an empty goals array
+            createdAt: new Date().toISOString()
+        };
+
+        await addToStore('studies', newStudy);
+
+        // Automatically mark the person as an RV
+        const person = await getFromStore('people', selectedStudyPersonId);
+        if (!person.isRV) {
+            person.isRV = true;
+            await updateInStore('people', person);
+        }
+        
+        hideAllModals();
+        await actions.navigateToStudies(); // Refresh the study list to show the new entry
+    });
+    // --- END: BIBLE STUDY MODAL LOGIC ---
 
     function handleToggleChange(event) {
         state.hideCompleted = event.target.checked;
@@ -331,6 +433,7 @@ function initializeEventListeners(state, actions) {
     document.getElementById('add-house-btn').addEventListener('click', showHouseModal);
     document.getElementById('add-visit-btn').addEventListener('click', () => showNoteModal('Add New Visit Note'));
     document.getElementById('show-rvs-btn').addEventListener('click', actions.navigateToRVs);
+    document.getElementById('show-studies-btn').addEventListener('click', actions.navigateToStudies);
     document.querySelector('.filter-controls').addEventListener('click', (e) => {
         const btn = e.target.closest('.filter-btn');
         if (!btn) return;

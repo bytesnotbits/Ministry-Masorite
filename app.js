@@ -1,4 +1,4 @@
-// Version 1.14.02
+// Version 1.15.01
 // --- REFACTORED FILE: app.js ---
 // This file initializes the application and manages its central state and actions.
 
@@ -60,6 +60,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         async navigateToRVs() {
             AppState.currentView = 'rv-list-view';
             await UI.renderRVList();
+            UI.showView(AppState.currentView);
+        },
+
+        async navigateToStudies() {
+            AppState.currentView = 'study-list-view';
+            await UI.renderStudyList();
             UI.showView(AppState.currentView);
         },
         

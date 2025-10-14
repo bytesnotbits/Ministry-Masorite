@@ -1,4 +1,4 @@
-// Version 1.14.02
+// Version 1.15.01
 // --- FILE: ui.js ---
 // This file contains all functions related to UI rendering and DOM manipulation, now organized into a UI object.
 
@@ -270,6 +270,52 @@ const UI = {
                     </div>`;
                 rvList.appendChild(li);
             }
+        }
+    },
+
+    async renderStudyList() {
+        const studyList = document.getElementById('study-list');
+        studyList.innerHTML = ''; // Clear the list first
+
+        const studies = (await getAllFromStore('studies')).filter(s => s.isActive !== false);
+
+        if (studies.length === 0) {
+            studyList.innerHTML = '<li class="placeholder">No bible studies have been added yet.</li>';
+            return;
+        }
+
+        // We need data from other tables to show full details
+        const allPeople = new Map((await getAllFromStore('people')).map(p => [p.id, p]));
+        const allHouses = new Map((await getAllFromStore('houses')).map(h => [h.id, h]));
+        const allStreets = new Map((await getAllFromStore('streets')).map(s => [s.id, s]));
+        const allTerritories = new Map((await getAllFromStore('territories')).map(t => [t.id, t]));
+
+        for (const study of studies) {
+            const person = allPeople.get(study.personId);
+            if (!person) continue; // Skip if the person was deleted
+
+            const house = allHouses.get(person.houseId);
+            if (!house) continue;
+            
+            const street = allStreets.get(house.streetId);
+            if (!street) continue;
+
+            const territory = allTerritories.get(street.territoryId);
+            if (!territory) continue;
+
+            const li = document.createElement('li');
+            li.dataset.studyId = study.id; // We'll use this later
+            li.dataset.personId = person.id;
+            li.dataset.houseId = house.id;
+            
+            li.innerHTML = `
+                <strong>${person.name}</strong>
+                <div class="rv-details">
+                    Publication: <strong>${study.publication || 'Not Set'}</strong><br>
+                    Current Lesson: <strong>${study.currentLesson || 'Not Set'}</strong><br>
+                    Territory: #${territory.number} (${street.name})
+                </div>`;
+            studyList.appendChild(li);
         }
     },
 

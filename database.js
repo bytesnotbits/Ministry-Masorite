@@ -1,8 +1,8 @@
-// Version 1.14.02
+// Version 1.15.01
 
 // --- DATABASE INITIALIZATION ---
 const DB_NAME = 'MinistryScribeDB';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 let db;
 
 function initDB() {
@@ -51,6 +51,16 @@ function initDB() {
             if (!db.objectStoreNames.contains('people')) {
                 const peopleStore = db.createObjectStore('people', { keyPath: 'id', autoIncrement: true });
                 peopleStore.createIndex('houseId', 'houseId', { unique: false });
+            }
+
+            // Track bible Studies
+            if (!db.objectStoreNames.contains('studies')) {
+                const studiesStore = db.createObjectStore('studies', { keyPath: 'id', autoIncrement: true });
+                studiesStore.createIndex('personId', 'personId', { unique: false });
+            }
+            if (!db.objectStoreNames.contains('studyHistory')) {
+                const studyHistoryStore = db.createObjectStore('studyHistory', { keyPath: 'id', autoIncrement: true });
+                studyHistoryStore.createIndex('studyId', 'studyId', { unique: false });
             }
 
             // --- DATA MIGRATION from v2 to v3 ---

@@ -1,4 +1,4 @@
-<!-- 1.14.02 -->
+<!-- 1.15.01 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -39,6 +39,7 @@
 
         <div class="controls">
             <button id="show-rvs-btn" class="secondary-action">Show All RVs</button>
+            <button id="show-studies-btn" class="secondary-action">Show All Bible Studies</button>
             <span>Sort by:</span>
             <button class="sort-btn" data-sort="number">Territory #</button>
             <button class="sort-btn" data-sort="description">Description</button>
@@ -149,6 +150,22 @@
         <button class="back-btn" data-target="territory-list-view">&larr; Back to Territories</button>
         <h2>Return Visits (RVs)</h2>
         <ul id="rv-list"></ul>
+    </div>
+
+    <!-- BIBLE STUDY LIST VIEW -->
+    <div id="study-list-view" class="view">
+        <header class="view-header">
+            <div class="header-row-main">
+                <button class="back-btn" data-target="territory-list-view">&larr; Back to Territories</button>
+                <h2>Bible Studies</h2>
+            </div>
+            <div class="header-row-actions">
+                <button id="add-study-btn" class="primary-action">+ Add New Study</button>
+            </div>
+        </header>
+        <ul id="study-list">
+            <!-- Study cards will be rendered here by JavaScript -->
+        </ul>
     </div>
 
     <!-- NOTE-TAKING MODAL -->
@@ -273,7 +290,7 @@
         </div>
     </div>
 
-    <!-- IMPORT CONFLICT MODAL (NEW) -->
+    <!-- IMPORT CONFLICT MODAL -->
     <div id="import-conflict-modal" class="modal-backdrop hidden">
         <div class="modal-content">
             <button class="close-modal-btn">&times;</button>
@@ -296,6 +313,34 @@
             <div class="modal-actions">
                 <button id="modal-import-cancel-btn">Cancel</button>
                 <button id="modal-import-confirm-btn" class="primary-action">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD/EDIT BIBLE STUDY MODAL -->
+    <div id="study-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <button class="close-modal-btn">&times;</button>
+            <h3>Start New Bible Study</h3>
+
+            <label for="modal-study-person-input">Who is this study with?</label>
+            <div class="combobox-container">
+                <input type="text" id="modal-study-person-input" placeholder="Search for an existing person..." autocomplete="off">
+                <div id="modal-study-suggestions-list" class="suggestions-list hidden"></div>
+            </div>
+
+            <label for="modal-study-publication">Publication</label>
+            <input type="text" id="modal-study-publication" placeholder="e.g., Enjoy Life Forever!">
+
+            <label for="modal-study-lesson">Current Lesson</label>
+            <input type="text" id="modal-study-lesson" placeholder="e.g., Lesson 15">
+
+            <label for="modal-study-progress">Lesson Progress</label>
+            <input type="text" id="modal-study-progress" placeholder="e.g., Paragraph 8, Question 4c">
+
+            <div class="modal-actions">
+                <button id="modal-study-cancel-btn">Cancel</button>
+                <button id="modal-study-save-btn" class="primary-action">Save Study</button>
             </div>
         </div>
     </div>
