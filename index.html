@@ -1,4 +1,4 @@
-<!-- 1.15.01 -->
+<!-- 1.15.02 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -166,6 +166,40 @@
         <ul id="study-list">
             <!-- Study cards will be rendered here by JavaScript -->
         </ul>
+    </div>
+
+    <!-- BIBLE STUDY DETAIL VIEW -->
+    <div id="study-detail-view" class="view">
+        <header class="view-header">
+            <div class="header-row-main">
+                <button class="back-btn" data-target="study-list-view">&larr; Back to Study List</button>
+                <h2 id="study-detail-person-name"></h2>
+            </div>
+        </header>
+
+        <div class="detail-section">
+            <h3>Study Details</h3>
+            <p><strong>Publication:</strong> <span id="study-detail-publication"></span></p>
+            <p><strong>Current Lesson:</strong> <span id="study-detail-lesson"></span></p>
+            <p><strong>Last Progress:</strong> <span id="study-detail-progress"></span></p>
+            <!-- We will add an edit button here later -->
+        </div>
+
+        <div class="detail-section">
+            <h3>Study History</h3>
+            <button id="log-study-session-btn" class="primary-action">+ Log New Study Session</button>
+            <ul id="study-history-list">
+                <!-- Session history will be rendered here -->
+            </ul>
+        </div>
+
+        <div class="detail-section">
+            <h3>Goals</h3>
+            <button id="add-study-goal-btn" class="secondary-action">+ Add New Goal</button>
+            <ul id="study-goals-list">
+                <!-- Goals will be rendered here -->
+            </ul>
+        </div>
     </div>
 
     <!-- NOTE-TAKING MODAL -->
@@ -341,6 +375,36 @@
             <div class="modal-actions">
                 <button id="modal-study-cancel-btn">Cancel</button>
                 <button id="modal-study-save-btn" class="primary-action">Save Study</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOG STUDY SESSION MODAL -->
+    <div id="log-session-modal" class="modal-backdrop hidden">
+        <div class="modal-content">
+            <button class="close-modal-btn">&times;</button>
+            <h3>Log Study Session</h3>
+
+            <label for="modal-session-lesson">Lesson Studied</label>
+            <input type="text" id="modal-session-lesson" placeholder="e.g., Lesson 15">
+
+            <label for="modal-session-progress">Where did you leave off?</label>
+            <input type="text" id="modal-session-progress" placeholder="e.g., Paragraph 8">
+            
+            <label for="modal-session-partner">Partner (optional)</label>
+            <input type="text" id="modal-session-partner" placeholder="e.g., John Doe">
+
+            <label for="modal-session-notes">Notes for next study</label>
+            <textarea id="modal-session-notes" rows="3" placeholder="e.g., Review the illustrations..."></textarea>
+            
+            <label class="modal-toggle">
+                <input type="checkbox" id="modal-session-update-main">
+                Update the main study progress with this info?
+            </label>
+
+            <div class="modal-actions">
+                <button id="modal-session-cancel-btn">Cancel</button>
+                <button id="modal-session-save-btn" class="primary-action">Save Session</button>
             </div>
         </div>
     </div>

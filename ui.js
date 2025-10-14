@@ -1,4 +1,4 @@
-// Version 1.15.01
+// Version 1.15.02
 // --- FILE: ui.js ---
 // This file contains all functions related to UI rendering and DOM manipulation, now organized into a UI object.
 
@@ -316,6 +316,71 @@ const UI = {
                     Territory: #${territory.number} (${street.name})
                 </div>`;
             studyList.appendChild(li);
+        }
+    },
+
+    async renderStudyDetails(studyId) {
+        // Get the specific study from the database
+        const study = await getFromStore('studies', studyId);
+        if (!study) {
+            console.error("Could not find study with ID:", studyId);
+            // Optionally, navigate back or show an error
+            return;
+        }
+
+        // Get the person's name for the header
+        const person = await getFromStore('people', study.personId);
+        document.getElementById('study-detail-person-name').textContent = person ? person.name : 'Unknown Person';
+
+        // Populate the main study details
+        document.getElementById('study-detail-publication').textContent = study.publication || 'N/A';
+        document.getElementById('study-detail-lesson').textContent = study.currentLesson || 'N/A';
+        document.getElementById('study-detail-progress').textContent = study.lessonProgress || 'N/A';
+
+        // Render the Study History list
+        const historyList = document.getElementById('study-history-list');
+        historyList.innerHTML = '';
+        const history = (await getByIndex('studyHistory', 'studyId', studyId)).sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        if (history.length === 0) {
+            historyList.innerHTML = '<li class="placeholder">No study sessions have been logged yet.</li>';
+        } else {
+            history.forEach(session => {
+                const li = document.createElement('li');
+                const sessionDate = new Date(session.date);
+                const formattedDateTime = sessionDate.toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+                li.innerHTML = `
+                    <div class="visit-note-header">
+                        <div class="visit-note-date">
+                            <span>${formattedDateTime}</span>
+                            <!-- Edit/Delete buttons can be added here later -->
+                        </div>
+                    </div>
+                    <p>
+                        <strong>Lesson:</strong> ${session.lessonStudied || study.currentLesson}<br>
+                        <strong>Stopped at:</strong> ${session.stoppingPoint || 'N/A'}<br>
+                        ${session.partner ? `<strong>Partner:</strong> ${session.partner}<br>` : ''}
+                        <strong>Notes:</strong> ${session.nextStudyNotes || 'No notes for next session.'}
+                    </p>
+                `;
+                historyList.appendChild(li);
+            });
+        }
+
+        // Render the Goals list
+        const goalsList = document.getElementById('study-goals-list');
+        goalsList.innerHTML = '';
+
+        if (!study.goals || study.goals.length === 0) {
+            goalsList.innerHTML = '<li class="placeholder">No goals have been set for this study yet.</li>';
+        } else {
+            study.goals.forEach(goal => {
+                const li = document.createElement('li');
+                // We can add more complex goal rendering here later
+                li.textContent = goal.goal;
+                goalsList.appendChild(li);
+            });
         }
     },
 

@@ -1,4 +1,4 @@
-// Version 1.15.01
+// Version 1.15.02
 // --- REFACTORED FILE: app.js ---
 // This file initializes the application and manages its central state and actions.
 
@@ -22,7 +22,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             ni: false,
             nt: false,
             gated: false
-        }
+        },
+        currentStudyId: null,
+        studyListScrollPosition: 0,
     };
 
     // --- 2. STATE MODIFICATION ACTIONS ---
@@ -57,6 +59,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             UI.showView(AppState.currentView);
         },
         
+        async navigateToStudyDetails(studyId) {
+            AppState.studyListScrollPosition = window.scrollY;
+            AppState.currentStudyId = studyId;
+            AppState.currentView = 'study-detail-view';
+            await UI.renderStudyDetails(AppState.currentStudyId);
+            UI.showView(AppState.currentView);
+        },
+
         async navigateToRVs() {
             AppState.currentView = 'rv-list-view';
             await UI.renderRVList();
@@ -109,6 +119,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         async refreshHouseDetails() {
             await UI.renderHouseDetails(AppState.currentHouseId);
+        },
+
+        async refreshStudyDetails() {
+            await UI.renderStudyDetails(AppState.currentStudyId);
         },
 
         async updateTerritorySort(sortType) {

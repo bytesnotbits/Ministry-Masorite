@@ -1,4 +1,4 @@
-// Version 1.15.01
+// Version 1.15.02
 /*
 Here, I'll modify the event listener for the import confirmation button to pass the conflict object to the executeMerge function 
 when the "merge" option is selected.
@@ -154,6 +154,16 @@ function initializeEventListeners(state, actions) {
                 item.dataset.name = person.name;
                 studySuggestionsList.appendChild(item);
             });
+             // Add an option to create a new person if they do not yet exist
+            const exactMatch = allPeople.some(p => p.name.toLowerCase() === filter);
+                if (filter && !exactMatch) {
+                    const newItem = document.createElement('div');
+                    newItem.className = 'suggestion-item is-new';
+                    newItem.textContent = `+ Create new person: "${studyPersonInput.value}"`;
+                    newItem.dataset.id = 'new'; // Special identifier
+                    newItem.dataset.name = studyPersonInput.value;
+                    studySuggestionsList.appendChild(newItem);
+            }
         }
         studySuggestionsList.classList.toggle('hidden', filteredPeople.length === 0 && !filter);
     }
@@ -169,8 +179,15 @@ function initializeEventListeners(state, actions) {
     studySuggestionsList.addEventListener('click', (e) => {
         const item = e.target.closest('.suggestion-item');
         if (!item || !item.dataset.id) return;
-        selectedStudyPersonId = Number(item.dataset.id);
-        studyPersonInput.value = item.dataset.name;
+
+        if (item.dataset.id === 'new') {
+            selectedStudyPersonId = 'new'; // Use 'new' as a flag
+            studyPersonInput.value = item.dataset.name;
+        } else {
+            selectedStudyPersonId = Number(item.dataset.id);
+            studyPersonInput.value = item.dataset.name;
+        }
+        
         studySuggestionsList.classList.add('hidden');
     });
 
@@ -179,39 +196,114 @@ function initializeEventListeners(state, actions) {
 
     // Event listener for the save button
     document.getElementById('modal-study-save-btn').addEventListener('click', async () => {
-        if (!selectedStudyPersonId) {
-            alert('Please select the person this study is with.');
+        const personName = document.getElementById('modal-study-person-input').value.trim();
+        const publication = document.getElementById('modal-study-publication').value.trim();
+        
+        if (!personName) {
+            alert('Please select or create the person this study is with.');
             return;
         }
-        const publication = document.getElementById('modal-study-publication').value.trim();
         if (!publication) {
             alert('Please enter the name of the publication.');
             return;
         }
 
+        // -- MODIFICATION START --
+        let personIdToSave;
+
+        // Check if we need to create a new person
+        if (selectedStudyPersonId === 'new') {
+            const newPerson = {
+                name: personName,
+                houseId: null, // This person has no address yet
+                isRV: true // A bible study is automatically an RV
+            };
+            personIdToSave = await addToStore('people', newPerson);
+        } else {
+            personIdToSave = selectedStudyPersonId;
+        }
+
+        if (!personIdToSave) {
+            alert('Could not find or create the person. Please try again.');
+            return;
+        }
+        // -- MODIFICATION END --
+
         const newStudy = {
-            personId: selectedStudyPersonId,
+            personId: personIdToSave, // Use the newly created or selected ID
             publication: publication,
             currentLesson: document.getElementById('modal-study-lesson').value.trim(),
             lessonProgress: document.getElementById('modal-study-progress').value.trim(),
             isActive: true,
-            goals: [], // Initialize with an empty goals array
+            goals: [],
             createdAt: new Date().toISOString()
         };
 
         await addToStore('studies', newStudy);
 
-        // Automatically mark the person as an RV
-        const person = await getFromStore('people', selectedStudyPersonId);
-        if (!person.isRV) {
-            person.isRV = true;
-            await updateInStore('people', person);
+        // If the person was existing, ensure they are marked as an RV
+        if (selectedStudyPersonId !== 'new') {
+            const person = await getFromStore('people', personIdToSave);
+            if (!person.isRV) {
+                person.isRV = true;
+                await updateInStore('people', person);
+            }
         }
         
         hideAllModals();
-        await actions.navigateToStudies(); // Refresh the study list to show the new entry
+        await actions.navigateToStudies();
     });
     // --- END: BIBLE STUDY MODAL LOGIC ---
+
+    // --- START: LOG STUDY SESSION MODAL LOGIC ---
+    const showSessionModal = async () => {
+        const study = await getFromStore('studies', state.currentStudyId);
+        // Pre-fill the lesson from the main study record
+        document.getElementById('modal-session-lesson').value = study.currentLesson || '';
+        document.getElementById('modal-session-progress').value = '';
+        document.getElementById('modal-session-partner').value = '';
+        document.getElementById('modal-session-notes').value = '';
+        document.getElementById('modal-session-update-main').checked = true; // Default to checked
+        document.getElementById('log-session-modal').classList.remove('hidden');
+        document.getElementById('modal-session-progress').focus();
+    };
+
+    // Event listener for the button on the detail screen
+    document.getElementById('log-study-session-btn').addEventListener('click', showSessionModal);
+
+    // Event listener for the save button in the modal
+    document.getElementById('modal-session-save-btn').addEventListener('click', async () => {
+        const lessonStudied = document.getElementById('modal-session-lesson').value.trim();
+        const stoppingPoint = document.getElementById('modal-session-progress').value.trim();
+
+        if (!lessonStudied || !stoppingPoint) {
+            alert('Please fill in the lesson and where you left off.');
+            return;
+        }
+
+        const newSession = {
+            studyId: state.currentStudyId,
+            date: new Date().toISOString(),
+            lessonStudied: lessonStudied,
+            stoppingPoint: stoppingPoint,
+            partner: document.getElementById('modal-session-partner').value.trim(),
+            nextStudyNotes: document.getElementById('modal-session-notes').value.trim()
+        };
+        
+        await addToStore('studyHistory', newSession);
+
+        // If the checkbox is ticked, update the main study record as well
+        if (document.getElementById('modal-session-update-main').checked) {
+            const study = await getFromStore('studies', state.currentStudyId);
+            study.currentLesson = lessonStudied;
+            study.lessonProgress = stoppingPoint;
+            await updateInStore('studies', study);
+        }
+
+        hideAllModals();
+        await actions.refreshStudyDetails(); // Refresh the detail view to show the new log
+    });
+    // --- END: LOG STUDY SESSION MODAL LOGIC ---
 
     function handleToggleChange(event) {
         state.hideCompleted = event.target.checked;
@@ -287,6 +379,8 @@ function initializeEventListeners(state, actions) {
         const streetLi = target.closest('#street-list li:not(.placeholder)');
         if (streetLi && !target.closest('.delete-btn, .edit-street-btn')) return actions.navigateToHouses(Number(streetLi.dataset.id));
         const houseLi = target.closest('#house-list li:not(.placeholder)');
+        const studyLi = target.closest('#study-list li:not(.placeholder)');
+        if (studyLi) return actions.navigateToStudyDetails(Number(studyLi.dataset.studyId));
         if (houseLi && !target.closest('.delete-btn, .card-actions')) return actions.navigateToHouseDetails(Number(houseLi.dataset.id));
         const rvLi = target.closest('#rv-list li:not(.placeholder)');
         if (rvLi) {
