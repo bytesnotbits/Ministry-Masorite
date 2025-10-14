@@ -5,7 +5,7 @@ const { jsPDF } = window.jspdf;
 async function bundleDataForExport(scope = 'full', id = null) {
     const bundle = {
         meta: {
-            version: '1.16.01',
+            version: '1.16.02',
             exportDate: new Date().toISOString(),
             scope: scope,
             appName: 'MinistryScribe'
@@ -25,6 +25,7 @@ async function bundleDataForExport(scope = 'full', id = null) {
         // Build the data relationally.
         const territories = await getAllFromStore('territories');
         bundle.data.territories = territories;
+
         for (const territory of territories) {
             const streets = await getByIndex('streets', 'territoryId', territory.id);
             bundle.data.streets.push(...streets);
@@ -34,13 +35,15 @@ async function bundleDataForExport(scope = 'full', id = null) {
                 for (const house of houses) {
                     bundle.data.people.push(...await getByIndex('people', 'houseId', house.id));
                     bundle.data.visits.push(...await getByIndex('visits', 'houseId', house.id));
-                    bundle.data.studies = await getAllFromStore('studies');
-                    bundle.data.studyHistory = await getAllFromStore('studyHistory');
                 }
             }
-            bundle.data.studies = await getAllFromStore('studies');
-            bundle.data.studyHistory = await getAllFromStore('studyHistory');
         }
+        
+        // --- CORRECT PLACEMENT ---
+        // This runs only ONCE, after all other data is gathered.
+        bundle.data.studies = await getAllFromStore('studies');
+        bundle.data.studyHistory = await getAllFromStore('studyHistory');
+        
     } else if (scope === 'territory' && id) {
         const territory = await getFromStore('territories', id);
         if (!territory) throw new Error("Territory not found.");
