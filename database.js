@@ -201,7 +201,7 @@ function getByIndex(storeName, indexName, value) {
 }
 
 async function clearAllStores() {
-    const storeNames = ['territories', 'streets', 'houses', 'visits', 'people'];
+    const storeNames = ['territories', 'streets', 'houses', 'visits', 'people', 'studies', 'studyHistory'];
     const transaction = db.transaction(storeNames, 'readwrite');
     for (const storeName of storeNames) {
         transaction.objectStore(storeName).clear();

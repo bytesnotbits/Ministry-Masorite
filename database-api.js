@@ -5,7 +5,7 @@ const { jsPDF } = window.jspdf;
 async function bundleDataForExport(scope = 'full', id = null) {
     const bundle = {
         meta: {
-            version: '1.14.04',
+            version: '1.16.01',
             exportDate: new Date().toISOString(),
             scope: scope,
             appName: 'MinistryScribe'
@@ -16,6 +16,8 @@ async function bundleDataForExport(scope = 'full', id = null) {
             houses: [],
             people: [],
             visits: [],
+            studies: [],
+            studyHistory: []
         }
     };
 
@@ -32,8 +34,12 @@ async function bundleDataForExport(scope = 'full', id = null) {
                 for (const house of houses) {
                     bundle.data.people.push(...await getByIndex('people', 'houseId', house.id));
                     bundle.data.visits.push(...await getByIndex('visits', 'houseId', house.id));
+                    bundle.data.studies = await getAllFromStore('studies');
+                    bundle.data.studyHistory = await getAllFromStore('studyHistory');
                 }
             }
+            bundle.data.studies = await getAllFromStore('studies');
+            bundle.data.studyHistory = await getAllFromStore('studyHistory');
         }
     } else if (scope === 'territory' && id) {
         const territory = await getFromStore('territories', id);
@@ -205,6 +211,8 @@ async function executeMerge(data, existingTerritory = null) {
         houses: new Map(),
         people: new Map(),
         visits: new Map(),
+        studies: new Map(),
+        studyHistory: new Map()
     };
 
     // 1. Process Territories
@@ -262,15 +270,21 @@ async function executeMerge(data, existingTerritory = null) {
         idMaps.houses.set(oldId, newId);
     }
 
-    // 4. Process People (linking to new House IDs)
+    // 4. Process People (linking to new House IDs or as unattached)
     if (data.people) {
         for (const person of data.people) {
+            const oldPersonId = person.id; // Get the old ID before deleting
             const oldHouseId = person.houseId;
             const newHouseId = idMaps.houses.get(oldHouseId);
-            if (newHouseId) {
+
+            // A person can exist without a house (new feature)
+            // or must be linked to a house that was successfully imported.
+            if (person.houseId === null || newHouseId) {
                 delete person.id;
-                person.houseId = newHouseId;
-                await addToStore('people', person);
+                person.houseId = newHouseId || null; // Assign new ID or keep it null
+                
+                const newPersonId = await addToStore('people', person);
+                idMaps.people.set(oldPersonId, newPersonId); // Map old person ID to new
             }
         }
     }
@@ -284,6 +298,38 @@ async function executeMerge(data, existingTerritory = null) {
                 delete visit.id;
                 visit.houseId = newHouseId;
                 await addToStore('visits', visit);
+            }
+        }
+    }
+    // 6. Process Studies (linking to new Person IDs)
+    if (data.studies) {
+        for (const study of data.studies) {
+            const oldPersonId = study.personId;
+            const newPersonId = idMaps.people.get(oldPersonId);
+            
+            // Only import studies for people who were successfully imported.
+            if (newPersonId) {
+                const oldStudyId = study.id;
+                delete study.id;
+                study.personId = newPersonId;
+                
+                const newStudyId = await addToStore('studies', study);
+                idMaps.studies.set(oldStudyId, newStudyId);
+            }
+        }
+    }
+
+    // 7. Process Study History (linking to new Study IDs)
+    if (data.studyHistory) {
+        for (const session of data.studyHistory) {
+            const oldStudyId = session.studyId;
+            const newStudyId = idMaps.studies.get(oldStudyId);
+            
+            // Only import history for studies that were successfully imported.
+            if (newStudyId) {
+                delete session.id;
+                session.studyId = newStudyId;
+                await addToStore('studyHistory', session);
             }
         }
     }
