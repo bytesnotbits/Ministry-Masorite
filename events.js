@@ -1,4 +1,4 @@
-// Version 1.15.04
+// Version 1.17.01
 /*
 Here, I'll modify the event listener for the import confirmation button to pass the conflict object to the executeMerge function 
 when the "merge" option is selected.
@@ -92,17 +92,34 @@ function initializeEventListeners(state, actions) {
     };
 
     const showStudyModal = () => {
-    selectedStudyPersonId = null; // Reset selection
-    document.getElementById('study-modal').querySelector('h3').textContent = 'Start New Bible Study';
-    document.getElementById('modal-study-person-input').value = '';
-    document.getElementById('modal-study-publication').value = '';
-    document.getElementById('modal-study-lesson').value = '';
-    document.getElementById('modal-study-progress').value = '';
-    document.getElementById('modal-study-suggestions-list').innerHTML = '';
-    document.getElementById('modal-study-suggestions-list').classList.add('hidden');
-    document.getElementById('study-modal').classList.remove('hidden');
-    document.getElementById('modal-study-person-input').focus();
-};
+        selectedStudyPersonId = null; // Reset selection
+        document.getElementById('study-modal').querySelector('h3').textContent = 'Start New Bible Study';
+        document.getElementById('modal-study-person-input').value = '';
+        document.getElementById('modal-study-publication').value = '';
+        document.getElementById('modal-study-lesson').value = '';
+        document.getElementById('modal-study-progress').value = '';
+        document.getElementById('modal-study-suggestions-list').innerHTML = '';
+        document.getElementById('modal-study-suggestions-list').classList.add('hidden');
+        document.getElementById('study-modal').classList.remove('hidden');
+        document.getElementById('modal-study-person-input').focus();
+    };
+
+    const showStudyModalForEdit = async (study) => {
+        state.currentEditStudyId = study.id; // Set the ID we are editing
+        document.getElementById('study-modal').querySelector('h3').textContent = 'Edit Bible Study';
+        
+        // Populate the form with existing data
+        const person = await getFromStore('people', study.personId);
+        document.getElementById('modal-study-person-input').value = person ? person.name : 'Unknown';
+        document.getElementById('modal-study-person-input').disabled = true; // Prevent changing the person
+        document.getElementById('modal-study-publication').value = study.publication || '';
+        document.getElementById('modal-study-lesson').value = study.currentLesson || '';
+        document.getElementById('modal-study-progress').value = study.lessonProgress || '';
+
+        document.getElementById('modal-study-suggestions-list').classList.add('hidden');
+        document.getElementById('study-modal').classList.remove('hidden');
+        document.getElementById('modal-study-publication').focus();
+    };
 
 
     // --- END: MODAL HELPER FUNCTIONS ---
@@ -191,30 +208,39 @@ function initializeEventListeners(state, actions) {
     // Event listener for the main button that opens the modal
     document.getElementById('add-study-btn').addEventListener('click', () => showStudyModal());
 
-    // Event listener for the save button
+    // Event listener for the save button (Handles BOTH Create and Edit)
     document.getElementById('modal-study-save-btn').addEventListener('click', async () => {
-        const personName = document.getElementById('modal-study-person-input').value.trim();
         const publication = document.getElementById('modal-study-publication').value.trim();
-        
-        if (!personName) {
-            alert('Please select or create the person this study is with.');
-            return;
-        }
         if (!publication) {
             alert('Please enter the name of the publication.');
             return;
         }
 
-        // -- MODIFICATION START --
-        let personIdToSave;
+        // --- EDIT LOGIC ---
+        if (state.currentEditStudyId) {
+            const study = await getFromStore('studies', state.currentEditStudyId);
+            study.publication = publication;
+            study.currentLesson = document.getElementById('modal-study-lesson').value.trim();
+            study.lessonProgress = document.getElementById('modal-study-progress').value.trim();
+            await updateInStore('studies', study);
+            
+            hideAllModals();
+            await actions.refreshStudyDetails();
+            state.currentEditStudyId = null; // Reset edit state
+            document.getElementById('modal-study-person-input').disabled = false; // Re-enable for next time
+            return; // Stop execution here
+        }
 
-        // Check if we need to create a new person
+        // --- CREATE LOGIC (The original code) ---
+        const personName = document.getElementById('modal-study-person-input').value.trim();
+        if (!personName) {
+            alert('Please select or create the person this study is with.');
+            return;
+        }
+
+        let personIdToSave;
         if (selectedStudyPersonId === 'new') {
-            const newPerson = {
-                name: personName,
-                houseId: null, // This person has no address yet
-                isRV: true // A bible study is automatically an RV
-            };
+            const newPerson = { name: personName, houseId: null, isRV: true };
             personIdToSave = await addToStore('people', newPerson);
         } else {
             personIdToSave = selectedStudyPersonId;
@@ -224,10 +250,9 @@ function initializeEventListeners(state, actions) {
             alert('Could not find or create the person. Please try again.');
             return;
         }
-        // -- MODIFICATION END --
 
         const newStudy = {
-            personId: personIdToSave, // Use the newly created or selected ID
+            personId: personIdToSave,
             publication: publication,
             currentLesson: document.getElementById('modal-study-lesson').value.trim(),
             lessonProgress: document.getElementById('modal-study-progress').value.trim(),
@@ -235,10 +260,8 @@ function initializeEventListeners(state, actions) {
             goals: [],
             createdAt: new Date().toISOString()
         };
-
         await addToStore('studies', newStudy);
 
-        // If the person was existing, ensure they are marked as an RV
         if (selectedStudyPersonId !== 'new') {
             const person = await getFromStore('people', personIdToSave);
             if (!person.isRV) {
@@ -250,6 +273,7 @@ function initializeEventListeners(state, actions) {
         hideAllModals();
         await actions.navigateToStudies();
     });
+
     // --- END: BIBLE STUDY MODAL LOGIC ---
 
     // --- START: LOG STUDY SESSION MODAL LOGIC ---
@@ -377,6 +401,8 @@ function initializeEventListeners(state, actions) {
         if (streetLi && !target.closest('.delete-btn, .edit-street-btn')) return actions.navigateToHouses(Number(streetLi.dataset.id));
         const houseLi = target.closest('#house-list li:not(.placeholder)');
         const studyLi = target.closest('#study-list li:not(.placeholder)');
+
+        // --- List Navigation ---
         if (studyLi) return actions.navigateToStudyDetails(Number(studyLi.dataset.studyId));
         if (houseLi && !target.closest('.delete-btn, .card-actions')) return actions.navigateToHouseDetails(Number(houseLi.dataset.id));
         const rvLi = target.closest('#rv-list li:not(.placeholder)');
@@ -388,6 +414,27 @@ function initializeEventListeners(state, actions) {
             state.currentStreetId = street.id;
             return actions.navigateToHouseDetails(houseId);
         }
+
+        // --- Detail View Button Actions ---
+        const editStudyBtn = target.closest('#edit-study-details-btn');
+        if (editStudyBtn) {
+            const study = await getFromStore('studies', state.currentStudyId);
+            if (study) return showStudyModalForEdit(study);
+        }
+
+        const concludeStudyBtn = target.closest('#conclude-study-btn');
+        if (concludeStudyBtn) {
+            if (confirm('Are you sure you want to conclude this study? It will be removed from the active list but its history will be saved.')) {
+                const study = await getFromStore('studies', state.currentStudyId);
+                if (study) {
+                    study.isActive = false;
+                    await updateInStore('studies', study);
+                    return actions.navigateBack('study-list-view');
+                }
+            }
+        }
+
+        // --- Card Button Actions ---
         const cardActions = target.closest('.card-actions');
         if (cardActions) {
             const houseId = Number(target.closest('button').dataset.id);

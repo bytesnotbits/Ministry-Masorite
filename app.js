@@ -1,4 +1,4 @@
-// Version 1.15.02
+// Version 1.17.01
 // --- REFACTORED FILE: app.js ---
 // This file initializes the application and manages its central state and actions.
 
@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         },
         currentStudyId: null,
         studyListScrollPosition: 0,
+        currentEditStudyId: null,
     };
 
     // --- 2. STATE MODIFICATION ACTIONS ---
