@@ -103,10 +103,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // --- Data & UI Update Actions ---
         async refreshTerritories() {
-            const allTerritories = await getAllFromStore('territories');
             const filter = document.getElementById('search-territory-input').value;
-            await UI.renderTerritories(allTerritories, AppState.territorySort, filter);
+            // Call our "master search" function
+            const matchingIds = await searchAllData(filter);
+            // Pass the results to the UI to be rendered
+            await UI.renderTerritories(matchingIds);
         },
+
         
         async refreshStreets() {
             const territory = await getFromStore('territories', AppState.currentTerritoryId);

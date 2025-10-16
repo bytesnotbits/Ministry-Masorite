@@ -370,3 +370,64 @@ async function handleExportPDF(streetId) {
     }
     doc.save(`${street.name.replace(/[^\w\s]/gi, '').replace(/\s/g, '_')}.pdf`);
 }
+
+async function searchAllData(searchText) {
+    const lowerCaseSearch = searchText.toLowerCase().trim();
+    if (!lowerCaseSearch) {
+        return null; // Return null if search is empty, so we know to show all territories
+    }
+
+    // A Set is used to store the IDs of territories that have a match.
+    // It automatically handles duplicates for us.
+    const matchingTerritoryIds = new Set();
+
+    // 1. Get all the data we need to search
+    const allTerritories = await getAllFromStore('territories');
+    const allStreets = await getAllFromStore('streets');
+    const allHouses = await getAllFromStore('houses');
+    const allPeople = await getAllFromStore('people');
+    const allVisits = await getAllFromStore('visits');
+
+    // 2. Create maps for easy lookups to find the parent territory
+    const houseToStreet = new Map(allHouses.map(h => [h.id, h.streetId]));
+    const streetToTerritory = new Map(allStreets.map(s => [s.id, s.territoryId]));
+
+    // 3. Search through each data type
+    // Search Territories
+    for (const territory of allTerritories) {
+        if (territory.number.toLowerCase().includes(lowerCaseSearch) || territory.description.toLowerCase().includes(lowerCaseSearch)) {
+            matchingTerritoryIds.add(territory.id);
+        }
+    }
+
+    // Search Streets
+    for (const street of allStreets) {
+        if (street.name.toLowerCase().includes(lowerCaseSearch)) {
+            matchingTerritoryIds.add(street.territoryId);
+        }
+    }
+
+    // Search People
+    for (const person of allPeople) {
+        if (person.name.toLowerCase().includes(lowerCaseSearch)) {
+            const streetId = houseToStreet.get(person.houseId);
+            const territoryId = streetToTerritory.get(streetId);
+            if (territoryId) {
+                matchingTerritoryIds.add(territoryId);
+            }
+        }
+    }
+
+    // Search Visit Notes
+    for (const visit of allVisits) {
+        if (visit.notes && visit.notes.toLowerCase().includes(lowerCaseSearch)) {
+            const streetId = houseToStreet.get(visit.houseId);
+            const territoryId = streetToTerritory.get(streetId);
+            if (territoryId) {
+                matchingTerritoryIds.add(territoryId);
+            }
+        }
+    }
+
+    return Array.from(matchingTerritoryIds);
+}

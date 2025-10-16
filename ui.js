@@ -29,11 +29,20 @@ const UI = {
         setTimeout(() => window.scrollTo(0, scrollPos), 0);
     },
 
-    async renderTerritories() {
+    async renderTerritories(matchingIds = null) {
         this.territoryList.innerHTML = '';
-        const territories = await getAllFromStore('territories');
+        let territories = await getAllFromStore('territories');
         const allStreets = await getAllFromStore('streets');
         const allHouses = await getAllFromStore('houses');
+
+        // --- START OF NEW LOGIC ---
+        // If matchingIds is an array, we filter the territories.
+        // If it's null (from an empty search), we show all of them.
+        if (matchingIds !== null) {
+            const idSet = new Set(matchingIds); // Use a Set for faster lookups
+            territories = territories.filter(t => idSet.has(t.id));
+        }
+        // --- END OF NEW LOGIC ---
         
         const streetsByTerritory = new Map(territories.map(t => [t.id, []]));
         allStreets.forEach(s => {
@@ -47,6 +56,13 @@ const UI = {
                 housesByStreet.get(h.streetId).push(h);
             }
         });
+
+        if (territories.length === 0) {
+            // The message is now smart: it knows if a search was performed.
+            const message = matchingIds !== null ? 'No territories match your search.' : 'No territories have been added yet.';
+            this.territoryList.innerHTML = `<li class="placeholder">${message}</li>`;
+            return;
+        }
 
         for (const territory of territories) {
             const streetsInTerritory = streetsByTerritory.get(territory.id) || [];
@@ -69,6 +85,8 @@ const UI = {
             this.territoryList.appendChild(li);
         }
     },
+
+
 
     async renderStreets(territory) {
         this.streetList.innerHTML = '';
