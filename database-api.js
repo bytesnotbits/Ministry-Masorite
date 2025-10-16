@@ -5,7 +5,7 @@ const { jsPDF } = window.jspdf;
 async function bundleDataForExport(scope = 'full', id = null) {
     const bundle = {
         meta: {
-            version: '1.16.03',
+            version: '1.18.01',
             exportDate: new Date().toISOString(),
             scope: scope,
             appName: 'MinistryScribe'
