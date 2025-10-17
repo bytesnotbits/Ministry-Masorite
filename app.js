@@ -171,19 +171,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // newSearch takes you all the way back to the beginning
         async newSearch() {
-            // 1. Clear the state just like the other function
+            // 1. Get the input element and clear it FIRST. This is the fix.
+            const searchInput = document.getElementById('search-territory-input');
+            searchInput.value = '';
+
+            // 2. Clear the state
             AppState.currentSearchQuery = '';
             AppState.searchHighlights = { streetIds: new Set(), houseIds: new Set() };
             
-            // 2. Navigate back to the main territory list
+            // 3. Navigate back to the main territory list (which will trigger a refresh)
             await this.navigateBack('territory-list-view');
             
-            // 3. Focus the input and clear it, ready for a new search
-            const searchInput = document.getElementById('search-territory-input');
-            searchInput.value = '';
+            // 4. Focus the input, ready for the user
             searchInput.focus();
 
-            // 4. Hide the indicator bar
+            // 5. Hide the indicator bar
             this.updateSearchIndicator();
         },
 
