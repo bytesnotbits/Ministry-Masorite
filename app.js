@@ -1,4 +1,4 @@
-// Version 1.20.03
+// Version 1.20.04
 // --- REFACTORED FILE: app.js ---
 // This file initializes the application and manages its central state and actions.
 
@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const territory = await getFromStore('territories', territoryId);
             UI.renderStreets(territory, AppState.searchHighlights);
             UI.showView(AppState.currentView);
+            this.updateSearchIndicator();
         },
 
         async navigateToHouses(streetId) {
@@ -54,6 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const street = await getFromStore('streets', streetId);
             await UI.renderHouses(street, AppState.activeHouseFilters, AppState.searchHighlights);
             UI.showView(AppState.currentView);
+            this.updateSearchIndicator();
         },
 
         async navigateToHouseDetails(houseId) {
@@ -110,10 +112,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             const filter = document.getElementById('search-territory-input').value;
             // Call our "master search" function
             const searchResults = await searchAllData(filter);
+
+            AppState.currentSearchQuery = filter;
+            AppState.searchHighlights = { streetIds: new Set(searchResults?.streetIds), houseIds: new Set(searchResults?.houseIds) };
             // Check if searchResults exists.
             // If it does, pass ONLY the territoryIds array.
             // If it's null (empty search), pass null.
             await UI.renderTerritories(searchResults ? searchResults.territoryIds : null);
+            this.updateSearchIndicator();
         },
         
         async refreshStreets() {
@@ -128,6 +134,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         async refreshHouseDetails() {
             await UI.renderHouseDetails(AppState.currentHouseId);
+        },
+
+        //Reads the AppState.currentSearchQuery and updates the UI accordingly.
+        updateSearchIndicator() {
+            const indicatorBar = document.getElementById('search-indicator-bar');
+            const indicatorText = document.getElementById('search-indicator-text');
+            
+            if (AppState.currentSearchQuery) {
+                indicatorText.textContent = `Search results for: "${AppState.currentSearchQuery}"`;
+                indicatorBar.classList.remove('hidden');
+            } else {
+                indicatorBar.classList.add('hidden');
+            }
         },
 
         async refreshStudyDetails() {
