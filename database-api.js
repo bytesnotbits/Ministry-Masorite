@@ -5,7 +5,7 @@ const { jsPDF } = window.jspdf;
 async function bundleDataForExport(scope = 'full', id = null) {
     const bundle = {
         meta: {
-            version: '1.18.01',
+            version: '1.20.02',
             exportDate: new Date().toISOString(),
             scope: scope,
             appName: 'MinistryScribe'
@@ -374,60 +374,76 @@ async function handleExportPDF(streetId) {
 async function searchAllData(searchText) {
     const lowerCaseSearch = searchText.toLowerCase().trim();
     if (!lowerCaseSearch) {
-        return null; // Return null if search is empty, so we know to show all territories
+        return null; // Return null if search is empty, indicating no search is active
     }
 
-    // A Set is used to store the IDs of territories that have a match.
-    // It automatically handles duplicates for us.
-    const matchingTerritoryIds = new Set();
+    // This object will hold all our results.
+    const matches = {
+        territoryIds: new Set(),
+        streetIds: new Set(),
+        houseIds: new Set()
+    };
 
-    // 1. Get all the data we need to search
+    // 1. Get all the data we need
     const allTerritories = await getAllFromStore('territories');
     const allStreets = await getAllFromStore('streets');
     const allHouses = await getAllFromStore('houses');
     const allPeople = await getAllFromStore('people');
     const allVisits = await getAllFromStore('visits');
 
-    // 2. Create maps for easy lookups to find the parent territory
-    const houseToStreet = new Map(allHouses.map(h => [h.id, h.streetId]));
-    const streetToTerritory = new Map(allStreets.map(s => [s.id, s.territoryId]));
+    // 2. Create maps for easy lookups to find parent IDs
+    const houseToStreetMap = new Map(allHouses.map(h => [h.id, h.streetId]));
+    const streetToTerritoryMap = new Map(allStreets.map(s => [s.id, s.territoryId]));
+
+    // Helper function to add all parent IDs when a "deep" match is found
+    const addParentIds = (houseId) => {
+        if (!houseId) return;
+        const streetId = houseToStreetMap.get(houseId);
+        if (streetId) {
+            matches.streetIds.add(streetId);
+            const territoryId = streetToTerritoryMap.get(streetId);
+            if (territoryId) {
+                matches.territoryIds.add(territoryId);
+            }
+        }
+    };
 
     // 3. Search through each data type
-    // Search Territories
+    // Search Territories (Top Level)
     for (const territory of allTerritories) {
         if (territory.number.toLowerCase().includes(lowerCaseSearch) || territory.description.toLowerCase().includes(lowerCaseSearch)) {
-            matchingTerritoryIds.add(territory.id);
+            matches.territoryIds.add(territory.id);
         }
     }
 
     // Search Streets
     for (const street of allStreets) {
         if (street.name.toLowerCase().includes(lowerCaseSearch)) {
-            matchingTerritoryIds.add(street.territoryId);
+            matches.streetIds.add(street.id);
+            matches.territoryIds.add(street.territoryId); // Also add its parent territory
         }
     }
 
     // Search People
     for (const person of allPeople) {
         if (person.name.toLowerCase().includes(lowerCaseSearch)) {
-            const streetId = houseToStreet.get(person.houseId);
-            const territoryId = streetToTerritory.get(streetId);
-            if (territoryId) {
-                matchingTerritoryIds.add(territoryId);
-            }
+            matches.houseIds.add(person.houseId);
+            addParentIds(person.houseId); // Add the parent street and territory
         }
     }
 
     // Search Visit Notes
     for (const visit of allVisits) {
         if (visit.notes && visit.notes.toLowerCase().includes(lowerCaseSearch)) {
-            const streetId = houseToStreet.get(visit.houseId);
-            const territoryId = streetToTerritory.get(streetId);
-            if (territoryId) {
-                matchingTerritoryIds.add(territoryId);
-            }
+            matches.houseIds.add(visit.houseId);
+            addParentIds(visit.houseId); // Add the parent street and territory
         }
     }
 
-    return Array.from(matchingTerritoryIds);
+    // Convert Sets to Arrays for easier use later
+    return {
+        territoryIds: Array.from(matches.territoryIds),
+        streetIds: Array.from(matches.streetIds),
+        houseIds: Array.from(matches.houseIds)
+    };
 }
