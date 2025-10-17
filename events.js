@@ -1,4 +1,4 @@
-// Version 1.17.01
+// Version 1.20.04
 /*
 Here, I'll modify the event listener for the import confirmation button to pass the conflict object to the executeMerge function 
 when the "merge" option is selected.
@@ -29,6 +29,8 @@ function initializeEventListeners(state, actions) {
             confirmBtn.removeAttribute('data-bundle');
             confirmBtn.removeAttribute('data-conflict');
         }
+        document.getElementById('clear-search-btn').addEventListener('click', () => actions.clearSearch());
+        document.getElementById('new-search-btn').addEventListener('click', () => actions.newSearch());
     };
 
     const showTerritoryModal = (territory = null) => {

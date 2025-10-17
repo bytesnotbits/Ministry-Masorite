@@ -1,4 +1,4 @@
-// Version 1.20.04
+// Version 1.20.06
 // --- REFACTORED FILE: app.js ---
 // This file initializes the application and manages its central state and actions.
 
@@ -147,6 +147,44 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 indicatorBar.classList.add('hidden');
             }
+        },
+
+        // clearSearch just refreshes the page you're on
+        async clearSearch() {
+            // 1. Clear the search state
+            AppState.currentSearchQuery = '';
+            AppState.searchHighlights = { streetIds: new Set(), houseIds: new Set() };
+            document.getElementById('search-territory-input').value = '';
+
+            // 2. Hide the indicator bar
+            this.updateSearchIndicator();
+
+            // 3. Refresh the current view to show all items
+            if (AppState.currentView === 'territory-list-view') {
+                await this.refreshTerritories();
+            } else if (AppState.currentView === 'street-list-view') {
+                await this.refreshStreets();
+            } else if (AppState.currentView === 'house-list-view') {
+                await this.refreshHouses();
+            }
+        },
+
+        // newSearch takes you all the way back to the beginning
+        async newSearch() {
+            // 1. Clear the state just like the other function
+            AppState.currentSearchQuery = '';
+            AppState.searchHighlights = { streetIds: new Set(), houseIds: new Set() };
+            
+            // 2. Navigate back to the main territory list
+            await this.navigateBack('territory-list-view');
+            
+            // 3. Focus the input and clear it, ready for a new search
+            const searchInput = document.getElementById('search-territory-input');
+            searchInput.value = '';
+            searchInput.focus();
+
+            // 4. Hide the indicator bar
+            this.updateSearchIndicator();
         },
 
         async refreshStudyDetails() {
