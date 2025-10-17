@@ -1,4 +1,4 @@
-// Version 1.18.01
+// Version 1.20.03
 // --- FILE: ui.js ---
 // This file contains all functions related to UI rendering and DOM manipulation, now organized into a UI object.
 
@@ -88,7 +88,7 @@ const UI = {
 
 
 
-    async renderStreets(territory) {
+    async renderStreets(territory, searchHighlights = { streetIds: new Set() }) {
         this.streetList.innerHTML = '';
         const streetListTitle = document.querySelector('#street-list-view .view-header h2');
         streetListTitle.innerHTML = `Territory #${territory.number}: <small>${territory.description}</small>`;
@@ -124,6 +124,10 @@ const UI = {
                 if (gatedCount > 0) metaHtmlParts.push(`<strong>${gatedCount}</strong> Gated`);
                 if (ntCount > 0) metaHtmlParts.push(`<strong>${ntCount}</strong> NT`);
                 const li = document.createElement('li');
+                // --- THIS IS THE HIGHLIGHT LOGIC ---
+                if (searchHighlights.streetIds.has(street.id)) {
+                    li.classList.add('search-highlight');
+                }
                 li.dataset.id = street.id;
                 if (isComplete) li.classList.add('is-complete');
                 li.innerHTML = `
@@ -140,7 +144,7 @@ const UI = {
         }
     },
 
-    async renderHouses(street, activeHouseFilters) {
+    async renderHouses(street, activeHouseFilters, searchHighlights = { houseIds: new Set() }) {
         this.houseList.innerHTML = '';
         document.getElementById('house-list-title').textContent = street.name;
         const allHouses = (await getByIndex('houses', 'streetId', street.id)).sort((a, b) => a.address.localeCompare(b.address, undefined, { numeric: true, sensitivity: 'base' }));
@@ -156,6 +160,10 @@ const UI = {
         }
 
         const housesToRender = allHouses.filter(house => {
+            // If a search is active, we IGNORE the regular filters and ONLY show the houses that are highlighted.
+            if (searchHighlights.houseIds.size > 0) {
+                return searchHighlights.houseIds.has(house.id);
+            }
             if (activeHouseFilters.ni && house.isNotInterested) return false;
             if (activeHouseFilters.nt && house.noTrespassing) return false;
             if (activeHouseFilters.gated && house.hasGate) return false;
@@ -181,7 +189,11 @@ const UI = {
                 const lastActivityDate = lastVisit ? `Last Visit: <strong>${new Date(lastVisit.date).toLocaleDateString()}</strong>` : 'No activity yet';
                 const personMet = lastVisit && !lastVisit.isNotAtHome && lastVisit.personName ? `Met: <strong>${lastVisit.personName}</strong>` : '';
                 const li = document.createElement('li');
-                li.className = `house-card ${house.isNotInterested ? 'is-ni' : ''}`;
+                // --- THIS IS THE HIGHLIGHT LOGIC ---
+                if (searchHighlights.houseIds.has(house.id)) {
+                    li.classList.add('search-highlight');
+                }
+                li.className = `house-card ${house.isNotInterested ? 'is-ni' : ''} ${li.className}`;
                 li.dataset.id = house.id;
                 const niBadge = house.isNotInterested ? '<span class="ni-badge">NI</span>' : '';
                 const hasSentLetter = visits.some(v => v.visitType === 'letter');

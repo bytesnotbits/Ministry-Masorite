@@ -39,18 +39,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             AppState.currentTerritoryId = territoryId;
             AppState.currentView = 'street-list-view';
             const territory = await getFromStore('territories', territoryId);
-            UI.renderStreets(territory);
+            UI.renderStreets(territory, AppState.searchHighlights);
             UI.showView(AppState.currentView);
         },
 
         async navigateToHouses(streetId) {
             AppState.streetListScrollPosition = window.scrollY;
             AppState.currentStreetId = streetId;
-            AppState.activeHouseFilters = { visited: false, ni: false, nt: false, gated: false };
+            if (!AppState.currentSearchQuery) {
+                AppState.activeHouseFilters = { visited: false, ni: false, nt: false, gated: false };
+            }
             document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
             AppState.currentView = 'house-list-view';
             const street = await getFromStore('streets', streetId);
-            await UI.renderHouses(street, AppState.activeHouseFilters);
+            await UI.renderHouses(street, AppState.activeHouseFilters, AppState.searchHighlights);
             UI.showView(AppState.currentView);
         },
 
