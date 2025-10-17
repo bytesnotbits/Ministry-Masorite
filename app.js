@@ -109,11 +109,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         async refreshTerritories() {
             const filter = document.getElementById('search-territory-input').value;
             // Call our "master search" function
-            const matchingIds = await searchAllData(filter);
-            // Pass the results to the UI to be rendered
-            await UI.renderTerritories(matchingIds);
+            const searchResults = await searchAllData(filter);
+            // Check if searchResults exists.
+            // If it does, pass ONLY the territoryIds array.
+            // If it's null (empty search), pass null.
+            await UI.renderTerritories(searchResults ? searchResults.territoryIds : null);
         },
-
         
         async refreshStreets() {
             const territory = await getFromStore('territories', AppState.currentTerritoryId);
