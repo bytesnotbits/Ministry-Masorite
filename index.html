@@ -1,4 +1,4 @@
-<!-- 1.17.01 -->
+<!-- 1.20.01 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,6 +17,14 @@
     </header>
 
     <main>
+    <div id="search-indicator-bar" class="hidden">
+        <span id="search-indicator-text"></span>
+        <div class="search-indicator-actions">
+            <button id="new-search-btn">New Search</button>
+            <button id="clear-search-btn">Clear</button>
+        </div>
+    </div>
+     
     <!-- LEVEL 1: This is the main screen showing the list of territories -->
     <div id="territory-list-view" class="view active">
         <header class="view-header">
@@ -58,7 +66,7 @@
         <button id="about-menu-toggle-btn" class="menu-toggle-btn">About / TODOs ℹ️</button>
         <div id="about-section" class="version-footer hidden">
                 <h3>Version</h3>
-                <p><strong>1.18.01</strong> Improved territory search function</p>
+                <p><strong>1.20.01</strong> Got rid of the search amnesia. Now giving it super powers.</p>
         </div>
     </div>
 

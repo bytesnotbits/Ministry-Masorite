@@ -269,3 +269,40 @@ body.hide-completed #street-list > li.is-complete { display: none; }
     padding-left: 28px; /* Aligns with text above */
 }
 /* --- END: NEW STYLES FOR IMPORT CONFLICT MODAL --- */
+
+/* --- START: SEARCH HIGHLIGHT & INDICATOR STYLES --- */
+#search-indicator-bar {
+    background-color: #fffbe6; /* A light yellow */
+    border: 1px solid #ffe58f;
+    border-radius: 8px;
+    padding: 10px 15px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+}
+
+#search-indicator-text {
+    font-weight: bold;
+    color: #8a6d3b;
+}
+
+.search-indicator-actions button {
+    font-size: 13px;
+    padding: 5px 10px;
+    margin-left: 10px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+}
+
+#clear-search-btn {
+    background-color: #f0f0f0;
+}
+
+/* This is the style that will be applied to matched items */
+.search-highlight {
+    border: 2px solid #007bff; /* A distinct blue border */
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+}
+/* --- END: SEARCH HIGHLIGHT & INDICATOR STYLES --- */
